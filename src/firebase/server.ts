@@ -7,58 +7,57 @@ import { firebaseConfig } from "@/firebase/config";
 import "server-only";
 
 let adminApp: App;
-let adminStorage: Storage;
-
-function getInitOptions() {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (!serviceAccountKey) {
-    console.error(
-      "Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. " +
-      "Falling back to Application Default Credentials (ADC). This might cause issues if ADC is not configured."
-    );
-    // Proceed with ADC, which might be the source of the error if not configured.
-    return {
-      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-    };
-  }
-
-  try {
-    const serviceAccount = JSON.parse(serviceAccountKey);
-    const projectId = serviceAccount.project_id || firebaseConfig.projectId;
-    return {
-      credential: cert(serviceAccount),
-      storageBucket: `${projectId}.appspot.com`,
-    };
-  } catch (e) {
-    console.error("Firebase Admin SDK: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", e);
-    // Fallback to ADC if parsing fails
-    return {
-      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-    };
-  }
-}
 
 function initializeAdminApp(): App {
+  if (adminApp) {
+    return adminApp;
+  }
+
   try {
-    // getApp() throws if no app is initialized, which is our control flow.
+    // getApp() will throw an error if the app is not already initialized.
+    // This is a way to check if we've already initialized it in this context.
     return getApp();
-  } catch {
-    // If it throws, initialize the app with the correct options.
-    return initializeApp(getInitOptions());
+  } catch (e) {
+    // If getApp() throws, it means we need to initialize.
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+    if (!serviceAccountKey) {
+      console.error(
+        "Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. " +
+        "Falling back to Application Default Credentials (ADC). This will likely fail if not configured."
+      );
+      // Initialize with ADC and bucket, which might be the source of the error.
+      adminApp = initializeApp({
+        storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+      });
+      return adminApp;
+    }
+
+    try {
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      const projectId = serviceAccount.project_id || firebaseConfig.projectId;
+      adminApp = initializeApp({
+        credential: cert(serviceAccount),
+        storageBucket: `${projectId}.appspot.com`,
+      });
+      return adminApp;
+    } catch (parseError) {
+      console.error("Firebase Admin SDK: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", parseError);
+      // Fallback to ADC if parsing fails.
+      adminApp = initializeApp({
+        storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+      });
+      return adminApp;
+    }
   }
 }
 
 export function getAdminApp(): App {
-  if (!adminApp) {
-    adminApp = initializeAdminApp();
-  }
-  return adminApp;
+  // This ensures that we always return an initialized app.
+  return initializeAdminApp();
 }
 
 export function getAdminStorage(app: App): Storage {
-  if (!adminStorage) {
-    adminStorage = getStorage(app);
-  }
-  return adminStorage;
+  // There is no need to cache the storage instance, getStorage handles this.
+  return getStorage(app);
 }
