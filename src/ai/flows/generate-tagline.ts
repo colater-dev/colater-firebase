@@ -42,7 +42,7 @@ Brand Name: {{{name}}}
 Elevator Pitch: {{{elevatorPitch}}}
 Target Audience: {{{audience}}}
 
-Generate a few concise and memorable taglines.`,
+Generate a few concise and memorable taglines. Do not repeat the brand name at the start of the tagline. For example, for a brand named "Bork", a good tagline is "Every bark, understood." and a bad tagline is "Bork: Every bark, understood.".`,
 });
 
 const generateTaglineFlow = ai.defineFlow(

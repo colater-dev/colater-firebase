@@ -82,9 +82,9 @@ const generateLogoFlow = ai.defineFlow(
               "fill_style": "solid fill"
             },
             "background_treatment": {
-              "type": "flat color",
+              "type": "none",
               "padding": "generous negative space around icon",
-              "shape": "square or circle container optional"
+              "shape": "none"
             },
             "composition": {
               "orientation": "horizontal bias if animal is used",
@@ -106,7 +106,7 @@ const generateLogoFlow = ai.defineFlow(
               "format": "png",
               "aspect_ratio": "1:1",
               "resolution": "scalable",
-              "background_included": true
+              "background_included": false
             }
           },
           "variation_controls": {
@@ -128,6 +128,8 @@ const generateLogoFlow = ai.defineFlow(
             "avoid": [
               "gradients",
               "thin lines",
+              "outlines",
+              "strokes",
               "textures",
               "multiple colors",
               "literal realism"
@@ -135,7 +137,7 @@ const generateLogoFlow = ai.defineFlow(
           }
         }
         
-        Do not include any text in the logo. The logo must be on a transparent background.
+        Do not include any text in the logo. The logo must be on a transparent background and have no outline or border.
         `,
         config: {
           responseModalities: ['IMAGE'],
