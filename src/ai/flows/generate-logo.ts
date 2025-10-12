@@ -44,9 +44,7 @@ const generateLogoFlow = ai.defineFlow(
         Brand Name: ${input.name}
         Brand Description: ${input.elevatorPitch}
         Target Audience: ${input.audience}
-        Desirable Cues: ${input.desirableCues || 'None'}
-        Undesirable Cues: ${input.undesirableCues || 'None'}
-
+        
         The logo must adhere to the following design system:
         
         {
@@ -58,8 +56,9 @@ const generateLogoFlow = ai.defineFlow(
               "negative_space_usage": "moderate, purposeful"
             },
             "subject_matter": {
-              "category": "animals, abstract forms, symbolic entities",
-              "example_subject": "bird, fish, fox, leaf",
+              "desirable_cues": "${input.desirableCues || 'None'}",
+              "undesirable_cues": "${input.undesirableCues || 'None'}",
+              "category": "abstract forms, symbolic entities",
               "representation_level": "stylized, abstracted, non-literal"
             },
             "color": {
