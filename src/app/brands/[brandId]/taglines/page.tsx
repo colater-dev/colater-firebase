@@ -12,7 +12,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions, getLogoSuggestion } from '@/app/actions';
+import { getTaglineSuggestions, generateAndSaveLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -98,26 +98,20 @@ export default function TaglinesPage() {
     if (!brand || !user) return;
     setIsGeneratingLogo(true);
     try {
-      const result = await getLogoSuggestion(brand.latestName, brand.latestElevatorPitch, brand.latestAudience);
-      if (result.success && result.data && brandRef) {
-        
-        const logosCollection = collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`);
-        const newLogoDoc = await addDocumentNonBlocking(logosCollection, {
-          brandId,
-          userId: user.uid,
-          logoUrl: result.data,
-          createdAt: serverTimestamp(),
-        });
-
-        // Also update the main brand doc with the latest logo
-        await updateDoc(brandRef, { logoUrl: result.data });
-
+      const result = await generateAndSaveLogo(
+        brandId as string,
+        user.uid,
+        brand.latestName,
+        brand.latestElevatorPitch,
+        brand.latestAudience
+      );
+      if (result.success && result.data) {
         toast({
-          title: 'New logo generated!',
-          description: 'Your new brand logo has been saved.',
+          title: "New logo generated!",
+          description: "Your new brand logo has been saved.",
         });
       } else {
-        throw new Error(result.error || 'Failed to get logo suggestion.');
+        throw new Error(result.error || "Failed to generate and save logo.");
       }
     } catch (error) {
         console.error('Error generating logo:', error);
@@ -129,7 +123,7 @@ export default function TaglinesPage() {
     } finally {
         setIsGeneratingLogo(false);
     }
-  }, [brand, user, brandId, firestore, brandRef, toast]);
+  }, [brand, user, brandId, toast]);
 
   // Effect to generate initial content if it doesn't exist
   useEffect(() => {
@@ -137,10 +131,10 @@ export default function TaglinesPage() {
         handleGenerateTaglines();
     }
     // Auto-generate logo if none exist
-    if (brand && !isLoadingLogos && logos?.length === 0 && !isGeneratingLogo) {
+    if (brand && user && !isLoadingLogos && logos?.length === 0 && !isGeneratingLogo) {
         handleGenerateLogo();
     }
-  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
+  }, [brand, user, taglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
 
   // Effect to update the brand's primary logoUrl when the paginated logo changes
   useEffect(() => {
@@ -221,7 +215,7 @@ export default function TaglinesPage() {
                           </div>
                       ) : currentLogo ? (
                           <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
-                              <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" />
+                              <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
                           </div>
                       ) : (
                           <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
