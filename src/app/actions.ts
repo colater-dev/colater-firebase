@@ -15,9 +15,10 @@ export async function getTaglineSuggestions(
     return { success: true, data: result.taglines };
   } catch (error) {
     console.error("Error generating tagline suggestion:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return {
       success: false,
-      error: "An unexpected error occurred while generating a tagline.",
+      error: `An unexpected error occurred while generating a tagline: ${errorMessage}`,
     };
   }
 }
