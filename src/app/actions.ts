@@ -83,7 +83,9 @@ export async function convertUrlToDataUri(url: string): Promise<{ success: boole
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.statusText}`);
         }
-        const contentType = response.headers.get('content-type') || 'image/png';
+        // Firebase Storage URLs often return 'application/octet-stream'.
+        // We know our logos are PNGs, so we'll explicitly set the MIME type.
+        const contentType = 'image/png';
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
         const dataUri = `data:${contentType};base64,${base64}`;
