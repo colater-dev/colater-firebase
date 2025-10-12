@@ -118,7 +118,7 @@ export default function NewBrandPage() {
           description: 'Redirecting to generate assets...',
         });
 
-        router.push(`/brands/${brandDocRef.id}/taglines`);
+        router.push(`/brands/${brandDocRef.id}`);
       })
       .catch((error) => {
         setIsSubmitting(false);
