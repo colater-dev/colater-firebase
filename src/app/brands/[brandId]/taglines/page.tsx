@@ -311,22 +311,22 @@ export default function TaglinesPage() {
                     
                     <div className="flex flex-col md:flex-row items-center justify-center w-full gap-8">
                         {isLoadingLogos && !logos ? (
-                            <div className="flex flex-col items-center justify-center h-48 w-48">
+                            <div className="flex flex-col items-center justify-center h-40 w-40">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 <p className="mt-2 text-muted-foreground">Loading logos...</p>
                             </div>
                         ) : isGeneratingLogo && !currentLogo ? (
-                            <div className="flex flex-col items-center justify-center h-48 w-48">
+                            <div className="flex flex-col items-center justify-center h-40 w-40">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 <p className="mt-2 text-muted-foreground">Generating your logo...</p>
                             </div>
                         ) : displayLogoUrl ? (
-                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48 -mr-12">
-                                <Image src={displayLogoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
+                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-40 h-40">
+                                <Image src={displayLogoUrl} alt="Generated brand logo" width={160} height={160} className="object-contain" unoptimized/>
                             </div>
                         ) : (
                              !isGeneratingLogo && (
-                                <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
+                                <div className="text-center flex items-center justify-center h-40 w-40 border-2 border-dashed rounded-lg">
                                     <p className="text-muted-foreground">Click the button to generate a logo.</p>
                                 </div>
                             )

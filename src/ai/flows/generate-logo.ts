@@ -55,7 +55,7 @@ const generateLogoFlow = ai.defineFlow(
         - **Color:** The logo must use black shapes or strokes only.
         - **Shape & Form:** Use a mix of smooth curves and sharp, flat planes. Corners should be slightly rounded or have blunt geometric cuts. The overall composition should be compact and balanced.
         - **Background:** The logo must be on a **transparent background**. Do not add any color, patterns, or borders to the background.
-        - **Output Requirements:** The final image must be a 256x256 pixel PNG. Do not include any text in the logo itself.
+        - **Output Requirements:** The final image must be a 160x160 pixel PNG. Do not include any text in the logo itself.
         - **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic.
         `,
         config: {
