@@ -48,11 +48,11 @@ const generateLogoFlow = ai.defineFlow(
         - **Target Audience:** ${input.audience}
 
         **Design System & Style Guidelines:**
-        - **Overall Style:** Create a logo that is modern, minimalist, and geometric. It should be constructed from basic shapes like circles, rectangles, and triangles. The silhouette must be solid, monolithic, and easily recognizable.
+        - **Overall Style:** Create an icon that is modern, minimalist, and geometric. It should be constructed from basic shapes like circles, rectangles, and triangles. The silhouette must be solid, monolithic, and easily recognizable.
         - **Subject Matter:** The logo should be an abstract, symbolic entity. Avoid literal interpretations.
         - **Desirable Cues:** ${input.desirableCues || 'None'}
         - **Undesirable Cues:** ${input.undesirableCues || 'None'}
-        - **Color:** The logo must be **black and white only**.
+        - **Color:** The logo must use black shapes or strokes only.
         - **Shape & Form:** Use a mix of smooth curves and sharp, flat planes. Corners should be slightly rounded or have blunt geometric cuts. The overall composition should be compact and balanced.
         - **Background:** The logo must be on a **transparent background**. Do not add any color, patterns, or borders to the background.
         - **Output Requirements:** The final image must be a 256x256 pixel PNG. Do not include any text in the logo itself.
