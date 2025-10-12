@@ -21,23 +21,23 @@ import { useEffect } from 'react';
 const BrandListItem = ({ brand }: { brand: Brand }) => (
     <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors group">
         <Card className="h-full flex flex-col">
-            <CardHeader className="flex-shrink-0">
-                <CardTitle>{brand.latestName}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col md:flex-row items-center gap-4">
-                 <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-md flex items-center justify-center group-hover:border-primary transition-colors">
-                    {brand.logoUrl ? (
-                        <Image
-                            src={brand.logoUrl}
-                            alt={`${brand.latestName} logo`}
-                            width={80}
-                            height={80}
-                            className="object-contain rounded-md"
-                            unoptimized={brand.logoUrl.startsWith('data:')}
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-muted/50 rounded-md" />
-                    )}
+            <CardContent className="flex-grow flex flex-col p-6 gap-4">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 flex-shrink-0 bg-muted rounded-md flex items-center justify-center">
+                        {brand.logoUrl ? (
+                            <Image
+                                src={brand.logoUrl}
+                                alt={`${brand.latestName} logo`}
+                                width={48}
+                                height={48}
+                                className="object-contain rounded-md"
+                                unoptimized={brand.logoUrl.startsWith('data:')}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-muted/50 rounded-md" />
+                        )}
+                    </div>
+                    <CardTitle className="text-xl group-hover:text-primary transition-colors">{brand.latestName}</CardTitle>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
             </CardContent>
