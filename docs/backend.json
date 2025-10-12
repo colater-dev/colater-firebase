@@ -49,7 +49,7 @@
         "logoUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL of the generated brand logo."
+            "description": "URL of the currently selected brand logo."
         }
       },
       "required": ["userId", "createdAt"]
@@ -110,7 +110,34 @@
         }
       },
       "required": ["brandId", "userId", "tagline", "createdAt"]
-    }
+    },
+    "LogoGeneration": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Logo Generation",
+        "type": "object",
+        "description": "Represents an AI-generated logo for a brand.",
+        "properties": {
+          "brandId": {
+            "type": "string",
+            "description": "The ID of the brand this logo was generated for."
+          },
+          "userId": {
+            "type": "string",
+            "description": "The ID of the user who owns this logo."
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The data URI of the generated logo."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the logo was generated."
+          }
+        },
+        "required": ["brandId", "userId", "logoUrl", "createdAt"]
+      }
   },
   "auth": {
     "providers": ["password", "google.com"]
@@ -156,8 +183,18 @@
           },
           "description": "Stores AI-generated taglines for a brand. Inherits ownership from the parent brand."
         }
+      },
+      {
+        "path": "/users/{userId}/brands/{brandId}/logoGenerations/{generationId}",
+        "definition": {
+          "entityName": "LogoGeneration",
+          "schema": {
+            "$ref": "#/entities/LogoGeneration"
+          },
+          "description": "Stores the history of AI-generated logos for a brand. Inherits ownership from the parent brand."
+        }
       }
     ],
-    "reasoning": "This structure enforces data ownership by scoping all user-related data under `/users/{userId}`. Brands are a subcollection of users, and input versions and tagline generations are subcollections of brands, ensuring a clear ownership hierarchy and enabling straightforward security rules."
+    "reasoning": "This structure enforces data ownership by scoping all user-related data under `/users/{userId}`. Brands are a subcollection of users, and input versions, tagline generations, and logo generations are subcollections of brands, ensuring a clear ownership hierarchy and enabling straightforward security rules."
   }
 }

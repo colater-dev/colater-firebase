@@ -15,3 +15,11 @@ export interface Tagline {
     tagline: string;
     createdAt: any; // Firestore Timestamp
 }
+
+export interface Logo {
+    id: string;
+    brandId: string;
+    userId: string;
+    logoUrl: string;
+    createdAt: any; // Firestore Timestamp
+}
