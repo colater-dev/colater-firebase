@@ -9,7 +9,6 @@ import {
 } from "framer-motion";
 import {
   collection,
-  doc,
   serverTimestamp,
 } from "firebase/firestore";
 import {
@@ -32,8 +31,8 @@ import {
   useCollection,
   useMemoFirebase,
   addDocumentNonBlocking,
-  updateDocumentNonBlocking,
 } from "@/firebase";
+import UserChip from "./user-chip";
 
 const CARD_WIDTH = 384; // w-96
 const CARD_SPACING = 64;
@@ -510,6 +509,10 @@ export default function BrandCanvas() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      <div className="absolute top-4 right-4 z-10">
+        <UserChip />
+      </div>
+
       <motion.div
         className="relative w-full h-full"
         style={{ x: panX, y: panY }}
@@ -534,19 +537,21 @@ export default function BrandCanvas() {
         </AnimatePresence>
       </motion.div>
 
-      {!creationFlowInProgress && (
+      {!creationFlowInProgress && !isLoadingBrands && (
         <div className="absolute inset-0 flex items-center justify-center">
-          {isLoadingBrands ? (
-            <Button size="lg" disabled>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Loading Brands...
-            </Button>
-          ) : (
             <Button size="lg" onClick={handleCreateNewBrand}>
               <Plus className="mr-2 h-5 w-5" />
               Create New Brand
             </Button>
-          )}
+        </div>
+      )}
+
+      {isLoadingBrands && (
+        <div className="absolute inset-0 flex items-center justify-center">
+            <Button size="lg" disabled>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Loading Brands...
+            </Button>
         </div>
       )}
 

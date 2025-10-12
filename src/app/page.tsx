@@ -3,6 +3,7 @@
 import BrandCanvas from '@/components/brand-canvas';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser, initiateGoogleSignIn } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const auth = useAuth();
@@ -15,7 +16,10 @@ export default function Home() {
   if (isUserLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
-        <p>Loading...</p>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading user session...</p>
+        </div>
       </div>
     );
   }
