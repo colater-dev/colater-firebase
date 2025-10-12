@@ -1,111 +1,114 @@
 /**
- * @fileoverview Firestore Security Rules for the Brand Canvas application.
+ * @fileoverview Firestore Security Rules for the BrandApp.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model, ensuring that only the authenticated user who "owns" a BrandCanvas can create, read, update, or delete it and its associated Cards and TargetAudiences.  All data is nested under /users/{userId} to establish clear ownership.
+ * This ruleset enforces a strict user-ownership model where each user has full control over their own data, and no access to others' data.
  *
  * Data Structure:
- * The Firestore database is structured as follows:
- *   /users/{userId}/brandCanvases/{brandCanvasId}
- *   /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}
- *   /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId}
+ * - /users/{userId}: Stores public user profile data.
+ * - /users/{userId}/brands/{brandId}: Stores brand information owned by the user.
+ * - /users/{userId}/brands/{brandId}/inputVersions/{versionId}: Stores historical versions of brand inputs, owned by the user.
+ * - /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}: Stores AI-generated taglines for a brand, owned by the user.
  *
  * Key Security Decisions:
- * - Path-based ownership is used for all data access. The authenticated user's UID must match the {userId} parameter in the path to grant access.
- * - List operations are restricted to the owner of the BrandCanvas and its associated data.
+ * - Users can only read and write their own profile data.
+ * - Users can only create, read, update, and delete brands they own.
+ * - Brand input versions and tagline generations inherit ownership from the parent brand and are only accessible to the brand owner.
+ * - Listing of other user profiles is disallowed.
+ *
+ * Denormalization for Authorization:
+ * - Brand documents contain the `userId` of the owner, allowing for direct ownership checks without additional reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by a signed-in user.
-     * @path N/A (Helper Function)
-     * @allow N/A (Helper Function)
-     * @deny N/A (Helper Function)
-     * @principle Authentication: Ensures that only authenticated users can access the data.
+     * @description Allows users to read and write their own profile data.
+     * @path /users/{userId}
+     * @allow (create) - User with UID 'user123' can create their profile if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can read their profile.
+     * @allow (update) - User with UID 'user123' can update their profile.
+     * @allow (delete) - User with UID 'user123' can delete their profile.
+     * @deny (create) - User with UID 'user456' cannot create a profile with ID 'user123'.
+     * @deny (get) - User with UID 'user456' cannot read the profile of 'user123'.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
      */
-    function isSignedIn() {
-      return request.auth != null;
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Checks if the request is made by the owner of the document, based on the userId.
-     * @path N/A (Helper Function)
-     * @allow N/A (Helper Function)
-     * @deny N/A (Helper Function)
-     * @principle Authorization: Enforces document ownership.
+     * @description Allows users to manage their brands.
+     * @path /users/{userId}/brands/{brandId}
+     * @allow (create) - User 'user123' can create a brand under their ID.
+     * @allow (get) - User 'user123' can read a brand under their ID.
+     * @allow (update) - User 'user123' can update a brand under their ID.
+     * @allow (delete) - User 'user123' can delete a brand under their ID.
+     * @deny (create) - User 'user456' cannot create a brand under user123's ID.
+     * @deny (get) - User 'user456' cannot read a brand under user123's ID.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
      */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the request is made by the owner of an existing document, based on the userId.
-     * @path N/A (Helper Function)
-     * @allow N/A (Helper Function)
-     * @deny N/A (Helper Function)
-     * @principle Authorization: Enforces document ownership and verifies document existence.
-     */
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for BrandCanvas documents.
-     * @path /users/{userId}/brandCanvases/{brandCanvasId}
-     * @allow (create) User A creates a new BrandCanvas under /users/A/brandCanvases/123 with a matching id field.
-     * @allow (get, list) User A reads BrandCanvas /users/A/brandCanvases/123.
-     * @allow (update, delete) User A updates/deletes BrandCanvas /users/A/brandCanvases/123.
-     * @deny (create) User B tries to create a BrandCanvas under /users/A/brandCanvases.
-     * @deny (get, list) User B tries to read BrandCanvas /users/A/brandCanvases/123.
-     * @deny (update, delete) User B tries to update/delete BrandCanvas /users/A/brandCanvases/123.
-     * @principle Enforces document ownership for all operations on BrandCanvas.
-     */
-    match /users/{userId}/brandCanvases/{brandCanvasId} {
+    match /users/{userId}/brands/{brandId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == brandCanvasId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.createdAt is string;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Rules for Card documents.
-     * @path /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}
-     * @allow (create) User A creates a new Card under /users/A/brandCanvases/123/cards/456 with a matching brandCanvasId field.
-     * @allow (get, list) User A reads Card /users/A/brandCanvases/123/cards/456.
-     * @allow (update, delete) User A updates/deletes Card /users/A/brandCanvases/123/cards/456.
-     * @deny (create) User B tries to create a Card under /users/A/brandCanvases/123/cards/456.
-     * @deny (get, list) User B tries to read Card /users/A/brandCanvases/123/cards/456.
-     * @deny (update, delete) User B tries to update/delete Card /users/A/brandCanvases/123/cards/456.
-     * @principle Enforces document ownership for all operations on Card.
+     * @description Allows users to manage versions of brand input.
+     * @path /users/{userId}/brands/{brandId}/inputVersions/{versionId}
+     * @allow (create) - User 'user123' can create a brand input version under their brand.
+     * @allow (get) - User 'user123' can read a brand input version under their brand.
+     * @allow (update) - User 'user123' can update a brand input version under their brand.
+     * @allow (delete) - User 'user123' can delete a brand input version under their brand.
+     * @deny (create) - User 'user456' cannot create a brand input version under user123's brand.
+     * @deny (get) - User 'user456' cannot read a brand input version under user123's brand.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
      */
-    match /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId} {
+    match /users/{userId}/brands/{brandId}/inputVersions/{versionId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.brandCanvasId == brandCanvasId;
-      allow update: if isExistingOwner(userId) && request.resource.data.brandCanvasId == brandCanvasId;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId is string && request.resource.data.inputType is string && request.resource.data.value is string && request.resource.data.createdAt is string;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Rules for TargetAudience documents.
-     * @path /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId}
-     * @allow (create) User A creates a new TargetAudience under /users/A/brandCanvases/123/cards/456/targetAudiences/789 with a matching cardId field.
-     * @allow (get, list) User A reads TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
-     * @allow (update, delete) User A updates/deletes TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
-     * @deny (create) User B tries to create a TargetAudience under /users/A/brandCanvases/123/cards/456/targetAudiences/789.
-     * @deny (get, list) User B tries to read TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
-     * @deny (update, delete) User B tries to update/delete TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
-     * @principle Enforces document ownership for all operations on TargetAudience.
+     * @description Allows users to manage AI-generated taglines for their brands.
+     * @path /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}
+     * @allow (create) - User 'user123' can create a tagline generation under their brand.
+     * @allow (get) - User 'user123' can read a tagline generation under their brand.
+     * @allow (update) - User 'user123' can update a tagline generation under their brand.
+     * @allow (delete) - User 'user123' can delete a tagline generation under their brand.
+     * @deny (create) - User 'user456' cannot create a tagline generation under user123's brand.
+     * @deny (get) - User 'user456' cannot read a tagline generation under user123's brand.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
      */
-    match /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId} {
+    match /users/{userId}/brands/{brandId}/taglineGenerations/{generationId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.cardId == cardId;
-      allow update: if isExistingOwner(userId) && request.resource.data.cardId == cardId;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId is string && request.resource.data.tagline is string && request.resource.data.createdAt is string;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
     }
   }
 }
