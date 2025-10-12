@@ -124,11 +124,8 @@ export default function TaglinesPage() {
         if (taglines?.length === 0) {
             handleGenerateTaglines();
         }
-        if (!brand.logoUrl) {
-            handleGenerateLogo();
-        }
     }
-  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines, handleGenerateLogo]);
+  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines]);
 
   const isLoading = isLoadingBrand || (isLoadingTaglines && !taglines);
 
@@ -208,13 +205,14 @@ export default function TaglinesPage() {
                         <CardDescription>An abstract logo for your brand.</CardDescription>
                     </div>
                     <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo} size="sm">
-                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
+                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : brand?.logoUrl ? 'Regenerate' : 'Generate'}
                   </Button>
                 </CardHeader>
                 <CardContent>
-                    {isGeneratingLogo ? (
+                    {isGeneratingLogo && !brand.logoUrl ? (
                         <div className="flex items-center justify-center h-64 aspect-square">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="ml-2 text-muted-foreground">Generating your logo...</p>
                         </div>
                     ) : brand.logoUrl ? (
                         <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center p-4">
@@ -222,7 +220,7 @@ export default function TaglinesPage() {
                         </div>
                     ) : (
                         <div className="text-center flex items-center justify-center h-64 aspect-square border-2 border-dashed rounded-lg">
-                            <p className="text-muted-foreground">No logo generated yet.</p>
+                            <p className="text-muted-foreground">Click the button to generate a logo.</p>
                         </div>
                     )}
                 </CardContent>
