@@ -3,6 +3,7 @@
 import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
+import { colorizeLogo } from "@/ai/flows/colorize-logo";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -63,6 +64,28 @@ export async function getBrandSuggestions(topic: string): Promise<{ success: boo
     return {
       success: false,
       error: `An unexpected error occurred while generating brand details: ${errorMessage}`,
+    };
+  }
+}
+
+
+export async function getColorizedLogo(
+  logoUrl: string,
+  desirableCues?: string,
+  undesirableCues?: string
+): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
+  try {
+    if (!logoUrl) {
+      return { success: false, error: "Original logo URL is required." };
+    }
+    const result = await colorizeLogo({ logoUrl, desirableCues, undesirableCues });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error colorizing logo:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while colorizing the logo: ${errorMessage}`,
     };
   }
 }
