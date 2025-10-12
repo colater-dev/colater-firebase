@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from "@/firebase";
 export const metadata: Metadata = {
   title: "Brand Canvas",
   description: "Visualize your brand identity on an infinite canvas.",
+  icons: [{ rel: 'icon', url: '/favicon.ico' }],
 };
 
 export default function RootLayout({
