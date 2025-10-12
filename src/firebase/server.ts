@@ -9,43 +9,36 @@ import "server-only";
 let adminApp: App;
 let adminStorage: Storage;
 
-// Helper function to get the initialization options
 function getInitOptions() {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        return {
-          credential: cert(serviceAccount),
-          storageBucket: `${serviceAccount.project_id}.appspot.com`,
-        };
-      } catch (e) {
-         console.error("Firebase Admin SDK: Error parsing service account key:", e);
+  const options: { credential?: any; storageBucket: string } = {
+    storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+  };
+
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      options.credential = cert(serviceAccount);
+      // Ensure storageBucket is derived from service account if project_id is different
+      if (serviceAccount.project_id) {
+          options.storageBucket = `${serviceAccount.project_id}.appspot.com`;
       }
+    } catch (e) {
+      console.error("Firebase Admin SDK: Error parsing service account key, falling back to ADC.", e);
     }
-    // Fallback to Application Default Credentials and config for storage bucket
-    return {
-      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-    };
+  }
+  return options;
 }
 
-
-// Helper function to initialize the Firebase Admin app
 function initializeAdminApp(): App {
   try {
-    // If the app is already initialized, just return it.
+    // getApp() throws if no app is initialized, which is the control flow we want.
     return getApp();
   } catch {
-    // Otherwise, initialize it with the correct options.
-    try {
-        return initializeApp(getInitOptions());
-    } catch (e) {
-      console.error("Firebase Admin SDK initialization failed:", e);
-      throw new Error("Could not initialize Firebase Admin SDK. Ensure Application Default Credentials or a service account key are set up correctly.");
-    }
+    // If it throws, initialize the app with the correct options.
+    return initializeApp(getInitOptions());
   }
 }
 
-// Export a function to get the singleton app instance
 export function getAdminApp(): App {
   if (!adminApp) {
     adminApp = initializeAdminApp();
@@ -53,7 +46,6 @@ export function getAdminApp(): App {
   return adminApp;
 }
 
-// Export a function to get the singleton Storage instance
 export function getAdminStorage(app: App): Storage {
   if (!adminStorage) {
     adminStorage = getStorage(app);

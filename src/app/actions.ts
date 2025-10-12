@@ -95,17 +95,13 @@ export async function generateAndSaveLogo(
     await file.save(imageBuffer, {
       metadata: {
         contentType: "image/png",
-        metadata: {
-          firebaseStorageDownloadTokens: crypto.randomUUID(),
-        },
       },
     });
 
-    // 4. Get the public URL
-    const [publicUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: '01-01-2500'
-    })
+    // 4. Make the file public and construct the URL
+    await file.makePublic();
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
 
     // 5. Save the public URL and other data to Firestore
     const logoGenerationRef = firestore.collection(`users/${userId}/brands/${brandId}/logoGenerations`).doc();
