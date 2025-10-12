@@ -1,13 +1,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
-import { useUser, useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { useRequireAuth } from '@/features/auth/hooks';
+import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,8 +33,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function NewBrandPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useRequireAuth();
   const firestore = useFirestore();
+  const brandService = useMemo(() => createBrandService(firestore), [firestore]);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -88,7 +90,7 @@ export default function NewBrandPage() {
   }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -98,49 +100,43 @@ export default function NewBrandPage() {
     }
 
     setIsSubmitting(true);
-    
-    const brandData = {
-      userId: user.uid,
-      createdAt: serverTimestamp(),
-      latestName: values.name,
-      latestElevatorPitch: values.elevatorPitch,
-      latestAudience: values.audience,
-      latestDesirableCues: values.desirableCues || '',
-      latestUndesirableCues: values.undesirableCues || '',
-    };
-    
-    const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
-    
-    addDoc(brandsCollection, brandData)
-      .then((brandDocRef) => {
-        toast({
-          title: 'Brand Created!',
-          description: 'Redirecting to generate assets...',
-        });
 
-        router.push(`/brands/${brandDocRef.id}`);
-      })
-      .catch((error) => {
-        setIsSubmitting(false);
-
-        // Check if it's a permission error, otherwise show generic toast
-        if (error.code === 'permission-denied') {
-             // Construct and emit the specialized error for debugging
-             const permissionError = new FirestorePermissionError({
-                path: brandsCollection.path,
-                operation: 'create',
-                requestResourceData: brandData,
-             });
-             errorEmitter.emit('permission-error', permissionError);
-        } else {
-            console.error('Error creating brand:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Something went wrong',
-                description: (error instanceof Error) ? error.message : 'Could not save the brand.',
-            });
-        }
+    try {
+      const brandId = await brandService.createBrand(user.uid, {
+        latestName: values.name,
+        latestElevatorPitch: values.elevatorPitch,
+        latestAudience: values.audience,
+        latestDesirableCues: values.desirableCues,
+        latestUndesirableCues: values.undesirableCues,
       });
+
+      toast({
+        title: 'Brand Created!',
+        description: 'Redirecting to generate assets...',
+      });
+
+      router.push(`/brands/${brandId}`);
+    } catch (error: any) {
+      setIsSubmitting(false);
+
+      // Check if it's a permission error, otherwise show generic toast
+      if (error.code === 'permission-denied') {
+        const brandsCollection = brandService.getBrandsCollection(user.uid);
+        const permissionError = new FirestorePermissionError({
+          path: brandsCollection.path,
+          operation: 'create',
+          requestResourceData: values,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      } else {
+        console.error('Error creating brand:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Something went wrong',
+          description: error instanceof Error ? error.message : 'Could not save the brand.',
+        });
+      }
+    }
   };
 
   return (

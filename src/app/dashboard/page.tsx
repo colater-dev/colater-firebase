@@ -3,20 +3,15 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  collection,
-  query,
-  orderBy,
-  where
-} from 'firebase/firestore';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useMemo } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useRequireAuth } from '@/features/auth/hooks';
+import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Plus, ArrowRight } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import UserChip from '@/components/user-chip';
 import type { Brand } from '@/lib/types';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => (
     <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors group">
@@ -47,27 +42,18 @@ const BrandListItem = ({ brand }: { brand: Brand }) => (
 
 
 export default function Dashboard() {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading } = useRequireAuth();
   const firestore = useFirestore();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/');
-    }
-  }, [user, isUserLoading, router]);
+  const brandService = useMemo(() => createBrandService(firestore), [firestore]);
 
   const brandsQuery = useMemoFirebase(
-    () => user ? query(
-        collection(firestore, `users/${user.uid}/brands`),
-        orderBy('createdAt', 'desc')
-    ) : null,
-    [user, firestore]
+    () => user ? brandService.getBrandsQuery(user.uid) : null,
+    [user, brandService]
   );
-  
+
   const { data: brands, isLoading: isLoadingBrands } = useCollection<Brand>(brandsQuery);
 
-  if (isUserLoading || !user) {
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
