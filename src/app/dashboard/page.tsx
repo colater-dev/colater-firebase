@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -17,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => (
-    <Link href={`/brands/${brand.id}/taglines`} className="block hover:bg-muted/50 rounded-lg transition-colors">
+    <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors">
         <Card className="h-full">
             <CardHeader>
                 <CardTitle>{brand.latestName}</CardTitle>
