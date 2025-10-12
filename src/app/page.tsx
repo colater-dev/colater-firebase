@@ -1,13 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
 import BrandCanvas from '@/components/brand-canvas';
 import { Button } from '@/components/ui/button';
-import { useAuth, useUser, initiateGoogleSignIn } from '@/firebase';
+import { useAuth, useUser, initiateGoogleSignIn, handleRedirectResult } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
+
+  // Handle the redirect result from Google Sign-In when the component mounts
+  useEffect(() => {
+    handleRedirectResult(auth);
+  }, [auth]);
 
   const handleSignIn = () => {
     initiateGoogleSignIn(auth);

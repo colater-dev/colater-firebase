@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   // Assume getAuth and app are initialized elsewhere
 } from 'firebase/auth';
 
@@ -33,7 +34,25 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
 /** Initiate Google sign-in (non-blocking). */
 export function initiateGoogleSignIn(authInstance: Auth): void {
   const provider = new GoogleAuthProvider();
-  // CRITICAL: Call signInWithPopup directly. Do NOT use 'await signInWithPopup(...)'.
-  signInWithPopup(authInstance, provider);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // CRITICAL: Call signInWithRedirect directly. Do NOT use 'await signInWithRedirect(...)'.
+  signInWithRedirect(authInstance, provider);
+  // The page will be redirected, and the result is handled by the onAuthStateChanged listener or getRedirectResult.
+}
+
+/**
+ * Checks for a redirect result after a user returns to the app.
+ * This should be called on the page where the user lands after sign-in.
+ */
+export async function handleRedirectResult(authInstance: Auth) {
+  try {
+    // This promise resolves with the user credential on a successful sign-in redirect.
+    // It resolves with `null` if the user just visited the page without a redirect.
+    const result = await getRedirectResult(authInstance);
+    // You can handle the user from the result here if needed,
+    // but onAuthStateChanged will also fire, which is often sufficient.
+    return result;
+  } catch (error) {
+    // Handle errors here, such as `auth/account-exists-with-different-credential`.
+    console.error("Error handling redirect result:", error);
+  }
 }
