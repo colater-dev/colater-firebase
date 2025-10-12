@@ -41,4 +41,3 @@ export function initializeFirebaseApp(): FirebaseApp {
   // If not in a browser (e.g., server action), initialize with the explicit config.
   return initializeApp(firebaseConfig);
 }
-
