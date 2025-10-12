@@ -70,15 +70,17 @@ export async function getBrandSuggestions(topic: string): Promise<{ success: boo
 
 
 export async function getColorizedLogo(
-  logoUrl: string,
+  name: string,
+  elevatorPitch: string,
+  audience: string,
   desirableCues?: string,
   undesirableCues?: string
 ): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
   try {
-    if (!logoUrl) {
-      return { success: false, error: "Original logo URL is required." };
+     if (!name || !elevatorPitch || !audience) {
+      return { success: false, error: "Brand details are required to generate a color logo." };
     }
-    const result = await colorizeLogo({ logoUrl, desirableCues, undesirableCues });
+    const result = await colorizeLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
     return { success: true, data: result };
   } catch (error) {
     console.error("Error colorizing logo:", error);

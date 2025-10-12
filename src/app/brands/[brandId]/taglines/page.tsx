@@ -150,13 +150,15 @@ export default function TaglinesPage() {
   }, [brand, user, brandId, firestore, toast]);
 
   const handleColorizeLogo = useCallback(async () => {
-    if (!currentLogo || !user || !firestore) return;
+    if (!currentLogo || !user || !firestore || !brand) return;
     setIsColorizing(true);
     try {
       const result = await getColorizedLogo(
-        currentLogo.logoUrl,
-        brand?.latestDesirableCues,
-        brand?.latestUndesirableCues
+        brand.latestName,
+        brand.latestElevatorPitch,
+        brand.latestAudience,
+        brand.latestDesirableCues,
+        brand.latestUndesirableCues
       );
 
       if (result.success && result.data) {

@@ -38,7 +38,7 @@ const generateLogoFlow = ai.defineFlow(
   },
   async input => {
     const { media } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash-image-preview',
+        model: 'googleai/imagen-4.0-fast-generate-001',
         prompt: `
         You are a logo designer. Generate a logo for the following brand:
         Brand Name: ${input.name}
