@@ -12,9 +12,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, Loader2 } from "lucide-react";
 import type { CardData } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useUser,
+  useFirestore,
+  useCollection,
+  useMemoFirebase,
+} from "@/firebase";
+import { collection } from "firebase/firestore";
 
 const CARD_WIDTH = 384; // w-96
 const CARD_SPACING = 64;
@@ -125,6 +132,30 @@ const AudienceCard: FC<{
   );
 };
 
+const ExistingBrandCard: FC<{ brand: any }> = ({ brand }) => {
+  return (
+    <>
+      <CardHeader>
+        <CardTitle className="font-headline">{brand.latestName}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <h4 className="font-bold text-sm text-muted-foreground">
+            Elevator Pitch
+          </h4>
+          <p className="text-sm">{brand.latestElevatorPitch}</p>
+        </div>
+        <div>
+          <h4 className="font-bold text-sm text-muted-foreground">
+            Target Audience
+          </h4>
+          <p className="text-sm">{brand.latestAudience}</p>
+        </div>
+      </CardContent>
+    </>
+  );
+};
+
 // --- Main Canvas Component ---
 
 export default function BrandCanvas() {
@@ -137,15 +168,42 @@ export default function BrandCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const brandsQuery = useMemoFirebase(
+    () => (user ? collection(firestore, `users/${user.uid}/brands`) : null),
+    [user, firestore]
+  );
+  const { data: brands, isLoading: isLoadingBrands } =
+    useCollection(brandsQuery);
+
+  useEffect(() => {
+    if (brands) {
+      const existingBrandCards: CardData[] = brands.map((brand, index) => ({
+        id: `existing-brand-${brand.id}`,
+        type: "existing-brand",
+        position: { x: index * (CARD_WIDTH + CARD_SPACING), y: -400 },
+        width: CARD_WIDTH,
+        height: 250,
+        data: brand,
+      }));
+      setCards((prev) => [
+        ...prev.filter((c) => c.type !== "existing-brand"),
+        ...existingBrandCards,
+      ]);
+    }
+  }, [brands]);
+
   const centerOnCard = (card: CardData) => {
     if (!containerRef.current) return;
 
-    const { x, y, width, height } = card;
-    const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = containerRef.current.clientHeight;
-
-    const newPanX = -x + (containerWidth - width) / 2;
-    const newPanY = -y + (containerHeight - height) / 2;
+    const newPanX =
+      -card.position.x +
+      (containerRef.current.clientWidth - card.width) / 2;
+    const newPanY =
+      -card.position.y +
+      (containerRef.current.clientHeight - card.height) / 2;
 
     animate(panX, newPanX, { duration: 0.8, ease: "easeInOut" });
     animate(panY, newPanY, { duration: 0.8, ease: "easeInOut" });
@@ -153,11 +211,11 @@ export default function BrandCanvas() {
 
   useEffect(() => {
     // Center the view on initial load
-    if (containerRef.current && cards.length === 0) {
+    if (containerRef.current) {
       const containerWidth = containerRef.current.clientWidth;
       const containerHeight = containerRef.current.clientHeight;
-      panX.set(containerWidth / 2);
-      panY.set(containerHeight / 2);
+      panX.set(containerWidth / 2 - CARD_WIDTH / 2);
+      panY.set(containerHeight / 2 - 100);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -189,6 +247,10 @@ export default function BrandCanvas() {
 
   const handleCreateNewBrand = () => {
     setIsCreatingBrand(true);
+    // Remove other creation flows if any
+    const nonCreationCards = cards.filter(
+      (c) => c.type === "existing-brand"
+    );
     const firstCard: CardData = {
       id: "brand-name",
       type: "brand-name",
@@ -197,19 +259,21 @@ export default function BrandCanvas() {
       height: 200,
       data: {},
     };
-    setCards([firstCard]);
+    setCards([...nonCreationCards, firstCard]);
     setTimeout(() => centerOnCard(firstCard), 100);
   };
 
   const addCard = (newCard: CardData) => {
     setCards((prev) => [...prev, newCard]);
-    centerOnCard(newCard);
+    setTimeout(() => centerOnCard(newCard), 100);
   };
 
   const handleBrandNameDone = (brandName: string) => {
     setCards((cs) =>
       cs.map((c) =>
-        c.id === "brand-name" ? { ...c, data: { ...c.data, completed: true } } : c
+        c.id === "brand-name"
+          ? { ...c, data: { ...c.data, completed: true } }
+          : c
       )
     );
     const fromCard = cards.find((c) => c.id === "brand-name");
@@ -286,10 +350,14 @@ export default function BrandCanvas() {
             isCompleted={!!card.data.completed}
           />
         );
+      case "existing-brand":
+        return <ExistingBrandCard brand={card.data} />;
       default:
         return null;
     }
   };
+
+  const creationFlowInProgress = cards.some((c) => c.type !== "existing-brand");
 
   return (
     <div
@@ -324,12 +392,19 @@ export default function BrandCanvas() {
         </AnimatePresence>
       </motion.div>
 
-      {!isCreatingBrand && (
+      {!creationFlowInProgress && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <Button size="lg" onClick={handleCreateNewBrand}>
-            <Plus className="mr-2 h-5 w-5" />
-            Create New Brand
-          </Button>
+          {isLoadingBrands ? (
+            <Button size="lg" disabled>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Loading Brands...
+            </Button>
+          ) : (
+            <Button size="lg" onClick={handleCreateNewBrand}>
+              <Plus className="mr-2 h-5 w-5" />
+              Create New Brand
+            </Button>
+          )}
         </div>
       )}
 
@@ -396,6 +471,3 @@ export default function BrandCanvas() {
     </div>
   );
 }
-
-
-    
