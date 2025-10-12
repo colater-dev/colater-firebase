@@ -20,7 +20,7 @@ export type GenerateTaglinesInput = z.infer<
 >;
 
 const GenerateTaglinesOutputSchema = z.object({
-  taglines: z.array(z.string()).describe('A list of 4 generated taglines for the brand.'),
+  taglines: z.array(z.string()).describe('A list of generated taglines for the brand.'),
 });
 export type GenerateTaglinesOutput = z.infer<
   typeof GenerateTaglinesOutputSchema
@@ -36,13 +36,13 @@ const prompt = ai.definePrompt({
   name: 'generateTaglinePrompt',
   input: {schema: GenerateTaglinesInputSchema},
   output: {schema: GenerateTaglinesOutputSchema},
-  prompt: `You are a marketing expert. Generate four catchy taglines for the following brand.
+  prompt: `You are a marketing expert. Generate a few catchy taglines for the following brand.
 
 Brand Name: {{{name}}}
 Elevator Pitch: {{{elevatorPitch}}}
 Target Audience: {{{audience}}}
 
-Generate four concise and memorable taglines.`,
+Generate a few concise and memorable taglines.`,
 });
 
 const generateTaglineFlow = ai.defineFlow(
