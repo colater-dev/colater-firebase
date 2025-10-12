@@ -1,29 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import {
   doc,
   collection,
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  updateDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Brand, Tagline } from '@/lib/types';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TaglinesPage() {
   const { brandId } = useParams();
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
+  const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
 
   const brandRef = useMemoFirebase(
     () => user ? doc(firestore, `users/${user.uid}/brands`, brandId as string) : null,
@@ -40,9 +44,9 @@ export default function TaglinesPage() {
   );
   const { data: taglines, isLoading: isLoadingTaglines } = useCollection<Tagline>(taglinesQuery);
 
-  const handleGenerate = async () => {
-    if (!brand) return;
-    setIsGenerating(true);
+  const handleGenerateTaglines = useCallback(async () => {
+    if (!brand || !user) return;
+    setIsGeneratingTaglines(true);
 
     try {
       const suggestionResult = await getTaglineSuggestions(
@@ -53,39 +57,78 @@ export default function TaglinesPage() {
 
       if (suggestionResult.success && suggestionResult.data) {
         const taglinesCollection = collection(firestore, `users/${user.uid}/brands/${brandId}/taglineGenerations`);
-        for (const tagline of suggestionResult.data) {
+        suggestionResult.data.forEach(tagline => {
           addDocumentNonBlocking(taglinesCollection, {
-            brandId: brandId,
+            brandId,
             userId: user.uid,
-            tagline: tagline,
+            tagline,
             createdAt: serverTimestamp(),
           });
-        }
+        });
         toast({
             title: 'New taglines generated!',
             description: 'They have been added to your list.',
         });
       } else {
-        throw new Error(suggestionResult.error || 'Failed to get suggestions.');
+        throw new Error(suggestionResult.error || 'Failed to get tagline suggestions.');
       }
     } catch (error) {
       console.error('Error generating taglines:', error);
       toast({
         variant: 'destructive',
-        title: 'Generation Failed',
+        title: 'Tagline Generation Failed',
         description: (error instanceof Error) ? error.message : 'Could not generate new taglines.',
       });
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingTaglines(false);
     }
-  };
+  }, [brand, user, brandId, firestore, toast]);
 
-  // Effect to generate initial taglines if none exist
-  useEffect(() => {
-    if (brand && taglines?.length === 0 && !isLoadingTaglines) {
-        handleGenerate();
+  const handleGenerateLogo = useCallback(async () => {
+    if (!brand || !user) return;
+    setIsGeneratingLogo(true);
+    try {
+      const result = await getLogoSuggestion(brand.latestName, brand.latestElevatorPitch, brand.latestAudience);
+      if (result.success && result.data && brandRef) {
+        await updateDoc(brandRef, { logoUrl: result.data });
+        toast({
+          title: 'New logo generated!',
+          description: 'Your new brand logo has been saved.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to get logo suggestion.');
+      }
+    } catch (error) {
+        console.error('Error generating logo:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Logo Generation Failed',
+            description: (error instanceof Error) ? error.message : 'Could not generate a new logo.',
+        });
+    } finally {
+        setIsGeneratingLogo(false);
     }
-  }, [brand, taglines, isLoadingTaglines]);
+  }, [brand, user, brandRef, toast]);
+
+
+  const handleGenerateAll = () => {
+    handleGenerateTaglines();
+    if (!brand?.logoUrl) {
+      handleGenerateLogo();
+    }
+  }
+
+  // Effect to generate initial content if it doesn't exist
+  useEffect(() => {
+    if (brand && !isLoadingTaglines) {
+        if (taglines?.length === 0) {
+            handleGenerateTaglines();
+        }
+        if (!brand.logoUrl) {
+            handleGenerateLogo();
+        }
+    }
+  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines, handleGenerateLogo]);
 
   const isLoading = isLoadingBrand || (isLoadingTaglines && !taglines);
 
@@ -126,36 +169,65 @@ export default function TaglinesPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary" /> AI Generated Taglines</CardTitle>
-                    <CardDescription>Here are some catchy taglines for your brand.</CardDescription>
-                </div>
-                <Button onClick={handleGenerate} disabled={isGenerating}>
-                    {isGenerating ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Generate More'}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isLoadingTaglines && taglines === null ? (
-                     <div className="flex items-center justify-center h-40">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                     </div>
-                ) : taglines && taglines.length > 0 ? (
-                    <ul className="space-y-4">
-                        {taglines.map((item) => (
-                            <li key={item.id} className="p-4 bg-muted/50 rounded-lg border">
-                                {item.tagline}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">No taglines generated yet. Click the button to start.</p>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div className="space-y-1">
+                      <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary" /> AI Generated Taglines</CardTitle>
+                      <CardDescription>Catchy taglines for your brand.</CardDescription>
+                  </div>
+                  <Button onClick={handleGenerateTaglines} disabled={isGeneratingTaglines} size="sm">
+                      {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingTaglines && taglines === null ? (
+                      <div className="flex items-center justify-center h-40">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                  ) : taglines && taglines.length > 0 ? (
+                      <ul className="space-y-4">
+                          {taglines.map((item) => (
+                              <li key={item.id} className="p-4 bg-muted/50 rounded-lg border">
+                                  {item.tagline}
+                              </li>
+                          ))}
+                      </ul>
+                  ) : (
+                      <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                          <p className="text-muted-foreground">No taglines generated yet. Click the button to start.</p>
+                      </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div className="space-y-1">
+                        <CardTitle className="flex items-center gap-2"><Wand2 className="text-primary" /> AI Generated Logo</CardTitle>
+                        <CardDescription>An abstract logo for your brand.</CardDescription>
                     </div>
-                )}
-              </CardContent>
-            </Card>
+                    <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo} size="sm">
+                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                    {isGeneratingLogo ? (
+                        <div className="flex items-center justify-center h-64 aspect-square">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : brand.logoUrl ? (
+                        <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center p-4">
+                            <Image src={brand.logoUrl} alt="Generated brand logo" width={256} height={256} className="object-contain" />
+                        </div>
+                    ) : (
+                        <div className="text-center flex items-center justify-center h-64 aspect-square border-2 border-dashed rounded-lg">
+                            <p className="text-muted-foreground">No logo generated yet.</p>
+                        </div>
+                    )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </main>
