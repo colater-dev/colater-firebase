@@ -120,10 +120,8 @@ export default function TaglinesPage() {
 
   // Effect to generate initial content if it doesn't exist
   useEffect(() => {
-    if (brand && !isLoadingTaglines) {
-        if (taglines?.length === 0) {
-            handleGenerateTaglines();
-        }
+    if (brand && !isLoadingTaglines && taglines?.length === 0) {
+        handleGenerateTaglines();
     }
   }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines]);
 
