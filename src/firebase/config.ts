@@ -29,12 +29,8 @@ export const firebaseConfig = {
       return "test.colater.com";
     }
     
-    // Custom domain (test.colater.com or production)
-    if (hostname === 'test.colater.com' || hostname.includes('colater.com')) {
-      return hostname; // Use the actual domain for custom domains
-    }
-    
-    // Default Firebase domain for other cases
+    // For all other domains (including test.colater.com), use Firebase domain
+    // Custom domains should use Firebase's auth domain to avoid 404 errors
     return "studio-6830756272-ca1a2.firebaseapp.com";
   })()
 };

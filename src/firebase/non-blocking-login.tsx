@@ -90,14 +90,14 @@ export function initiateSmartGoogleSignIn(authInstance: Auth): void {
     prompt: 'select_account'
   });
   
-  // Use redirect authentication for all environments now that we have proper auth domain
-  console.log('Using redirect authentication for', hostname === 'localhost' ? 'localhost (with test.colater.com auth domain)' : isCustomDomain ? 'custom domain' : 'production');
+  // Use redirect authentication for all environments
+  console.log('Using redirect authentication for', hostname === 'localhost' ? 'localhost (with test.colater.com auth domain)' : isCustomDomain ? 'custom domain (with Firebase auth domain)' : 'production');
   
   sessionStorage.setItem('auth-debug-start', JSON.stringify({
     timestamp: new Date().toISOString(),
     currentUrl: window.location.href,
     authDomain: authInstance.app.options.authDomain,
-    environment: hostname === 'localhost' ? `localhost:${port} (auth domain: test.colater.com)` : isCustomDomain ? 'custom domain' : 'production',
+    environment: hostname === 'localhost' ? `localhost:${port} (auth domain: test.colater.com)` : isCustomDomain ? 'custom domain (auth domain: Firebase)' : 'production',
     method: 'redirect'
   }));
   
