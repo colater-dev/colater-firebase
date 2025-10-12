@@ -3,7 +3,7 @@
 import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
-import { colorizeLogo } from "@/ai/flows/colorize-logo";
+import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -70,17 +70,13 @@ export async function getBrandSuggestions(topic: string): Promise<{ success: boo
 
 
 export async function getColorizedLogo(
-  name: string,
-  elevatorPitch: string,
-  audience: string,
-  desirableCues?: string,
-  undesirableCues?: string
+  input: ColorizeLogoInput
 ): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
   try {
-     if (!name || !elevatorPitch || !audience) {
-      return { success: false, error: "Brand details are required to generate a color logo." };
+     if (!input.logoUrl || !input.name || !input.elevatorPitch || !input.audience) {
+      return { success: false, error: "A logo and brand details are required to generate a color logo." };
     }
-    const result = await colorizeLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
+    const result = await colorizeLogo(input);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error colorizing logo:", error);
