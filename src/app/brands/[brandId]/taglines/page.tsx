@@ -265,7 +265,7 @@ export default function TaglinesPage() {
                                 <p className="mt-2 text-muted-foreground">Generating your logo...</p>
                             </div>
                         ) : currentLogo ? (
-                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
+                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48 -mr-12">
                                 <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
                             </div>
                         ) : (
@@ -287,7 +287,7 @@ export default function TaglinesPage() {
                     </div>
 
                     {logos && logos.length > 1 && (
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex flex-col items-center gap-2 pt-6">
                         <div className="flex items-center justify-center w-full gap-4">
                             <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
                                 <ChevronLeft />
