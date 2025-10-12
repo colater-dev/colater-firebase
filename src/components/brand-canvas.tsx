@@ -422,7 +422,9 @@ export default function BrandCanvas() {
       const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
       const brandDocRef = await addDocumentNonBlocking(brandsCollection, brandData);
   
-      if (!brandDocRef) throw new Error("Failed to create brand document.");
+      if (!brandDocRef) {
+        throw new Error("Failed to create brand document. It returned undefined.");
+      }
   
       const suggestionResult = await getTaglineSuggestions(
         brandName,
