@@ -23,7 +23,7 @@ const BrandListItem = ({ brand }: { brand: Brand }) => (
         <Card className="h-full flex flex-col">
             <CardContent className="flex-grow flex flex-col p-6 gap-4">
                  <div className="flex items-center">
-                    <div className="w-16 h-16 flex-shrink-0 bg-muted rounded-md flex items-center justify-center">
+                    <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
                         {brand.logoUrl ? (
                             <Image
                                 src={brand.logoUrl}
@@ -34,10 +34,10 @@ const BrandListItem = ({ brand }: { brand: Brand }) => (
                                 unoptimized={brand.logoUrl.startsWith('data:')}
                             />
                         ) : (
-                            <div className="w-full h-full bg-muted/50 rounded-md" />
+                            <div className="w-full h-full bg-muted rounded-md" />
                         )}
                     </div>
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors ml-4">{brand.latestName}</CardTitle>
+                    <CardTitle className="text-xl font-semibold group-hover:text-primary transition-colors ml-4">{brand.latestName}</CardTitle>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
             </CardContent>

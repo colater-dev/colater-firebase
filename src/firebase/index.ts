@@ -8,8 +8,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 
-// IMPORTANT: This function gets the initialized app and associated SDKs.
-// The actual initialization logic is now in config.ts to be shared.
+// This function is the single entry point for client-side Firebase initialization.
 export function initializeFirebase() {
   const firebaseApp = initializeFirebaseApp();
   return getSdks(firebaseApp);
