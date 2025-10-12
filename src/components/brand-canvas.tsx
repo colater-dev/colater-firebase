@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, type FC } from "react";
@@ -8,20 +7,33 @@ import {
   useMotionValue,
   animate,
 } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  collection,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Plus, Loader2 } from "lucide-react";
+import { Check, Plus, Loader2, Sparkles } from "lucide-react";
 import type { CardData } from "@/lib/types";
+import { getTaglineSuggestions } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import {
   useUser,
   useFirestore,
   useCollection,
   useMemoFirebase,
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
 } from "@/firebase";
-import { collection } from "firebase/firestore";
 
 const CARD_WIDTH = 384; // w-96
 const CARD_SPACING = 64;
@@ -127,6 +139,38 @@ const AudienceCard: FC<{
           <Check className="h-4 w-4" />
           Done
         </Button>
+      </CardContent>
+    </>
+  );
+};
+
+const TaglineCard: FC<{
+  taglines: string[];
+  isLoading: boolean;
+}> = ({ taglines, isLoading }) => {
+  return (
+    <>
+      <CardHeader>
+        <CardTitle className="font-headline flex items-center gap-2">
+          <Sparkles className="text-primary" />
+          AI Generated Taglines
+        </CardTitle>
+        <CardDescription>
+          Here are a few tagline ideas to get you started.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-24">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <ul className="space-y-2 list-disc list-inside">
+            {taglines.map((tagline, i) => (
+              <li key={i}>{tagline}</li>
+            ))}
+          </ul>
+        )}
       </CardContent>
     </>
   );
@@ -268,11 +312,17 @@ export default function BrandCanvas() {
     setTimeout(() => centerOnCard(newCard), 100);
   };
 
+  const updateCardData = (cardId: string, data: { [key: string]: any }) => {
+    setCards((prev) =>
+      prev.map((c) => (c.id === cardId ? { ...c, data: { ...c.data, ...data } } : c))
+    );
+  };
+
   const handleBrandNameDone = (brandName: string) => {
     setCards((cs) =>
       cs.map((c) =>
         c.id === "brand-name"
-          ? { ...c, data: { ...c.data, completed: true } }
+          ? { ...c, data: { ...c.data, name: brandName, completed: true } }
           : c
       )
     );
@@ -297,7 +347,7 @@ export default function BrandCanvas() {
     setCards((cs) =>
       cs.map((c) =>
         c.id === "elevator-pitch"
-          ? { ...c, data: { ...c.data, completed: true } }
+          ? { ...c, data: { ...c.data, pitch: pitch, completed: true } }
           : c
       )
     );
@@ -319,12 +369,95 @@ export default function BrandCanvas() {
     addCard(audienceCard);
   };
 
-  const handleAudienceDone = (audience: string) => {
+  const handleAudienceDone = async (audience: string) => {
+    if (!user || !firestore) return;
+  
     setCards((cs) =>
       cs.map((c) =>
-        c.id === "audience" ? { ...c, data: { ...c.data, completed: true } } : c
+        c.id === "audience"
+          ? { ...c, data: { ...c.data, completed: true } }
+          : c
       )
     );
+  
+    const nameCard = cards.find((c) => c.type === "brand-name");
+    const pitchCard = cards.find((c) => c.type === "elevator-pitch");
+    const brandName = nameCard?.data.name;
+    const elevatorPitch = pitchCard?.data.pitch;
+  
+    if (!brandName || !elevatorPitch) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Brand name or elevator pitch is missing.",
+      });
+      return;
+    }
+  
+    const fromCard = cards.find((c) => c.id === "audience");
+    if (!fromCard) return;
+  
+    const taglineCard: CardData = {
+      id: "taglines",
+      type: "taglines",
+      position: {
+        x: fromCard.position.x - fromCard.width - CARD_SPACING,
+        y: fromCard.position.y,
+      },
+      width: CARD_WIDTH,
+      height: 280,
+      data: { isLoading: true, taglines: [] },
+      connections: ["audience"],
+    };
+    addCard(taglineCard);
+  
+    try {
+      const brandData = {
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        latestName: brandName,
+        latestElevatorPitch: elevatorPitch,
+        latestAudience: audience,
+      };
+      const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
+      const brandDocRef = await addDocumentNonBlocking(brandsCollection, brandData);
+  
+      if (!brandDocRef) throw new Error("Failed to create brand document.");
+  
+      const suggestionResult = await getTaglineSuggestions(
+        brandName,
+        elevatorPitch,
+        audience
+      );
+  
+      if (suggestionResult.success && suggestionResult.data) {
+        updateCardData(taglineCard.id, {
+          isLoading: false,
+          taglines: suggestionResult.data,
+        });
+        const taglinesCollection = collection(brandDocRef, "taglineGenerations");
+        for (const tagline of suggestionResult.data) {
+          addDocumentNonBlocking(taglinesCollection, {
+            brandId: brandDocRef.id,
+            userId: user.uid,
+            tagline: tagline,
+            createdAt: serverTimestamp(),
+          });
+        }
+      } else {
+        throw new Error(suggestionResult.error || "Failed to get suggestions.");
+      }
+    } catch (error) {
+      console.error("Error during brand creation and tagline generation:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong",
+        description:
+          (error as Error).message ||
+          "Could not save brand or generate taglines.",
+      });
+      updateCardData(taglineCard.id, { isLoading: false });
+    }
   };
 
   const getCardComponent = (card: CardData) => {
@@ -348,6 +481,13 @@ export default function BrandCanvas() {
           <AudienceCard
             onDone={handleAudienceDone}
             isCompleted={!!card.data.completed}
+          />
+        );
+      case "taglines":
+        return (
+          <TaglineCard
+            isLoading={card.data.isLoading}
+            taglines={card.data.taglines}
           />
         );
       case "existing-brand":
@@ -422,16 +562,22 @@ export default function BrandCanvas() {
                     fromCard.type === "elevator-pitch" &&
                     card.type === "audience";
 
+                  const isAudienceToTagline =
+                    fromCard.type === "audience" && card.type === "taglines";
+
                   let x1, y1, x2, y2;
 
                   if (isPitchToAudience) {
-                    // From bottom of pitch card to top of audience card
                     x1 = fromCard.position.x + fromCard.width / 2;
                     y1 = fromCard.position.y + fromCard.height;
                     x2 = card.position.x + card.width / 2;
                     y2 = card.position.y;
+                  } else if (isAudienceToTagline) {
+                    x1 = fromCard.position.x;
+                    y1 = fromCard.position.y + fromCard.height / 2;
+                    x2 = card.position.x + card.width;
+                    y2 = card.position.y + card.height / 2;
                   } else {
-                    // Default: From right of first card to left of second card
                     x1 = fromCard.position.x + fromCard.width;
                     y1 = fromCard.position.y + fromCard.height / 2;
                     x2 = card.position.x;

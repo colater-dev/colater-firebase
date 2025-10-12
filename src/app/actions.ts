@@ -1,18 +1,18 @@
 "use server";
 
-import { generateTagline } from "@/ai/flows/generate-tagline";
+import { generateTaglines } from "@/ai/flows/generate-tagline";
 
-export async function getTaglineSuggestion(
+export async function getTaglineSuggestions(
   name: string,
   elevatorPitch: string,
   audience: string
-): Promise<{ success: boolean; data?: string; error?: string }> {
+): Promise<{ success: boolean; data?: string[]; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
     }
-    const result = await generateTagline({ name, elevatorPitch, audience });
-    return { success: true, data: result.tagline };
+    const result = await generateTaglines({ name, elevatorPitch, audience });
+    return { success: true, data: result.taglines };
   } catch (error) {
     console.error("Error generating tagline suggestion:", error);
     return {

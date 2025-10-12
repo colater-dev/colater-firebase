@@ -1,6 +1,6 @@
 export interface CardData {
   id: string;
-  type: "brand-name" | "elevator-pitch" | "audience" | "existing-brand";
+  type: "brand-name" | "elevator-pitch" | "audience" | "existing-brand" | "taglines";
   position: { x: number; y: number };
   width: number;
   height: number;
