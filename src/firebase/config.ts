@@ -26,7 +26,11 @@ export function initializeFirebaseApp(): FirebaseApp {
   if (getApps().length) {
     return getApp();
   }
-  // Otherwise, initialize the app with the provided config.
-  // This will only run once.
-  return initializeApp(firebaseConfig);
+
+  // Initialize the app with the provided config.
+  // The automaticDataCollectionEnabled: false prevents Firebase from attempting
+  // to auto-fetch config from /__/firebase/init.json
+  return initializeApp(firebaseConfig, {
+    automaticDataCollectionEnabled: false,
+  });
 }
