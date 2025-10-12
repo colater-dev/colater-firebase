@@ -1,0 +1,111 @@
+/**
+ * @fileoverview Firestore Security Rules for the Brand Canvas application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, ensuring that only the authenticated user who "owns" a BrandCanvas can create, read, update, or delete it and its associated Cards and TargetAudiences.  All data is nested under /users/{userId} to establish clear ownership.
+ *
+ * Data Structure:
+ * The Firestore database is structured as follows:
+ *   /users/{userId}/brandCanvases/{brandCanvasId}
+ *   /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}
+ *   /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId}
+ *
+ * Key Security Decisions:
+ * - Path-based ownership is used for all data access. The authenticated user's UID must match the {userId} parameter in the path to grant access.
+ * - List operations are restricted to the owner of the BrandCanvas and its associated data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is made by a signed-in user.
+     * @path N/A (Helper Function)
+     * @allow N/A (Helper Function)
+     * @deny N/A (Helper Function)
+     * @principle Authentication: Ensures that only authenticated users can access the data.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the request is made by the owner of the document, based on the userId.
+     * @path N/A (Helper Function)
+     * @allow N/A (Helper Function)
+     * @deny N/A (Helper Function)
+     * @principle Authorization: Enforces document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the request is made by the owner of an existing document, based on the userId.
+     * @path N/A (Helper Function)
+     * @allow N/A (Helper Function)
+     * @deny N/A (Helper Function)
+     * @principle Authorization: Enforces document ownership and verifies document existence.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for BrandCanvas documents.
+     * @path /users/{userId}/brandCanvases/{brandCanvasId}
+     * @allow (create) User A creates a new BrandCanvas under /users/A/brandCanvases/123 with a matching id field.
+     * @allow (get, list) User A reads BrandCanvas /users/A/brandCanvases/123.
+     * @allow (update, delete) User A updates/deletes BrandCanvas /users/A/brandCanvases/123.
+     * @deny (create) User B tries to create a BrandCanvas under /users/A/brandCanvases.
+     * @deny (get, list) User B tries to read BrandCanvas /users/A/brandCanvases/123.
+     * @deny (update, delete) User B tries to update/delete BrandCanvas /users/A/brandCanvases/123.
+     * @principle Enforces document ownership for all operations on BrandCanvas.
+     */
+    match /users/{userId}/brandCanvases/{brandCanvasId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == brandCanvasId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for Card documents.
+     * @path /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}
+     * @allow (create) User A creates a new Card under /users/A/brandCanvases/123/cards/456 with a matching brandCanvasId field.
+     * @allow (get, list) User A reads Card /users/A/brandCanvases/123/cards/456.
+     * @allow (update, delete) User A updates/deletes Card /users/A/brandCanvases/123/cards/456.
+     * @deny (create) User B tries to create a Card under /users/A/brandCanvases/123/cards/456.
+     * @deny (get, list) User B tries to read Card /users/A/brandCanvases/123/cards/456.
+     * @deny (update, delete) User B tries to update/delete Card /users/A/brandCanvases/123/cards/456.
+     * @principle Enforces document ownership for all operations on Card.
+     */
+    match /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.brandCanvasId == brandCanvasId;
+      allow update: if isExistingOwner(userId) && request.resource.data.brandCanvasId == brandCanvasId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for TargetAudience documents.
+     * @path /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId}
+     * @allow (create) User A creates a new TargetAudience under /users/A/brandCanvases/123/cards/456/targetAudiences/789 with a matching cardId field.
+     * @allow (get, list) User A reads TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
+     * @allow (update, delete) User A updates/deletes TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
+     * @deny (create) User B tries to create a TargetAudience under /users/A/brandCanvases/123/cards/456/targetAudiences/789.
+     * @deny (get, list) User B tries to read TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
+     * @deny (update, delete) User B tries to update/delete TargetAudience /users/A/brandCanvases/123/cards/456/targetAudiences/789.
+     * @principle Enforces document ownership for all operations on TargetAudience.
+     */
+    match /users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.cardId == cardId;
+      allow update: if isExistingOwner(userId) && request.resource.data.cardId == cardId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

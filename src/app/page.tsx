@@ -1,3 +1,9 @@
+import BrandCanvas from "@/components/brand-canvas";
+
 export default function Home() {
-  return <></>;
+  return (
+    <main>
+      <BrandCanvas />
+    </main>
+  );
 }
