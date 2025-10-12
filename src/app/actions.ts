@@ -9,13 +9,15 @@ import { getFirestore } from "firebase-admin/firestore";
 export async function getTaglineSuggestions(
   name: string,
   elevatorPitch: string,
-  audience: string
+  audience: string,
+  desirableCues: string,
+  undesirableCues: string
 ): Promise<{ success: boolean; data?: string[]; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
     }
-    const result = await generateTaglines({ name, elevatorPitch, audience });
+    const result = await generateTaglines({ name, elevatorPitch, audience, desirableCues, undesirableCues });
     return { success: true, data: result.taglines };
   } catch (error) {
     console.error("Error generating tagline suggestion:", error);
@@ -30,13 +32,15 @@ export async function getTaglineSuggestions(
 export async function getLogoSuggestion(
   name: string,
   elevatorPitch: string,
-  audience: string
+  audience: string,
+  desirableCues: string,
+  undesirableCues: string
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
     }
-    const result = await generateLogo({ name, elevatorPitch, audience });
+    const result = await generateLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
     return { success: true, data: result.logoUrl };
   } catch (error) {
     console.error("Error generating logo suggestion:", error);
@@ -53,7 +57,9 @@ export async function generateAndSaveLogo(
   userId: string,
   brandName: string,
   brandElevatorPitch: string,
-  brandAudience: string
+  brandAudience: string,
+  brandDesirableCues: string,
+  brandUndesirableCues: string
 ): Promise<{ success: boolean; data?: { logoUrl: string }; error?: string }> {
   try {
     const app = getAdminApp();
@@ -65,6 +71,8 @@ export async function generateAndSaveLogo(
       name: brandName,
       elevatorPitch: brandElevatorPitch,
       audience: brandAudience,
+      desirableCues: brandDesirableCues,
+      undesirableCues: brandUndesirableCues,
     });
 
     if (!logoResult.logoUrl) {

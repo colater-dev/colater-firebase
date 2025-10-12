@@ -20,6 +20,8 @@ const formSchema = z.object({
   name: z.string().min(2, 'Brand name must be at least 2 characters.'),
   elevatorPitch: z.string().min(10, 'Elevator pitch must be at least 10 characters.'),
   audience: z.string().min(10, 'Target audience must be at least 10 characters.'),
+  desirableCues: z.string().optional(),
+  undesirableCues: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -37,6 +39,8 @@ export default function NewBrandPage() {
       name: '',
       elevatorPitch: '',
       audience: '',
+      desirableCues: '',
+      undesirableCues: '',
     },
   });
 
@@ -59,6 +63,8 @@ export default function NewBrandPage() {
         latestName: values.name,
         latestElevatorPitch: values.elevatorPitch,
         latestAudience: values.audience,
+        latestDesirableCues: values.desirableCues || '',
+        latestUndesirableCues: values.undesirableCues || '',
       };
 
       const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
@@ -152,6 +158,40 @@ export default function NewBrandPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="desirableCues"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Desirable visual cues</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., 'minimalist, elegant, bird, blue'"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="undesirableCues"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Undesirable visual cues</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., 'complex, childish, gradients, red'"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex justify-end">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
@@ -160,7 +200,7 @@ export default function NewBrandPage() {
                       Creating...
                     </>
                   ) : (
-                    'Create Brand & Generate Taglines'
+                    'Create Brand & Generate Assets'
                   )}
                 </Button>
               </div>

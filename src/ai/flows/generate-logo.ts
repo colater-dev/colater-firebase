@@ -14,6 +14,8 @@ const GenerateLogoInputSchema = z.object({
   name: z.string().describe('The name of the brand.'),
   elevatorPitch: z.string().describe('The elevator pitch for the brand.'),
   audience: z.string().describe('The target audience for the brand.'),
+  desirableCues: z.string().optional().describe('Desirable visual cues for the logo.'),
+  undesirableCues: z.string().optional().describe('Undesirable visual cues for the logo.'),
 });
 export type GenerateLogoInput = z.infer<typeof GenerateLogoInputSchema>;
 
@@ -42,6 +44,8 @@ const generateLogoFlow = ai.defineFlow(
         Brand Name: ${input.name}
         Brand Description: ${input.elevatorPitch}
         Target Audience: ${input.audience}
+        Desirable Cues: ${input.desirableCues || 'None'}
+        Undesirable Cues: ${input.undesirableCues || 'None'}
 
         The logo must adhere to the following design system:
         

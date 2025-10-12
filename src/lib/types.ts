@@ -5,6 +5,8 @@ export interface Brand {
     latestName: string;
     latestElevatorPitch: string;
     latestAudience: string;
+    latestDesirableCues: string;
+    latestUndesirableCues: string;
     logoUrl?: string;
 }
 

@@ -46,6 +46,14 @@
           "type": "string",
           "description": "The latest target audience for the brand."
         },
+        "latestDesirableCues": {
+          "type": "string",
+          "description": "The latest desirable visual cues for the brand."
+        },
+        "latestUndesirableCues": {
+          "type": "string",
+          "description": "The latest undesirable visual cues for the brand."
+        },
         "logoUrl": {
             "type": "string",
             "format": "uri",
