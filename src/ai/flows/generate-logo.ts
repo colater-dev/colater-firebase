@@ -96,12 +96,6 @@ const generateLogoFlow = ai.defineFlow(
               "rotation_allowed": false,
               "scalability": "vector-friendly"
             },
-            "grid_and_construction": {
-              "grid_type": "modular or circle-based construction",
-              "shape_repetition": true,
-              "modularity": "elements derived from shared primitives",
-              "keylines": "invisible but implied"
-            },
             "mood_and_tone": {
               "tone": "friendly, modern, understated",
               "visual_voice": "playful-minimalist, professional"
@@ -109,7 +103,7 @@ const generateLogoFlow = ai.defineFlow(
             "output": {
               "format": "png",
               "aspect_ratio": "1:1",
-              "resolution": "scalable",
+              "resolution": "256x256",
               "background_included": false
             }
           },
