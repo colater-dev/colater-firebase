@@ -17,7 +17,7 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@
 import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Brand, Tagline, Logo } from '@/lib/types';
 import Link from 'next/link';
@@ -107,6 +107,21 @@ export default function TaglinesPage() {
     }
   }, [brand, user, brandId, firestore, toast]);
 
+    // Automatically generate taglines if there are none.
+  useEffect(() => {
+    if (
+      !isLoadingTaglines &&
+      allTaglines &&
+      allTaglines.length === 0 &&
+      brand &&
+      user &&
+      !isGeneratingTaglines
+    ) {
+      handleGenerateTaglines();
+    }
+  }, [isLoadingTaglines, allTaglines, brand, user, handleGenerateTaglines, isGeneratingTaglines]);
+
+
   const handleGenerateLogo = useCallback(async () => {
     if (!brand || !user || !firestore) return;
     setIsGeneratingLogo(true);
@@ -132,8 +147,6 @@ export default function TaglinesPage() {
           title: "New logo generated!",
           description: "Your new brand logo has been saved.",
         });
-        // The new logo will be the last one, so we don't need to set the index here.
-        // The `useEffect` below will handle setting the index when `logos` updates.
       } else {
         throw new Error(result.error || "Failed to generate and save logo.");
       }
@@ -312,9 +325,11 @@ export default function TaglinesPage() {
                                 <Image src={displayLogoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
                             </div>
                         ) : (
-                            <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">Click the button to generate a logo.</p>
-                            </div>
+                             !isGeneratingLogo && (
+                                <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
+                                    <p className="text-muted-foreground">Click the button to generate a logo.</p>
+                                </div>
+                            )
                         )}
                         
                         <div className="flex flex-col gap-2 text-center md:text-left">
@@ -379,7 +394,7 @@ export default function TaglinesPage() {
                     <CardDescription>More catchy taglines for your brand.</CardDescription>
                 </div>
                 <Button onClick={handleGenerateTaglines} disabled={isGeneratingTaglines} size="sm">
-                    {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate'}
+                    {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : <><Plus className="mr-2"/>New Tagline</>}
                 </Button>
               </CardHeader>
               <CardContent>
