@@ -15,9 +15,9 @@ import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking, u
 import { getTaglineSuggestions, getLogoSuggestion } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Brand, Tagline } from '@/lib/types';
+import type { Brand, Tagline, Logo } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -28,6 +28,7 @@ export default function TaglinesPage() {
   const { toast } = useToast();
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+  const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
 
   const brandRef = useMemoFirebase(
     () => user ? doc(firestore, `users/${user.uid}/brands`, brandId as string) : null,
@@ -43,6 +44,15 @@ export default function TaglinesPage() {
     [user, firestore, brandId]
   );
   const { data: taglines, isLoading: isLoadingTaglines } = useCollection<Tagline>(taglinesQuery);
+
+  const logosQuery = useMemoFirebase(
+    () => user ? query(
+        collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`),
+        orderBy('createdAt', 'desc')
+    ) : null,
+    [user, firestore, brandId]
+  );
+  const { data: logos, isLoading: isLoadingLogos } = useCollection<Logo>(logosQuery);
 
   const handleGenerateTaglines = useCallback(async () => {
     if (!brand || !user) return;
@@ -90,7 +100,18 @@ export default function TaglinesPage() {
     try {
       const result = await getLogoSuggestion(brand.latestName, brand.latestElevatorPitch, brand.latestAudience);
       if (result.success && result.data && brandRef) {
+        
+        const logosCollection = collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`);
+        const newLogoDoc = await addDocumentNonBlocking(logosCollection, {
+          brandId,
+          userId: user.uid,
+          logoUrl: result.data,
+          createdAt: serverTimestamp(),
+        });
+
+        // Also update the main brand doc with the latest logo
         await updateDoc(brandRef, { logoUrl: result.data });
+
         toast({
           title: 'New logo generated!',
           description: 'Your new brand logo has been saved.',
@@ -108,24 +129,29 @@ export default function TaglinesPage() {
     } finally {
         setIsGeneratingLogo(false);
     }
-  }, [brand, user, brandRef, toast]);
-
-
-  const handleGenerateAll = () => {
-    handleGenerateTaglines();
-    if (!brand?.logoUrl) {
-      handleGenerateLogo();
-    }
-  }
+  }, [brand, user, brandId, firestore, brandRef, toast]);
 
   // Effect to generate initial content if it doesn't exist
   useEffect(() => {
     if (brand && !isLoadingTaglines && taglines?.length === 0) {
         handleGenerateTaglines();
     }
-  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines]);
+    // Auto-generate logo if none exist
+    if (brand && !isLoadingLogos && logos?.length === 0 && !isGeneratingLogo) {
+        handleGenerateLogo();
+    }
+  }, [brand, taglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
 
+  // Effect to update the brand's primary logoUrl when the paginated logo changes
+  useEffect(() => {
+    if (logos && logos.length > 0 && brandRef && logos[currentLogoIndex].logoUrl !== brand?.logoUrl) {
+      updateDoc(brandRef, { logoUrl: logos[currentLogoIndex].logoUrl });
+    }
+  }, [logos, currentLogoIndex, brandRef, brand?.logoUrl]);
+  
   const isLoading = isLoadingBrand || (isLoadingTaglines && !taglines);
+
+  const currentLogo = logos?.[currentLogoIndex];
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -171,36 +197,62 @@ export default function TaglinesPage() {
                         <CardDescription>Your brand logo and primary tagline.</CardDescription>
                     </div>
                     <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo} size="sm">
-                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : brand?.logoUrl ? 'Regenerate Logo' : 'Generate Logo'}
-                  </Button>
+                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate Logo'}
+                    </Button>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-8 w-full">
-                        {isGeneratingLogo && !brand.logoUrl ? (
-                            <div className="flex flex-col items-center justify-center h-48 w-48">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                <p className="mt-2 text-muted-foreground">Generating your logo...</p>
-                            </div>
-                        ) : brand.logoUrl ? (
-                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
-                                <Image src={brand.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" />
-                            </div>
-                        ) : (
-                            <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">Click the button to generate a logo.</p>
-                            </div>
-                        )}
-                        <div className="flex flex-col gap-2">
-                           <h3 className="text-4xl font-bold">{brand.latestName}</h3>
-                            {isLoadingTaglines ? (
-                                <Skeleton className="h-6 w-3/4" />
-                            ): (
-                                <p className="text-lg text-muted-foreground">
-                                    {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                    
+                  <div className="flex items-center justify-center w-full gap-4">
+                      {logos && logos.length > 1 && (
+                          <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
+                              <ChevronLeft />
+                          </Button>
+                      )}
+                      
+                      {isLoadingLogos && !logos ? (
+                          <div className="flex flex-col items-center justify-center h-48 w-48">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              <p className="mt-2 text-muted-foreground">Loading logos...</p>
+                          </div>
+                      ) : isGeneratingLogo && !currentLogo ? (
+                          <div className="flex flex-col items-center justify-center h-48 w-48">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              <p className="mt-2 text-muted-foreground">Generating your logo...</p>
+                          </div>
+                      ) : currentLogo ? (
+                          <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
+                              <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" />
+                          </div>
+                      ) : (
+                          <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
+                              <p className="text-muted-foreground">Click the button to generate a logo.</p>
+                          </div>
+                      )}
+
+                      {logos && logos.length > 1 && (
+                          <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.min(logos.length - 1, prev + 1))} disabled={currentLogoIndex === logos.length - 1}>
+                              <ChevronRight />
+                          </Button>
+                      )}
+                  </div>
+                  
+                  {logos && logos.length > 1 && (
+                      <p className="text-sm text-muted-foreground">
+                          Logo {currentLogoIndex + 1} of {logos.length}
+                      </p>
+                  )}
+                  
+                  <div className="flex flex-col gap-2">
+                     <h3 className="text-4xl font-bold">{brand.latestName}</h3>
+                      {isLoadingTaglines ? (
+                          <Skeleton className="h-6 w-3/4 mx-auto" />
+                      ): (
+                          <p className="text-lg text-muted-foreground">
+                              {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
+                          </p>
+                      )}
+                  </div>
+
                 </CardContent>
               </Card>
 
@@ -212,7 +264,7 @@ export default function TaglinesPage() {
                     <CardDescription>More catchy taglines for your brand.</CardDescription>
                 </div>
                 <Button onClick={handleGenerateTaglines} disabled={isGeneratingTaglines} size="sm">
-                    {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
+                    {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate'}
                 </Button>
               </CardHeader>
               <CardContent>
