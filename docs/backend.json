@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -58,6 +59,10 @@
             "type": "string",
             "format": "uri",
             "description": "URL of the currently selected brand logo."
+        },
+        "primaryTagline": {
+          "type": "string",
+          "description": "The current primary tagline for the brand."
         }
       },
       "required": ["userId", "createdAt"]
@@ -115,6 +120,11 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the tagline was generated."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["generated", "liked", "disliked"],
+          "description": "The user's rating of the tagline."
         }
       },
       "required": ["brandId", "userId", "tagline", "createdAt"]
