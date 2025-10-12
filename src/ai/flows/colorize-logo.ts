@@ -45,22 +45,6 @@ export async function colorizeLogo(
   return colorizeLogoFlow(input);
 }
 
-const colorTool = ai.defineTool(
-  {
-    name: 'colorExtractor',
-    description:
-      'Extracts the 2-3 primary hex colors from the generated logo image.',
-    inputSchema: z.object({
-      colors: z
-        .array(z.string().describe('A hex color code, e.g., #FFFFFF'))
-        .length(3)
-        .describe('An array of 3 dominant hex color codes from the image.'),
-    }),
-    outputSchema: z.void(),
-  },
-  async () => {} // No-op, we just need the structured output.
-);
-
 const colorizeLogoFlow = ai.defineFlow(
   {
     name: 'colorizeLogoFlow',
@@ -68,7 +52,7 @@ const colorizeLogoFlow = ai.defineFlow(
     outputSchema: ColorizeLogoOutputSchema,
   },
   async input => {
-    const {media, toolRequest} = await ai.generate({
+    const {media, text} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',
       prompt: [
         {
@@ -81,23 +65,38 @@ const colorizeLogoFlow = ai.defineFlow(
           Desirable Cues: ${input.desirableCues || 'None'}
           Undesirable Cues: ${input.undesirableCues || 'None'}
           
-          After generating the image, extract the 3 dominant hex colors and provide them using the colorExtractor tool.`,
+          After generating the image, respond with a JSON object in a markdown code block containing the hex codes of the 3 dominant colors. Example:
+          \`\`\`json
+          {
+            "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]
+          }
+          \`\`\``,
         },
       ],
       config: {
-        responseModalities: ['IMAGE'],
+        responseModalities: ['IMAGE', 'TEXT'],
       },
-      tools: [colorTool],
     });
 
     if (!media?.url) {
       throw new Error('Color logo generation failed to return a data URI.');
     }
-    if (!toolRequest) {
-      throw new Error('Color extraction failed.');
+    
+    let colors: string[] = [];
+    if (text) {
+      try {
+        const jsonString = text.match(/```json\n([\s\S]*?)\n```/)?.[1];
+        if (jsonString) {
+          const parsed = JSON.parse(jsonString);
+          if (parsed.colors && Array.isArray(parsed.colors)) {
+            colors = parsed.colors;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse color palette from model response", e);
+        // Fail gracefully, we can still return the image.
+      }
     }
-
-    const colors = toolRequest.input.colors || [];
 
     return {
       colorLogoUrl: media.url,
