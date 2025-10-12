@@ -5,6 +5,7 @@ export interface Brand {
     latestName: string;
     latestElevatorPitch: string;
     latestAudience: string;
+    logoUrl?: string;
 }
 
 export interface Tagline {

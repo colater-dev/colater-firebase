@@ -45,6 +45,11 @@
         "latestAudience": {
           "type": "string",
           "description": "The latest target audience for the brand."
+        },
+        "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the generated brand logo."
         }
       },
       "required": ["userId", "createdAt"]
