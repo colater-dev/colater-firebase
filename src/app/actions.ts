@@ -38,20 +38,35 @@ export async function getLogoSuggestion(
   undesirableCues: string,
   userId: string,
 ): Promise<{ success: boolean; data?: string; error?: string }> {
+  console.log("getLogoSuggestion: Starting...");
   try {
     if (!name || !elevatorPitch || !audience) {
+      console.error("getLogoSuggestion: Missing brand details.");
       return { success: false, error: "Brand details are required." };
     }
     if (!userId) {
+      console.error("getLogoSuggestion: Missing user ID.");
       return { success: false, error: "User ID is required for storage." };
     }
+    console.log("getLogoSuggestion: Brand details and userId are present.");
 
     const result = await generateLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
+    console.log("getLogoSuggestion: AI generation complete.");
+
+    if (!result || !result.logoUrl) {
+        console.error("getLogoSuggestion: AI did not return a logoUrl.");
+        throw new Error("AI image generation failed to return a result.");
+    }
+    // Log the beginning of the data URI to confirm it's what we expect
+    console.log("getLogoSuggestion: Received data URI from AI:", result.logoUrl.substring(0, 100));
+    
+    console.log("getLogoSuggestion: Attempting to upload to storage...");
     const logoUrl = await uploadDataUriToStorage(result.logoUrl, userId);
+    console.log("getLogoSuggestion: Upload successful. Public URL:", logoUrl);
 
     return { success: true, data: logoUrl };
   } catch (error) {
-    console.error("Error generating logo suggestion:", error);
+    console.error("Error in getLogoSuggestion action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return {
       success: false,
