@@ -1,3 +1,4 @@
+
 "use server";
 
 import { generateTaglines } from "@/ai/flows/generate-tagline";
@@ -74,6 +75,27 @@ export async function getBrandSuggestions(topic: string): Promise<{ success: boo
       error: `An unexpected error occurred while generating brand details: ${errorMessage}`,
     };
   }
+}
+
+export async function convertUrlToDataUri(url: string): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const contentType = response.headers.get('content-type') || 'image/png';
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const dataUri = `data:${contentType};base64,${base64}`;
+        return { success: true, data: dataUri };
+    } catch (error) {
+        console.error("Error converting URL to data URI:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return {
+            success: false,
+            error: `Could not process image for colorization: ${errorMessage}`,
+        };
+    }
 }
 
 

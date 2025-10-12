@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
@@ -14,7 +15,7 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo, convertUrlToDataUri } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette, Plus } from 'lucide-react';
@@ -288,8 +289,14 @@ export default function BrandPage() {
     if (!currentLogo || !user || !firestore || !brand) return;
     setIsColorizing(true);
     try {
+      // First, convert the storage URL to a data URI
+      const dataUriResult = await convertUrlToDataUri(currentLogo.logoUrl);
+      if (!dataUriResult.success || !dataUriResult.data) {
+        throw new Error(dataUriResult.error || "Failed to prepare image for colorization.");
+      }
+
       const result = await getColorizedLogo({
-        logoUrl: currentLogo.logoUrl,
+        logoUrl: dataUriResult.data, // Pass the data URI to the AI
         name: brand.latestName,
         elevatorPitch: brand.latestElevatorPitch,
         audience: brand.latestAudience,
