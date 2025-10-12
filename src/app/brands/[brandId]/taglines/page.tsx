@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -14,7 +14,7 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo, getHueshiftedColors } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette, Plus } from 'lucide-react';
@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 export default function TaglinesPage() {
   const { brandId } = useParams();
@@ -37,6 +38,9 @@ export default function TaglinesPage() {
   const [isColorizing, setIsColorizing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
   const [showColorLogo, setShowColorLogo] = useState(true);
+  const [hueShift, setHueShift] = useState(0);
+  const [displayedPalette, setDisplayedPalette] = useState<string[] | undefined>(undefined);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const brandRef = useMemoFirebase(
     () => user ? doc(firestore, `users/${user.uid}/brands`, brandId as string) : null,
@@ -181,6 +185,7 @@ export default function TaglinesPage() {
             colorLogoUrl: result.data.colorLogoUrl,
             palette: result.data.palette
         });
+        setDisplayedPalette(result.data.palette);
         setShowColorLogo(true);
         toast({
             title: "Logo colorized!",
@@ -238,6 +243,29 @@ export default function TaglinesPage() {
       setCurrentLogoIndex(logos.length - 1);
     }
   }, [logos?.length]); // Depend on the count of logos
+  
+  useEffect(() => {
+    if (currentLogo?.palette) {
+        setDisplayedPalette(currentLogo.palette);
+        setHueShift(0); // Reset slider on logo change
+    }
+  }, [currentLogo]);
+  
+  const handleHueChange = (value: number[]) => {
+    const newHue = value[0];
+    setHueShift(newHue);
+    if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+    }
+    debounceTimeout.current = setTimeout(async () => {
+        if (currentLogo?.palette) {
+            const result = await getHueshiftedColors(currentLogo.palette, newHue);
+            if (result.success && result.data) {
+                setDisplayedPalette(result.data);
+            }
+        }
+    }, 200); // 200ms debounce
+  };
 
   // Effect to update the brand's primary logoUrl when the paginated logo changes
   useEffect(() => {
@@ -322,7 +350,15 @@ export default function TaglinesPage() {
                             </div>
                         ) : displayLogoUrl ? (
                             <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-40 h-40">
-                                <Image src={displayLogoUrl} alt="Generated brand logo" width={160} height={160} className="object-contain" unoptimized/>
+                                <Image 
+                                  src={displayLogoUrl} 
+                                  alt="Generated brand logo" 
+                                  width={160} 
+                                  height={160} 
+                                  className="object-contain" 
+                                  unoptimized
+                                  style={{ filter: showColorLogo ? `hue-rotate(${hueShift}deg)` : 'none' }}
+                                />
                             </div>
                         ) : (
                              !isGeneratingLogo && (
@@ -345,7 +381,7 @@ export default function TaglinesPage() {
                     </div>
                     <div className="w-full space-y-4 pt-6 flex flex-col items-center">
                         {currentLogo?.colorLogoUrl && (
-                           <div className="flex flex-col gap-4 items-center">
+                           <div className="flex flex-col gap-4 items-center w-full max-w-sm">
                                 <div className="flex items-center space-x-2">
                                     <Label htmlFor="color-toggle">B&amp;W</Label>
                                     <Switch
@@ -355,15 +391,25 @@ export default function TaglinesPage() {
                                     />
                                     <Label htmlFor="color-toggle">Color</Label>
                                 </div>
-                                {showColorLogo && currentLogo.palette && (
-                                    <div className="flex items-center gap-4">
-                                        {currentLogo.palette.map((color, index) => (
-                                            <div key={index} className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: color }} />
-                                                <span className="text-sm font-mono text-muted-foreground">{color}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                {showColorLogo && displayedPalette && (
+                                    <>
+                                        <Slider
+                                            defaultValue={[0]}
+                                            max={360}
+                                            step={1}
+                                            className="w-full"
+                                            onValueChange={handleHueChange}
+                                            value={[hueShift]}
+                                        />
+                                        <div className="flex items-center gap-4">
+                                            {displayedPalette.map((color, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: color }} />
+                                                    <span className="text-sm font-mono text-muted-foreground">{color}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
                                 )}
                            </div>
                         )}
