@@ -14,7 +14,7 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo, getHueshiftedColors } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette, Plus } from 'lucide-react';
@@ -28,6 +28,110 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 
+
+// #region Color Conversion Utilities
+// These functions handle converting colors between HEX and HSL formats.
+
+/**
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @return  {Array}           The RGB representation
+ */
+function hslToRgb(h: number, s: number, l: number){
+    let r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        const hue2rgb = (p: number, q: number, t: number) => {
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+/**
+ * Converts an RGB color value to HSL. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes r, g, and b are contained in the set [0, 255] and
+ * returns h, s, and l in the set [0, 1].
+ *
+ * @param   {number}  r       The red color value
+ * @param   {number}  g       The green color value
+ * @param   {number}  b       The blue color value
+ * @return  {Array}           The HSL representation
+ */
+function rgbToHsl(r: number, g: number, b: number){
+    r /= 255, g /= 255, b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s, l = (max + min) / 2;
+
+    if(max == min){
+        h = s = 0; // achromatic
+    }else{
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max){
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    return [h, s, l];
+}
+
+
+function hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).padStart(6, '0');
+}
+
+function shiftHue(hex: string, degrees: number) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+
+    const [h, s, l] = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    
+    let newHue = (h + degrees / 360) % 1;
+    if (newHue < 0) {
+        newHue += 1;
+    }
+
+    const [newR, newG, newB] = hslToRgb(newHue, s, l);
+    return rgbToHex(newR, newG, newB);
+}
+
+// #endregion
+
+
 export default function TaglinesPage() {
   const { brandId } = useParams();
   const { user } = useUser();
@@ -40,7 +144,6 @@ export default function TaglinesPage() {
   const [showColorLogo, setShowColorLogo] = useState(true);
   const [hueShift, setHueShift] = useState(0);
   const [displayedPalette, setDisplayedPalette] = useState<string[] | undefined>(undefined);
-  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const brandRef = useMemoFirebase(
     () => user ? doc(firestore, `users/${user.uid}/brands`, brandId as string) : null,
@@ -246,25 +349,20 @@ export default function TaglinesPage() {
   
   useEffect(() => {
     if (currentLogo?.palette) {
-        setDisplayedPalette(currentLogo.palette);
         setHueShift(0); // Reset slider on logo change
+        handleHueChange([0]); // Update palette display
+    } else {
+        setDisplayedPalette(undefined);
     }
-  }, [currentLogo]);
+  }, [currentLogo, currentLogo?.palette]);
   
   const handleHueChange = (value: number[]) => {
     const newHue = value[0];
     setHueShift(newHue);
-    if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
+    if (currentLogo?.palette) {
+        const newPalette = currentLogo.palette.map(color => shiftHue(color, newHue));
+        setDisplayedPalette(newPalette);
     }
-    debounceTimeout.current = setTimeout(async () => {
-        if (currentLogo?.palette) {
-            const result = await getHueshiftedColors(currentLogo.palette, newHue);
-            if (result.success && result.data) {
-                setDisplayedPalette(result.data);
-            }
-        }
-    }, 200); // 200ms debounce
   };
 
   // Effect to update the brand's primary logoUrl when the paginated logo changes
@@ -357,7 +455,7 @@ export default function TaglinesPage() {
                                   height={160} 
                                   className="object-contain" 
                                   unoptimized
-                                  style={{ filter: showColorLogo ? `hue-rotate(${hueShift}deg)` : 'none' }}
+                                  style={{ filter: showColorLogo && currentLogo?.colorLogoUrl ? `hue-rotate(${hueShift}deg)` : 'none' }}
                                 />
                             </div>
                         ) : (
