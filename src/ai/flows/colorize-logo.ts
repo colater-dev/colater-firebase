@@ -11,11 +11,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const ColorizeLogoInputSchema = z.object({
-  logoUrl: z
-    .string()
-    .describe(
-      "The data URI of the black and white logo. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  name: z.string().describe('The name of the brand.'),
+  elevatorPitch: z.string().describe('The elevator pitch for the brand.'),
+  audience: z.string().describe('The target audience for the brand.'),
   desirableCues: z
     .string()
     .optional()
@@ -53,26 +51,54 @@ const colorizeLogoFlow = ai.defineFlow(
   },
   async input => {
     const {media, text} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
-      prompt: [
+      model: 'googleai/imagen-4.0-fast-generate-001',
+      prompt: `
+        You are a logo designer. Generate a color logo for the following brand:
+        Brand Name: ${input.name}
+        Brand Description: ${input.elevatorPitch}
+        Target Audience: ${input.audience}
+        Desirable Cues for color and style: ${input.desirableCues || 'None'}
+        Undesirable Cues for color and style: ${input.undesirableCues || 'None'}
+
+        The logo must adhere to the following design system, but you must introduce color:
+        
         {
-          media: {
-            url: input.logoUrl,
-          },
-        },
-        {
-          text: `Colorize this logo using only 2 or 3 complementary, modern, and professional colors. The background MUST be transparent. Do not draw a checkerboard or any other pattern for the background. Generate the image at a 256x256 pixel resolution.
-          Desirable Cues: ${input.desirableCues || 'None'}
-          Undesirable Cues: ${input.undesirableCues || 'None'}
-          
-          After generating the image, respond with a JSON object in a markdown code block containing the hex codes of the 3 dominant colors. Example:
-          \`\`\`json
-          {
-            "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]
+          "logo_style": {
+            "overall_form": {
+              "geometry": "geometric, constructed from basic shapes (circles, rectangles, triangles)",
+              "silhouette_type": "solid, monolithic, minimal"
+            },
+            "subject_matter": {
+              "category": "animals, abstract forms, symbolic entities",
+              "representation_level": "stylized, abstracted, non-literal"
+            },
+            "color": {
+              "uses_multiple_colors": true,
+              "color_count": "2-3 complementary, modern, and professional colors",
+              "background_color": "transparent"
+            },
+            "shape_language": {
+              "edges": "smooth curves + sharp flat planes"
+            },
+            "output": {
+              "format": "png",
+              "aspect_ratio": "1:1",
+              "resolution": "256x256",
+              "background_included": false
+            },
+            "avoid": ["gradients", "thin lines", "outlines", "strokes", "textures", "literal realism", "text"]
           }
-          \`\`\``,
-        },
-      ],
+        }
+        
+        Do not include any text in the logo. The logo must be on a transparent background.
+
+        After generating the image, respond with a JSON object in a markdown code block containing the hex codes of the 2-3 dominant colors. Example:
+        \`\`\`json
+        {
+          "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]
+        }
+        \`\`\`
+      `,
       config: {
         responseModalities: ['IMAGE', 'TEXT'],
       },
