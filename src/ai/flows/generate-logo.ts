@@ -45,6 +45,7 @@ const generateLogoFlow = ai.defineFlow(
   async input => {
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',
+      temperature: 0.8,
       prompt: [
         {
           text: `
