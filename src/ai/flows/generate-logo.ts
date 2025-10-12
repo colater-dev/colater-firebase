@@ -14,8 +14,14 @@ const GenerateLogoInputSchema = z.object({
   name: z.string().describe('The name of the brand.'),
   elevatorPitch: z.string().describe('The elevator pitch for the brand.'),
   audience: z.string().describe('The target audience for the brand.'),
-  desirableCues: z.string().optional().describe('Desirable visual cues for the logo.'),
-  undesirableCues: z.string().optional().describe('Undesirable visual cues for the logo.'),
+  desirableCues: z
+    .string()
+    .optional()
+    .describe('Desirable visual cues for the logo.'),
+  undesirableCues: z
+    .string()
+    .optional()
+    .describe('Undesirable visual cues for the logo.'),
 });
 export type GenerateLogoInput = z.infer<typeof GenerateLogoInputSchema>;
 
@@ -37,36 +43,38 @@ const generateLogoFlow = ai.defineFlow(
     outputSchema: GenerateLogoOutputSchema,
   },
   async input => {
-    const { media } = await ai.generate({
-        model: 'googleai/imagen-4.0-fast-generate-001',
-        prompt: `
-        You are a world-class logo designer. Your task is to generate a logo icon for the brand described below.
+    const {media} = await ai.generate({
+      model: 'googleai/gemini-2.5-flash-image-preview',
+      prompt: [
+        {
+          text: `
+          You are a world-class brand designer. Your task is to generate an icon for the brand described below.
 
-        **Brand Details:**
-        - **Brand Name:** ${input.name}
-        - **Brand Description:** ${input.elevatorPitch}
-        - **Target Audience:** ${input.audience}
+          **Brand Details:**
+          - **Brand Name:** ${input.name}
+          - **Brand Description:** ${input.elevatorPitch}
+          - **Target Audience:** ${input.audience}
 
-        **Design System & Style Guidelines:**
-        - **Overall Style:** Create an icon that is modern, minimalist, and geometric. It should be constructed from basic shapes like circles, rectangles, and triangles. The silhouette must be solid, monolithic, and easily recognizable.
-        - **Subject Matter:** The logo should be an abstract, symbolic entity. Avoid literal interpretations.
-        - **Desirable Cues:** ${input.desirableCues || 'None'}
-        - **Undesirable Cues:** ${input.undesirableCues || 'None'}
-        - **Color:** The logo must use black shapes or strokes only.
-        - **Shape & Form:** Use a mix of smooth curves and sharp, flat planes. Corners should be slightly rounded or have blunt geometric cuts. The overall composition should be compact and balanced.
-        - **Background:** The logo must be on a **transparent background**. Do not add any color, patterns, or borders to the background.
-        - **Output Requirements:** The final image must be a 160x160 pixel PNG. Do not include any text in the logo itself.
-        - **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic.
-        `,
-        config: {
-          responseModalities: ['IMAGE'],
+          **Design System & Style Guidelines:**
+          - **Overall Style:** Create a vector-style icon that is modern, minimalist, and geometric. The logo should be an abstract, symbolic entity.
+          - **Color:** The logo must use only black shapes against a transparent background.
+          - **Output Size:** The output image must be exactly 160x160 pixels.
+          - **Background:** The final logo must be on a transparent background. Do not add any color or patterns to the background.
+          - **Desirable Cues:** ${input.desirableCues || 'None'}
+          - **Undesirable Cues:** ${input.undesirableCues || 'None'}
+          - **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
+          `,
         },
-      });
+      ],
+      config: {
+        responseModalities: ['IMAGE'],
+      },
+    });
 
-    if (!media.url) {
+    if (!media?.url) {
       throw new Error('Image generation failed to return a data URI.');
     }
-      
-    return { logoUrl: media.url };
+
+    return {logoUrl: media.url};
   }
 );
