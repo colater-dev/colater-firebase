@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { getBrandSuggestions } from '@/app/actions';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Brand name must be at least 2 characters.'),
@@ -32,6 +34,8 @@ export default function NewBrandPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [topic, setTopic] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -43,6 +47,43 @@ export default function NewBrandPage() {
       undesirableCues: '',
     },
   });
+
+  const handleFillForMe = async () => {
+    if (!topic) {
+        toast({
+            variant: 'destructive',
+            title: 'Topic Required',
+            description: 'Please enter a topic to generate brand details.',
+        });
+        return;
+    }
+    setIsGenerating(true);
+    try {
+        const result = await getBrandSuggestions(topic);
+        if (result.success && result.data) {
+            form.setValue('name', result.data.name);
+            form.setValue('elevatorPitch', result.data.elevatorPitch);
+            form.setValue('audience', result.data.audience);
+            form.setValue('desirableCues', result.data.desirableCues);
+            form.setValue('undesirableCues', result.data.undesirableCues);
+            toast({
+                title: 'Brand details generated!',
+                description: 'The form has been filled with AI suggestions.',
+            });
+        } else {
+            throw new Error(result.error || 'Failed to get brand suggestions.');
+        }
+    } catch (error) {
+        console.error('Error filling form:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Generation Failed',
+            description: (error instanceof Error) ? error.message : 'Could not generate brand details.',
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
     if (!user || !firestore) {
@@ -70,10 +111,6 @@ export default function NewBrandPage() {
     
     addDoc(brandsCollection, brandData)
       .then((brandDocRef) => {
-        if (!brandDocRef) {
-          throw new Error('Failed to create brand document.');
-        }
-
         toast({
           title: 'Brand Created!',
           description: 'Redirecting to generate taglines...',
@@ -116,11 +153,29 @@ export default function NewBrandPage() {
                 </Button>
                 <div>
                     <CardTitle className="text-2xl font-bold">Create a New Brand</CardTitle>
-                    <CardDescription>Fill out the details below to get started.</CardDescription>
+                    <CardDescription>Fill out the details below to get started, or let AI fill it for you.</CardDescription>
                 </div>
             </div>
         </CardHeader>
         <CardContent>
+          <div className="space-y-4 mb-6">
+            <Label htmlFor="topic-input">Topic</Label>
+            <div className="flex gap-2">
+                <Input 
+                    id="topic-input"
+                    placeholder="e.g., 'A coffee shop for developers'"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                />
+                <Button onClick={handleFillForMe} disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                    <span className="ml-2 hidden sm:inline">Fill for me</span>
+                </Button>
+            </div>
+          </div>
+          
+          <Separator className="mb-6"/>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -199,7 +254,7 @@ export default function NewBrandPage() {
                         rows={3}
                         {...field}
                       />
-                    </FormControl>
+FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
