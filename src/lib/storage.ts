@@ -33,4 +33,3 @@ export async function uploadDataUriToStorage(dataUri: string, userId: string): P
   
   return downloadUrl;
 }
-
