@@ -1,167 +1,165 @@
-/**
- * @description This ruleset enforces a strict user-ownership model, allowing only the authenticated user to read and write their own data.
- * All data is nested under `/users/{userId}`, establishing a clear hierarchy.
- *
- * Data Structure:
- * - `/users/{userId}`: User profile information.
- * - `/users/{userId}/brands/{brandId}`: Brands created by the user.
- * - `/users/{userId}/brands/{brandId}/inputVersions/{versionId}`: History of changes to brand inputs.
- * - `/users/{userId}/brands/{brandId}/taglineGenerations/{generationId}`: AI-generated taglines for brands.
- * - `/users/{userId}/brands/{brandId}/logoGenerations/{generationId}`: AI-generated logos for brands.
- *
- * Key Security Decisions:
- * - Users can only access their own data tree.
- * - Listing of users is disallowed.
- * - Data shapes are NOT strictly enforced to allow for rapid iteration (prototyping mode).
- *
- * Denormalization for Authorization:
- * - The `userId` field is present in all documents to simplify authorization checks and prevent extra `get()` calls.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows only the authenticated user to manage their own profile.
+     * @description Protects user profile data. Only the authenticated user can read their own profile.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user_abc' can create their own profile document.
-     * @allow (update) User with UID 'user_abc' can update their own profile document.
-     * @allow (delete) User with UID 'user_abc' can delete their own profile document.
-     * @allow (get) User with UID 'user_abc' can get their own profile document.
-     * @allow (list) Listing all users is not allowed.
-     * @deny (create) User with UID 'user_abc' cannot create a profile document for 'user_xyz'.
-     * @deny (update) User with UID 'user_abc' cannot update the profile document of 'user_xyz'.
-     * @deny (delete) User with UID 'user_abc' cannot delete the profile document of 'user_xyz'.
-     * @deny (get) User with UID 'user_abc' cannot get the profile document of 'user_xyz'.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (get, create, update, delete): Authenticated user with matching userId.
+     * @deny (get, create, update, delete): Any other user or unauthenticated user.
+     * @principle Enforces user-ownership and prevents unauthorized access to user profiles.
      */
     match /users/{userId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // Listing users is disallowed
+      allow list: if false;
 
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
+      allow create: if isSignedIn() && isOwner(userId) ;
       allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Helper function to check for existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
     }
 
     /**
-     * @description Allows the owner to manage their brands.
+     * @description Secures brands created by users. Only the owner can read, create, update, or delete.
      * @path /users/{userId}/brands/{brandId}
-     * @allow (create) User with UID 'user_abc' can create a brand under their user ID.
-     * @allow (update) User with UID 'user_abc' can update a brand under their user ID.
-     * @allow (delete) User with UID 'user_abc' can delete a brand under their user ID.
-     * @allow (get) User with UID 'user_abc' can get a brand under their user ID.
-     * @allow (list) User with UID 'user_abc' can list brands under their user ID.
-     * @deny (create) User with UID 'user_abc' cannot create a brand under 'user_xyz'.
-     * @deny (update) User with UID 'user_abc' cannot update a brand under 'user_xyz'.
-     * @deny (delete) User with UID 'user_abc' cannot delete a brand under 'user_xyz'.
-     * @deny (get) User with UID 'user_abc' cannot get a brand under 'user_xyz'.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (create): Authenticated user creates a brand under their userId.
+     * @allow (get, update, delete): Only the owner of the brand can read, update, or delete it.
+     * @deny (create, get, update, delete): Any other user.
+     * @principle Enforces document ownership for writes and prevents unauthorized access.
      */
     match /users/{userId}/brands/{brandId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
 
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.createdAt is string;
-      allow update: if isSignedIn() && isOwner(userId) && resource != null;
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Helper function to check for existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
     }
 
     /**
-     * @description Allows the owner to manage versions of their brand inputs.
+     * @description Secures input versions for brands. Only the brand owner can manage input versions.
      * @path /users/{userId}/brands/{brandId}/inputVersions/{versionId}
-     * @allow (create) User with UID 'user_abc' can create an input version under their brand.
-     * @allow (update) User with UID 'user_abc' can update an input version under their brand.
-     * @allow (delete) User with UID 'user_abc' can delete an input version under their brand.
-     * @allow (get) User with UID 'user_abc' can get an input version under their brand.
-     * @allow (list) User with UID 'user_abc' can list input versions under their brand.
-     * @deny (create) User with UID 'user_abc' cannot create an input version under a brand owned by 'user_xyz'.
-     * @deny (update) User with UID 'user_abc' cannot update an input version under a brand owned by 'user_xyz'.
-     * @deny (delete) User with UID 'user_abc' cannot delete an input version under a brand owned by 'user_xyz'.
-     * @deny (get) User with UID 'user_abc' cannot get an input version under a brand owned by 'user_xyz'.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (create): Authenticated user creates an input version under their brand.
+     * @allow (get, update, delete): Only the owner of the parent brand can read, update, or delete input versions.
+     * @deny (create, get, update, delete): Any other user.
+     * @principle Inherits ownership from parent and prevents unauthorized access.
      */
     match /users/{userId}/brands/{brandId}/inputVersions/{versionId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
+      // Ensure the userId matches the parent brand's userId
+      function isBrandOwner(userId, brandId) {
+        return get(/databases/$(database)/documents/users/$(userId)/brands/$(brandId)).data.userId == userId;
+      }
+
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId;
-      allow update: if isSignedIn() && isOwner(userId) && resource != null;
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Helper function to check for existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
     }
 
     /**
-     * @description Allows the owner to manage AI-generated taglines for their brands.
+     * @description Secures AI-generated taglines for brands. Only the brand owner can access taglines.
      * @path /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}
-     * @allow (create) User with UID 'user_abc' can create a tagline generation under their brand.
-     * @allow (update) User with UID 'user_abc' can update a tagline generation under their brand.
-     * @allow (delete) User with UID 'user_abc' can delete a tagline generation under their brand.
-     * @allow (get) User with UID 'user_abc' can get a tagline generation under their brand.
-     * @allow (list) User with UID 'user_abc' can list tagline generations under their brand.
-     * @deny (create) User with UID 'user_abc' cannot create a tagline generation under a brand owned by 'user_xyz'.
-     * @deny (update) User with UID 'user_abc' cannot update a tagline generation under a brand owned by 'user_xyz'.
-     * @deny (delete) User with UID 'user_abc' cannot delete a tagline generation under a brand owned by 'user_xyz'.
-     * @deny (get) User with UID 'user_abc' cannot get a tagline generation under a brand owned by 'user_xyz'.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (create): Authenticated user creates a tagline generation under their brand.
+     * @allow (get, update, delete): Only the owner of the parent brand can read, update, or delete taglines.
+     * @deny (create, get, update, delete): Any other user.
+     * @principle Inherits ownership from parent and prevents unauthorized access.
      */
     match /users/{userId}/brands/{brandId}/taglineGenerations/{generationId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
+            // Ensure the userId matches the parent brand's userId
+      function isBrandOwner(userId, brandId) {
+        return get(/databases/$(database)/documents/users/$(userId)/brands/$(brandId)).data.userId == userId;
+      }
+
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId;
-      allow update: if isSignedIn() && isOwner(userId) && resource != null;
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Helper function to check for existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
     }
 
-    /**
-     * @description Allows the owner to manage AI-generated logos for their brands.
+        /**
+     * @description Secures AI-generated logos for brands. Only the brand owner can access logos.
      * @path /users/{userId}/brands/{brandId}/logoGenerations/{generationId}
-     * @allow (create) User with UID 'user_abc' can create a logo generation under their brand.
-     * @allow (update) User with UID 'user_abc' can update a logo generation under their brand.
-     * @allow (delete) User with UID 'user_abc' can delete a logo generation under their brand.
-     * @allow (get) User with UID 'user_abc' can get a logo generation under their brand.
-     * @allow (list) User with UID 'user_abc' can list logo generations under their brand.
-     * @deny (create) User with UID 'user_abc' cannot create a logo generation under a brand owned by 'user_xyz'.
-     * @deny (update) User with UID 'user_abc' cannot update a logo generation under a brand owned by 'user_xyz'.
-     * @deny (delete) User with UID 'user_abc' cannot delete a logo generation under a brand owned by 'user_xyz'.
-     * @deny (get) User with UID 'user_abc' cannot get a logo generation under a brand owned by 'user_xyz'.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (create): Authenticated user creates a logo generation under their brand.
+     * @allow (get, update, delete): Only the owner of the parent brand can read, update, or delete logos.
+     * @deny (create, get, update, delete): Any other user.
+     * @principle Inherits ownership from parent and prevents unauthorized access.
      */
     match /users/{userId}/brands/{brandId}/logoGenerations/{generationId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
+            // Ensure the userId matches the parent brand's userId
+      function isBrandOwner(userId, brandId) {
+        return get(/databases/$(database)/documents/users/$(userId)/brands/$(brandId)).data.userId == userId;
+      }
+
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId;
-      allow update: if isSignedIn() && isOwner(userId) && resource != null;
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Helper function to check for existing owner
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
     }
   }
 }
