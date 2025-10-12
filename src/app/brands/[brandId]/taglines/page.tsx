@@ -62,7 +62,9 @@ export default function TaglinesPage() {
       const suggestionResult = await getTaglineSuggestions(
         brand.latestName,
         brand.latestElevatorPitch,
-        brand.latestAudience
+        brand.latestAudience,
+        brand.latestDesirableCues,
+        brand.latestUndesirableCues
       );
 
       if (suggestionResult.success && suggestionResult.data) {
@@ -103,7 +105,9 @@ export default function TaglinesPage() {
         user.uid,
         brand.latestName,
         brand.latestElevatorPitch,
-        brand.latestAudience
+        brand.latestAudience,
+        brand.latestDesirableCues,
+        brand.latestUndesirableCues
       );
       if (result.success && result.data) {
         toast({
@@ -179,8 +183,10 @@ export default function TaglinesPage() {
                   {brand.latestElevatorPitch}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <p className="text-sm"><strong>Target Audience:</strong> {brand.latestAudience}</p>
+                {brand.latestDesirableCues && <p className="text-sm"><strong>Desirable Cues:</strong> {brand.latestDesirableCues}</p>}
+                {brand.latestUndesirableCues && <p className="text-sm"><strong>Undesirable Cues:</strong> {brand.latestUndesirableCues}</p>}
               </CardContent>
             </Card>
             
