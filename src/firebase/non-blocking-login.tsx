@@ -76,32 +76,31 @@ export async function initiateGoogleSignInWithPopup(authInstance: Auth): Promise
   }
 }
 
-/** Smart Google sign-in that automatically chooses the best method for the environment */
+/** Popup-based Google sign-in - more reliable than redirect */
 export function initiateSmartGoogleSignIn(authInstance: Auth): void {
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  const port = typeof window !== 'undefined' ? window.location.port : '';
-  const isCustomDomain = hostname === 'test.colater.com' || hostname.includes('colater.com');
-  
-  console.log('Current URL:', window.location.href);
-  console.log('Auth domain from config:', authInstance.app.options.authDomain);
-  
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
     prompt: 'select_account'
   });
   
-  // Use redirect authentication for all environments
-  console.log('Using redirect authentication for', hostname === 'localhost' ? 'localhost (with test.colater.com auth domain)' : isCustomDomain ? 'custom domain (with Firebase auth domain)' : 'production');
+  console.log('Using popup authentication');
   
-  sessionStorage.setItem('auth-debug-start', JSON.stringify({
-    timestamp: new Date().toISOString(),
-    currentUrl: window.location.href,
-    authDomain: authInstance.app.options.authDomain,
-    environment: hostname === 'localhost' ? `localhost:${port} (auth domain: test.colater.com)` : isCustomDomain ? 'custom domain (auth domain: Firebase)' : 'production',
-    method: 'redirect'
-  }));
-  
-  signInWithRedirect(authInstance, provider);
+  signInWithPopup(authInstance, provider)
+    .then((result) => {
+      console.log('Popup sign-in successful:', result.user);
+    })
+    .catch((error) => {
+      console.error('Popup sign-in error:', error);
+      
+      // If popup fails, fallback to redirect
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        console.log('Popup blocked or closed, falling back to redirect...');
+        signInWithRedirect(authInstance, provider);
+      } else {
+        // Show error to user
+        throw error;
+      }
+    });
 }
 
 /**

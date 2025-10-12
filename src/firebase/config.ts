@@ -4,35 +4,18 @@ import { initializeApp, getApps, FirebaseApp, getApp } from "firebase/app";
 // This is a public configuration and can be safely exposed.
 // Security is enforced by Firestore and Storage security rules.
 const baseConfig = {
-  "projectId": "studio-6830756272-ca1a2",
-  "appId": "1:251098089151:web:7dfc5b869ff6e11af6e80a",
-  "apiKey": "AIzaSyCVNej025Wh4yX0SP_Vl0ODl6Bq259CCFY",
-  "storageBucket": "studio-6830756272-ca1a2.appspot.com",
+  "projectId": process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "studio-6830756272-ca1a2",
+  "appId": process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:251098089151:web:7dfc5b869ff6e11af6e80a",
+  "apiKey": process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCVNej025Wh4yX0SP_Vl0ODl6Bq259CCFY",
+  "storageBucket": process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "studio-6830756272-ca1a2.appspot.com",
   "measurementId": "",
-  "messagingSenderId": "251098089151"
+  "messagingSenderId": process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "251098089151"
 };
 
-// Environment-aware configuration
+// Simplified configuration - always use Firebase auth domain
 export const firebaseConfig = {
   ...baseConfig,
-  "authDomain": (() => {
-    if (typeof window === 'undefined') {
-      // Server-side rendering - use default
-      return "studio-6830756272-ca1a2.firebaseapp.com";
-    }
-    
-    const hostname = window.location.hostname;
-    
-    // For localhost development, use test.colater.com as auth domain
-    // This allows proper redirect handling since test.colater.com is already authorized
-    if (hostname === 'localhost') {
-      return "test.colater.com";
-    }
-    
-    // For all other domains (including test.colater.com), use Firebase domain
-    // Custom domains should use Firebase's auth domain to avoid 404 errors
-    return "studio-6830756272-ca1a2.firebaseapp.com";
-  })()
+  "authDomain": "studio-6830756272-ca1a2.firebaseapp.com"
 };
 
 
