@@ -4,6 +4,7 @@ import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
 import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
+import { hueshiftColors } from "@/ai/flows/hueshift-colors";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -84,6 +85,26 @@ export async function getColorizedLogo(
     return {
       success: false,
       error: `An unexpected error occurred while colorizing the logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getHueshiftedColors(
+  colors: string[],
+  hueShift: number
+): Promise<{ success: boolean; data?: string[]; error?: string }> {
+  try {
+    if (!colors || colors.length === 0) {
+      return { success: false, error: "An array of colors is required." };
+    }
+    const result = await hueshiftColors({ colors, hueShift });
+    return { success: true, data: result.newColors };
+  } catch (error) {
+    console.error("Error hueshifting colors:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while shifting hues: ${errorMessage}`,
     };
   }
 }
