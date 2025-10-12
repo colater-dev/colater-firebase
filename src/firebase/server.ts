@@ -10,28 +10,38 @@ let adminApp: App;
 let adminStorage: Storage;
 
 function getInitOptions() {
-  const options: { credential?: any; storageBucket: string } = {
-    storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-  };
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    try {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      options.credential = cert(serviceAccount);
-      // Ensure storageBucket is derived from service account if project_id is different
-      if (serviceAccount.project_id) {
-          options.storageBucket = `${serviceAccount.project_id}.appspot.com`;
-      }
-    } catch (e) {
-      console.error("Firebase Admin SDK: Error parsing service account key, falling back to ADC.", e);
-    }
+  if (!serviceAccountKey) {
+    console.error(
+      "Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. " +
+      "Falling back to Application Default Credentials (ADC). This might cause issues if ADC is not configured."
+    );
+    // Proceed with ADC, which might be the source of the error if not configured.
+    return {
+      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+    };
   }
-  return options;
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountKey);
+    const projectId = serviceAccount.project_id || firebaseConfig.projectId;
+    return {
+      credential: cert(serviceAccount),
+      storageBucket: `${projectId}.appspot.com`,
+    };
+  } catch (e) {
+    console.error("Firebase Admin SDK: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", e);
+    // Fallback to ADC if parsing fails
+    return {
+      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+    };
+  }
 }
 
 function initializeAdminApp(): App {
   try {
-    // getApp() throws if no app is initialized, which is the control flow we want.
+    // getApp() throws if no app is initialized, which is our control flow.
     return getApp();
   } catch {
     // If it throws, initialize the app with the correct options.
