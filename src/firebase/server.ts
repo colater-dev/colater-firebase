@@ -3,6 +3,7 @@
 
 import { initializeApp, getApp, App, cert } from "firebase-admin/app";
 import { getStorage, Storage } from "firebase-admin/storage";
+import { firebaseConfig } from "@/firebase/config";
 import "server-only";
 
 // Helper function to initialize the Firebase Admin app
@@ -13,7 +14,9 @@ function initializeAdminApp(): App {
   } catch {
     // If not initialized, try to initialize with Application Default Credentials
     try {
-      return initializeApp();
+      return initializeApp({
+        storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+      });
     } catch (e: any) {
         if (e.code === 'app/invalid-credential' && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
             // Fallback for environments where ADC is not set up but a service account key is provided
