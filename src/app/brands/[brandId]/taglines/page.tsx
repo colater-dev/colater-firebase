@@ -238,7 +238,8 @@ export default function TaglinesPage() {
         brand.latestElevatorPitch,
         brand.latestAudience,
         brand.latestDesirableCues,
-        brand.latestUndesirableCues
+        brand.latestUndesirableCues,
+        user.uid
       );
       if (result.success && result.data) {
         const logoData = {
@@ -294,7 +295,7 @@ export default function TaglinesPage() {
         audience: brand.latestAudience,
         desirableCues: brand.latestDesirableCues,
         undesirableCues: brand.latestUndesirableCues,
-      });
+      }, user.uid);
 
       if (result.success && result.data) {
         const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`, currentLogo.id);
@@ -468,7 +469,7 @@ export default function TaglinesPage() {
                                   width={160} 
                                   height={160} 
                                   className="object-contain" 
-                                  unoptimized
+                                  unoptimized={displayLogoUrl.startsWith('data:')}
                                   style={{ filter: showColorLogo && currentLogo?.colorLogoUrl ? `hue-rotate(${hueShift}deg)` : 'none' }}
                                 />
                             </div>
