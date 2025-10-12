@@ -8,30 +8,37 @@ export const firebaseConfig = {
   "appId": "1:251098089151:web:7dfc5b869ff6e11af6e80a",
   "apiKey": "AIzaSyCVNej025Wh4yX0SP_Vl0ODl6Bq259CCFY",
   "authDomain": "studio-6830756272-ca1a2.firebaseapp.com",
-  "storageBucket": "studio-6830756272-ca1a2.firebasestorage.app",
+  "storageBucket": "studio-6830756272-ca1a2.appspot.com",
   "measurementId": "",
   "messagingSenderId": "251098089151"
 };
 
 
 /**
- * Initializes Firebase, handling both client-side (with App Hosting auto-config)
- * and server-side environments.
+ * Initializes Firebase, creating a new app if one doesn't already exist.
+ * This is a simplified function to be used where needed.
+ * For client-side React components, initialization should happen once in the provider.
  * @returns The initialized FirebaseApp instance.
  */
 export function initializeFirebaseApp(): FirebaseApp {
-  if (getApps().length > 0) {
-    return getApps()[0];
+  const apps = getApps();
+  if (apps.length > 0) {
+    return apps[0];
   }
-
-  // In a Firebase App Hosting environment, the config is automatically provided.
-  // The `try...catch` block handles environments where auto-config is not available.
-  try {
-    return initializeApp();
-  } catch (e) {
-    if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic Firebase initialization failed, falling back to local config. This is normal for local development but may indicate an issue in production if not using App Hosting.', e);
+  // In a client-side context (like FirebaseProvider), App Hosting will auto-configure.
+  // In a server-side context (like a server action), we must provide the config.
+  // We check if window is defined to differentiate.
+  if (typeof window !== 'undefined') {
+    try {
+        // This will be auto-configured by App Hosting in production.
+        return initializeApp();
+    } catch (e) {
+        // Fallback for local dev where auto-config isn't present.
+        return initializeApp(firebaseConfig);
     }
-    return initializeApp(firebaseConfig);
   }
+  
+  // If not in a browser (e.g., server action), initialize with the explicit config.
+  return initializeApp(firebaseConfig);
 }
+

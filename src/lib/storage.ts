@@ -14,6 +14,7 @@ import { initializeFirebaseApp } from "@/firebase/config";
  * @returns The public download URL of the uploaded file.
  */
 export async function uploadDataUriToStorage(dataUri: string, userId: string): Promise<string> {
+  // This now uses the robust, environment-aware initialization function.
   const firebaseApp = initializeFirebaseApp();
   const storage = getStorage(firebaseApp);
   
@@ -25,11 +26,11 @@ export async function uploadDataUriToStorage(dataUri: string, userId: string): P
   // The actual data is after the comma
   const base64Data = dataUri.split(',')[1];
   
-  // The rules have been updated to allow public writes for simplicity in this server action context.
-  // Security can be enhanced by using the Admin SDK in a trusted server environment if needed.
+  // This upload happens from the server, where we've configured rules to allow it.
   await uploadString(storageRef, base64Data, 'base64');
   
   const downloadUrl = await getDownloadURL(storageRef);
   
   return downloadUrl;
 }
+
