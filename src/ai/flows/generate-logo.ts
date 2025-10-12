@@ -40,101 +40,23 @@ const generateLogoFlow = ai.defineFlow(
     const { media } = await ai.generate({
         model: 'googleai/imagen-4.0-fast-generate-001',
         prompt: `
-        You are a logo designer. Generate a logo for the following brand:
-        Brand Name: ${input.name}
-        Brand Description: ${input.elevatorPitch}
-        Target Audience: ${input.audience}
-        
-        The logo must adhere to the following design system:
-        
-        {
-          "logo_style": {
-            "overall_form": {
-              "geometry": "geometric, constructed from basic shapes (circles, rectangles, triangles)",
-              "silhouette_type": "solid, monolithic, minimal",
-              "symmetry": "mostly symmetrical with intentional asymmetry for identity",
-              "negative_space_usage": "moderate, purposeful"
-            },
-            "subject_matter": {
-              "desirable_cues": "${input.desirableCues || 'None'}",
-              "undesirable_cues": "${input.undesirableCues || 'None'}",
-              "category": "abstract forms, symbolic entities",
-              "representation_level": "stylized, abstracted, non-literal"
-            },
-            "color": {
-              "primary_color": "#000000",
-              "background_color": "transparent",
-              "contrast": "high",
-              "uses_multiple_colors": false,
-              "allow_gradient": false
-            },
-            "shape_language": {
-              "edges": "smooth curves + sharp flat planes",
-              "corner_style": "slightly rounded or blunt geometric cuts",
-              "proportions": "compact, balanced weight",
-              "visual_weight_distribution": "centered or forward-biased"
-            },
-            "eye_or_detail_features": {
-              "detail_style": "single circular cutout or dot",
-              "contrast_with_body": "high contrast (light on dark)",
-              "allow_stroke": false
-            },
-            "line_and_stroke": {
-              "use_strokes": false,
-              "stroke_weight": "0px",
-              "fill_style": "solid fill"
-            },
-            "background_treatment": {
-              "type": "none",
-              "padding": "generous negative space around icon",
-              "shape": "none"
-            },
-            "composition": {
-              "orientation": "horizontal bias if animal is used",
-              "center_alignment": true,
-              "rotation_allowed": false,
-              "scalability": "vector-friendly"
-            },
-            "mood_and_tone": {
-              "tone": "friendly, modern, understated",
-              "visual_voice": "playful-minimalist, professional"
-            },
-            "output": {
-              "format": "png",
-              "aspect_ratio": "1:1",
-              "resolution": "256x256",
-              "background_included": false
-            }
-          },
-          "variation_controls": {
-            "allowed_mutations": [
-              "swap animal/form type",
-              "adjust wing or limb shapes",
-              "change head-body proportion",
-              "introduce negative space cuts"
-            ],
-            "constraints": {
-              "keep solid fill": true,
-              "maintain single color": true,
-              "avoid realism": true
-            }
-          },
-          "generation_instructions": {
-            "prompt_tone": "design-system precise, not illustrative",
-            "output_goal": "logo icon suitable for identity or symbol mark",
-            "avoid": [
-              "gradients",
-              "thin lines",
-              "outlines",
-              "strokes",
-              "textures",
-              "multiple colors",
-              "literal realism"
-            ]
-          }
-        }
-        
-        Do not include any text in the logo. The logo must be on a transparent background and have no outline or border.
+        You are a world-class logo designer. Your task is to generate a logo icon for the brand described below.
+
+        **Brand Details:**
+        - **Brand Name:** ${input.name}
+        - **Brand Description:** ${input.elevatorPitch}
+        - **Target Audience:** ${input.audience}
+
+        **Design System & Style Guidelines:**
+        - **Overall Style:** Create a logo that is modern, minimalist, and geometric. It should be constructed from basic shapes like circles, rectangles, and triangles. The silhouette must be solid, monolithic, and easily recognizable.
+        - **Subject Matter:** The logo should be an abstract, symbolic entity. Avoid literal interpretations.
+        - **Desirable Cues:** ${input.desirableCues || 'None'}
+        - **Undesirable Cues:** ${input.undesirableCues || 'None'}
+        - **Color:** The logo must be **black and white only**.
+        - **Shape & Form:** Use a mix of smooth curves and sharp, flat planes. Corners should be slightly rounded or have blunt geometric cuts. The overall composition should be compact and balanced.
+        - **Background:** The logo must be on a **transparent background**. Do not add any color, patterns, or borders to the background.
+        - **Output Requirements:** The final image must be a 256x256 pixel PNG. Do not include any text in the logo itself.
+        - **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic.
         `,
         config: {
           responseModalities: ['IMAGE'],
