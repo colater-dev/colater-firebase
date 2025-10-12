@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { getBrandSuggestions } from '@/app/actions';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Brand name must be at least 2 characters.'),
@@ -113,7 +115,7 @@ export default function NewBrandPage() {
       .then((brandDocRef) => {
         toast({
           title: 'Brand Created!',
-          description: 'Redirecting to generate taglines...',
+          description: 'Redirecting to generate assets...',
         });
 
         router.push(`/brands/${brandDocRef.id}/taglines`);
@@ -254,7 +256,7 @@ export default function NewBrandPage() {
                         rows={3}
                         {...field}
                       />
-FormControl>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
