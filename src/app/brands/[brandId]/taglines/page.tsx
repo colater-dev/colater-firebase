@@ -290,7 +290,7 @@ export default function TaglinesPage() {
                             {isColorizing ? <><Loader2 className="mr-2 animate-spin"/> Colorizing...</> : <><Palette className="mr-2" /> Colorise</>}
                         </Button>
                         <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo}>
-                          {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate Logo'}
+                          {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Another Logo'}
                         </Button>
                     </div>
                 </CardHeader>
