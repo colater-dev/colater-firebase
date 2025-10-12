@@ -37,11 +37,105 @@ const generateLogoFlow = ai.defineFlow(
   async input => {
     const { media } = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image-preview',
-        prompt: `Generate an abstract, geometric logo for the following brand. The logo should be simple, modern, and memorable. Do not include any text.
-        
+        prompt: `
+        You are a logo designer. Generate a logo for the following brand:
         Brand Name: ${input.name}
         Brand Description: ${input.elevatorPitch}
         Target Audience: ${input.audience}
+
+        The logo must adhere to the following design system:
+        
+        {
+          "logo_style": {
+            "overall_form": {
+              "geometry": "geometric, constructed from basic shapes (circles, rectangles, triangles)",
+              "silhouette_type": "solid, monolithic, minimal",
+              "symmetry": "mostly symmetrical with intentional asymmetry for identity",
+              "negative_space_usage": "moderate, purposeful"
+            },
+            "subject_matter": {
+              "category": "animals, abstract forms, symbolic entities",
+              "example_subject": "bird, fish, fox, leaf",
+              "representation_level": "stylized, abstracted, non-literal"
+            },
+            "color": {
+              "primary_color": "#000000",
+              "background_color": "transparent",
+              "contrast": "high",
+              "uses_multiple_colors": false,
+              "allow_gradient": false
+            },
+            "shape_language": {
+              "edges": "smooth curves + sharp flat planes",
+              "corner_style": "slightly rounded or blunt geometric cuts",
+              "proportions": "compact, balanced weight",
+              "visual_weight_distribution": "centered or forward-biased"
+            },
+            "eye_or_detail_features": {
+              "detail_style": "single circular cutout or dot",
+              "contrast_with_body": "high contrast (light on dark)",
+              "allow_stroke": false
+            },
+            "line_and_stroke": {
+              "use_strokes": false,
+              "stroke_weight": "0px",
+              "fill_style": "solid fill"
+            },
+            "background_treatment": {
+              "type": "flat color",
+              "padding": "generous negative space around icon",
+              "shape": "square or circle container optional"
+            },
+            "composition": {
+              "orientation": "horizontal bias if animal is used",
+              "center_alignment": true,
+              "rotation_allowed": false,
+              "scalability": "vector-friendly"
+            },
+            "grid_and_construction": {
+              "grid_type": "modular or circle-based construction",
+              "shape_repetition": true,
+              "modularity": "elements derived from shared primitives",
+              "keylines": "invisible but implied"
+            },
+            "mood_and_tone": {
+              "tone": "friendly, modern, understated",
+              "visual_voice": "playful-minimalist, professional"
+            },
+            "output": {
+              "format": "png",
+              "aspect_ratio": "1:1",
+              "resolution": "scalable",
+              "background_included": true
+            }
+          },
+          "variation_controls": {
+            "allowed_mutations": [
+              "swap animal/form type",
+              "adjust wing or limb shapes",
+              "change head-body proportion",
+              "introduce negative space cuts"
+            ],
+            "constraints": {
+              "keep solid fill": true,
+              "maintain single color": true,
+              "avoid realism": true
+            }
+          },
+          "generation_instructions": {
+            "prompt_tone": "design-system precise, not illustrative",
+            "output_goal": "logo icon suitable for identity or symbol mark",
+            "avoid": [
+              "gradients",
+              "thin lines",
+              "textures",
+              "multiple colors",
+              "literal realism"
+            ]
+          }
+        }
+        
+        Do not include any text in the logo. The logo must be on a transparent background.
         `,
         config: {
           responseModalities: ['IMAGE'],
