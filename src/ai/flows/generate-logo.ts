@@ -45,25 +45,27 @@ const generateLogoFlow = ai.defineFlow(
   },
   async input => {
     const {media} = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
-      temperature: 0.8,
+      model: 'googleai/gemini-2.5-flash-image-preview',
       prompt: `
-          Generate a modern, minimalist, and geometric vector-style icon for the brand described below.
+        A modern, minimalist, and geometric vector-style icon for the brand described below.
 
-          **Brand Details:**
-          - **Brand Name:** ${input.name}
-          - **Brand Description:** ${input.elevatorPitch}
-          - **Target Audience:** ${input.audience}
+        **Brand Details:**
+        - **Brand Name:** ${input.name}
+        - **Brand Description:** ${input.elevatorPitch}
+        - **Target Audience:** ${input.audience}
 
-          **Design System & Style Guidelines:**
-          - The logo must be a simple, abstract, and symbolic entity.
-          - The logo must use only black shapes against a transparent background.
-          - The output image must be exactly 160x160 pixels.
-          - Desirable Cues: ${input.desirableCues || 'None'}
-          - Undesirable Cues: ${input.undesirableCues || 'None'}
-          
-          **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
-        `,
+        **Design System & Style Guidelines:**
+        - The logo must be a simple, abstract, and symbolic entity.
+        - The logo must use only black shapes against a transparent background.
+        - The output image must be exactly 160x160 pixels.
+        - Desirable Cues: ${input.desirableCues || 'None'}
+        - Undesirable Cues: ${input.undesirableCues || 'None'}
+        
+        **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
+      `,
+      config: {
+        responseModalities: ['IMAGE'],
+      },
     });
 
     if (!media?.url) {
