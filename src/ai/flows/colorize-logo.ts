@@ -61,7 +61,7 @@ const colorizeLogoFlow = ai.defineFlow(
           },
         },
         {
-          text: `Colorize this logo using only 2 or 3 complementary, modern, and professional colors. The background MUST remain transparent.
+          text: `Colorize this logo using only 2 or 3 complementary, modern, and professional colors. The background MUST be transparent. Do not draw a checkerboard or any other pattern for the background.
           Desirable Cues: ${input.desirableCues || 'None'}
           Undesirable Cues: ${input.undesirableCues || 'None'}
           
