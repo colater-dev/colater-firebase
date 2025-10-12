@@ -1,45 +1,156 @@
 /**
- * @fileoverview Firestore Security Rules for the Brand Tagline Generator application.
+ * @fileoverview Firestore Security Rules for the application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user has a dedicated data tree under `/users/{userId}`, and only the authenticated user can read and write to their own data.
+ * This ruleset enforces a strict user-ownership model. All data is nested under
+ * /users/{userId}, and only the authenticated user with the matching {userId}
+ * can read or write their own data. This prevents unauthorized access and
+ * ensures data privacy.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profile information.
- * - /users/{userId}/brands/{brandId}: Stores brands created by users.
- * - /users/{userId}/brands/{brandId}/inputVersions/{versionId}: Stores the history of changes for brand inputs.
- * - /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}: Stores AI-generated taglines for a brand.
+ * - /users/{userId}: Stores public user profile information.
+ * - /users/{userId}/brands/{brandId}: Stores brand data owned by the user.
+ * - /users/{userId}/brands/{brandId}/inputVersions/{versionId}: Stores historical
+ *   input versions for a brand, inheriting ownership from the parent brand.
+ * - /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}: Stores
+ *   AI-generated taglines for a brand, inheriting ownership from the parent brand.
+ * - /users/{userId}/brands/{brandId}/logoGenerations/{generationId}: Stores
+ *   AI-generated logos for a brand, inheriting ownership from the parent brand.
  *
  * Key Security Decisions:
- * - User listing is disallowed to prevent unauthorized access to user profiles.
- * - All data is nested under /users/{userId} to enforce a clear ownership hierarchy.
- * - Data validation is relaxed in this prototyping phase to allow for rapid iteration but crucial authorization and relational fields are validated.
+ * - User listing is disallowed. Only authenticated users can access their own data.
+ * - All write operations are strictly validated against the authenticated user's ID.
+ * - The rules prioritize security and data privacy by default.
+ *
+ * Denormalization for Authorization:
+ * To simplify rules and improve performance, each document requiring
+ * ownership-based access includes a `userId` field. This allows rules to
+ * quickly verify ownership without additional reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Disallow listing all users.  Enforce user-based access control.
+    /**
+     * @description Enforces access control for user profiles.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'test_user' can create their profile if userId matches auth.uid.
+     * @allow (get) User with UID 'test_user' can read their own profile.
+     * @allow (list) User with UID 'test_user' can list their own profile (though this is effectively a get).
+     * @deny (update) User with UID 'other_user' cannot update 'test_user' profile.
+     * @deny (delete) User with UID 'other_user' cannot delete 'test_user' profile.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
     match /users/{userId} {
-      allow list: if false;
-
-      // Only allow authenticated user to read/write their own user document.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-
-      match /brands/{brandId} {
-        // Only allow authenticated user to read/write their own brand documents.
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-
-        match /inputVersions/{versionId} {
-          // Only allow authenticated user to read/write their own input version documents.
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-
-        match /taglineGenerations/{generationId} {
-          // Only allow authenticated user to read/write their own tagline generation documents.
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
       }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Enforces access control for brands created by users.
+     * @path /users/{userId}/brands/{brandId}
+     * @allow (create) User with UID 'test_user' can create a brand if userId matches auth.uid.
+     * @allow (get) User with UID 'test_user' can read their own brand.
+     * @allow (list) User with UID 'test_user' can list their own brands.
+     * @deny (update) User with UID 'other_user' cannot update 'test_user' brand.
+     * @deny (delete) User with UID 'other_user' cannot delete 'test_user' brand.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/brands/{brandId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.createdAt is string;
+      allow update: if isExistingOwner(userId) && resource.data.userId == request.resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces access control for brand input versions.
+     * @path /users/{userId}/brands/{brandId}/inputVersions/{versionId}
+     * @allow (create) User with UID 'test_user' can create an input version if userId matches auth.uid.
+     * @allow (get) User with UID 'test_user' can read their own input version.
+     * @allow (list) User with UID 'test_user' can list their own input versions.
+     * @deny (update) User with UID 'other_user' cannot update 'test_user' input version.
+     * @deny (delete) User with UID 'other_user' cannot delete 'test_user' input version.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/brands/{brandId}/inputVersions/{versionId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId && request.resource.data.createdAt is string;
+      allow update: if isExistingOwner(userId) && resource.data.userId == request.resource.data.userId && resource.data.brandId == request.resource.data.brandId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces access control for tagline generations.
+     * @path /users/{userId}/brands/{brandId}/taglineGenerations/{generationId}
+     * @allow (create) User with UID 'test_user' can create a tagline generation if userId matches auth.uid.
+     * @allow (get) User with UID 'test_user' can read their own tagline generation.
+     * @allow (list) User with UID 'test_user' can list their own tagline generations.
+     * @deny (update) User with UID 'other_user' cannot update 'test_user' tagline generation.
+     * @deny (delete) User with UID 'other_user' cannot delete 'test_user' tagline generation.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/brands/{brandId}/taglineGenerations/{generationId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId && request.resource.data.createdAt is string;
+      allow update: if isExistingOwner(userId) && resource.data.userId == request.resource.data.userId && resource.data.brandId == request.resource.data.brandId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces access control for logo generations.
+     * @path /users/{userId}/brands/{brandId}/logoGenerations/{generationId}
+     * @allow (create) User with UID 'test_user' can create a logo generation if userId matches auth.uid.
+     * @allow (get) User with UID 'test_user' can read their own logo generation.
+     * @allow (list) User with UID 'test_user' can list their own logo generations.
+     * @deny (update) User with UID 'other_user' cannot update 'test_user' logo generation.
+     * @deny (delete) User with UID 'other_user' cannot delete 'test_user' logo generation.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/brands/{brandId}/logoGenerations/{generationId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.brandId == brandId && request.resource.data.createdAt is string;
+      allow update: if isExistingOwner(userId) && resource.data.userId == request.resource.data.userId && resource.data.brandId == request.resource.data.brandId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
