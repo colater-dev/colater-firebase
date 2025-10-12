@@ -163,67 +163,74 @@ export default function TaglinesPage() {
                 <p className="text-sm"><strong>Target Audience:</strong> {brand.latestAudience}</p>
               </CardContent>
             </Card>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div className="space-y-1">
-                      <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary" /> AI Generated Taglines</CardTitle>
-                      <CardDescription>Catchy taglines for your brand.</CardDescription>
-                  </div>
-                  <Button onClick={handleGenerateTaglines} disabled={isGeneratingTaglines} size="sm">
-                      {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingTaglines && taglines === null ? (
-                      <div className="flex items-center justify-center h-40">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                  ) : taglines && taglines.length > 0 ? (
-                      <ul className="space-y-4">
-                          {taglines.map((item) => (
-                              <li key={item.id} className="p-4 bg-muted/50 rounded-lg border">
-                                  {item.tagline}
-                              </li>
-                          ))}
-                      </ul>
-                  ) : (
-                      <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                          <p className="text-muted-foreground">No taglines generated yet. Click the button to start.</p>
-                      </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
+            
+            <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div className="space-y-1">
-                        <CardTitle className="flex items-center gap-2"><Wand2 className="text-primary" /> AI Generated Logo</CardTitle>
-                        <CardDescription>An abstract logo for your brand.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Wand2 className="text-primary" /> AI Generated Brand Identity</CardTitle>
+                        <CardDescription>Your brand logo and primary tagline.</CardDescription>
                     </div>
                     <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo} size="sm">
-                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : brand?.logoUrl ? 'Regenerate' : 'Generate'}
+                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> ...</> : brand?.logoUrl ? 'Regenerate Logo' : 'Generate Logo'}
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
                     {isGeneratingLogo && !brand.logoUrl ? (
-                        <div className="flex items-center justify-center h-64 aspect-square">
+                        <div className="flex flex-col items-center justify-center h-64 w-64">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="ml-2 text-muted-foreground">Generating your logo...</p>
+                            <p className="mt-2 text-muted-foreground">Generating your logo...</p>
                         </div>
                     ) : brand.logoUrl ? (
-                        <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center p-4">
+                        <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center p-4 w-64 h-64">
                             <Image src={brand.logoUrl} alt="Generated brand logo" width={256} height={256} className="object-contain" />
                         </div>
                     ) : (
-                        <div className="text-center flex items-center justify-center h-64 aspect-square border-2 border-dashed rounded-lg">
+                        <div className="text-center flex items-center justify-center h-64 w-64 border-2 border-dashed rounded-lg">
                             <p className="text-muted-foreground">Click the button to generate a logo.</p>
                         </div>
                     )}
+                    <h3 className="text-2xl font-bold pt-4">{brand.latestName}</h3>
+                    {isLoadingTaglines ? (
+                        <Skeleton className="h-6 w-3/4" />
+                    ): (
+                        <p className="text-lg text-muted-foreground">
+                            {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
+                        </p>
+                    )}
                 </CardContent>
               </Card>
-            </div>
+
+
+            <Card>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary" /> AI Generated Taglines</CardTitle>
+                    <CardDescription>More catchy taglines for your brand.</CardDescription>
+                </div>
+                <Button onClick={handleGenerateTaglines} disabled={isGeneratingTaglines} size="sm">
+                    {isGeneratingTaglines ? <><Loader2 className="mr-2 animate-spin"/> ...</> : 'Regenerate'}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {isLoadingTaglines && taglines === null ? (
+                    <div className="flex items-center justify-center h-40">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : taglines && taglines.length > 0 ? (
+                    <ul className="space-y-4">
+                        {taglines.map((item) => (
+                            <li key={item.id} className="p-4 bg-muted/50 rounded-lg border">
+                                {item.tagline}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                        <p className="text-muted-foreground">No taglines generated yet. Click the button to start.</p>
+                    </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>
