@@ -1,7 +1,15 @@
 'use server';
 
+import { initializeApp, getApps } from "firebase/app";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
+import { firebaseConfig } from "@/firebase/config";
+
+function initializeAppIfNeeded() {
+    if (!getApps().length) {
+        initializeApp(firebaseConfig);
+    }
+}
 
 /**
  * Uploads a data URI to Firebase Cloud Storage.
@@ -10,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
  * @returns The public download URL of the uploaded file.
  */
 export async function uploadDataUriToStorage(dataUri: string, userId: string): Promise<string> {
+  initializeAppIfNeeded();
   const storage = getStorage();
   const fileExtension = dataUri.substring(dataUri.indexOf('/') + 1, dataUri.indexOf(';'));
   const uniqueId = uuidv4();
