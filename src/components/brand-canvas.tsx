@@ -136,9 +136,14 @@ export default function BrandCanvas() {
   const { toast } = useToast();
 
   const centerOnCard = (card: CardData) => {
+    if (!containerRef.current) return;
+
     const { x, y, width, height } = card;
-    const newPanX = -x + (window.innerWidth - width) / 2;
-    const newPanY = -y + (window.innerHeight - height) / 2;
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+
+    const newPanX = -x + (containerWidth - width) / 2;
+    const newPanY = -y + (containerHeight - height) / 2;
 
     animate(panX, newPanX, { duration: 0.8, ease: "easeInOut" });
     animate(panY, newPanY, { duration: 0.8, ease: "easeInOut" });
@@ -156,7 +161,8 @@ export default function BrandCanvas() {
     };
     setCards([firstCard]);
     // We position the card at 0,0 and pan the canvas to center it.
-    centerOnCard(firstCard);
+    // Use a timeout to ensure the container has dimensions.
+    setTimeout(() => centerOnCard(firstCard), 100);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -311,40 +317,60 @@ export default function BrandCanvas() {
       <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <motion.g style={{ x: panX, y: panY }}>
           <AnimatePresence>
-            {cards.map((card) =>
-              card.connections?.map((connId) => {
-                const fromCard = cards.find((c) => c.id === connId);
-                if (!fromCard) return null;
+            {cards
+              .filter((card) => card.connections)
+              .map((card) =>
+                card.connections!.map((connId) => {
+                  const fromCard = cards.find((c) => c.id === connId);
+                  if (!fromCard) return null;
 
-                // Adjust for card centering if needed by your layout logic
-                const x1 = fromCard.position.x + fromCard.width;
-                const y1 = fromCard.position.y + fromCard.height / 2;
-                const x2 = card.position.x;
-                const y2 = card.position.y + card.height / 2;
+                  const isPitchToAudience =
+                    fromCard.type === "elevator-pitch" &&
+                    card.type === "audience";
 
-                const pathData = `M ${x1} ${y1} C ${
-                  x1 + CARD_SPACING / 2
-                } ${y1}, ${x2 - CARD_SPACING / 2} ${y2}, ${x2} ${y2}`;
+                  let x1, y1, x2, y2;
 
-                return (
-                  <motion.path
-                    key={`${fromCard.id}-${card.id}`}
-                    d={pathData}
-                    fill="none"
-                    stroke="hsl(var(--border))"
-                    strokeWidth="2"
-                    strokeDasharray="4 4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{
-                      duration: 0.8,
-                      delay: 0.5,
-                      ease: "easeInOut",
-                    }}
-                  />
-                );
-              })
-            )}
+                  if (isPitchToAudience) {
+                    // From bottom of pitch card to top of audience card
+                    x1 = fromCard.position.x + fromCard.width / 2;
+                    y1 = fromCard.position.y + fromCard.height;
+                    x2 = card.position.x + card.width / 2;
+                    y2 = card.position.y;
+                  } else {
+                    // Default: From right of first card to left of second card
+                    x1 = fromCard.position.x + fromCard.width;
+                    y1 = fromCard.position.y + fromCard.height / 2;
+                    x2 = card.position.x;
+                    y2 = card.position.y + card.height / 2;
+                  }
+
+                  const pathData = isPitchToAudience
+                    ? `M ${x1} ${y1} C ${x1} ${
+                        y1 + CARD_SPACING / 2
+                      }, ${x2} ${y2 - CARD_SPACING / 2}, ${x2} ${y2}`
+                    : `M ${x1} ${y1} C ${
+                        x1 + CARD_SPACING / 2
+                      } ${y1}, ${x2 - CARD_SPACING / 2} ${y2}, ${x2} ${y2}`;
+
+                  return (
+                    <motion.path
+                      key={`${fromCard.id}-${card.id}`}
+                      d={pathData}
+                      fill="none"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{
+                        duration: 0.8,
+                        delay: 0.5,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  );
+                })
+              )}
           </AnimatePresence>
         </motion.g>
       </svg>
