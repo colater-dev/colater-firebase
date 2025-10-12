@@ -251,59 +251,56 @@ export default function TaglinesPage() {
                       {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate Logo'}
                     </Button>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
+                <CardContent className="flex flex-col items-center justify-center text-center space-y-6">
                     
-                  <div className="flex items-center justify-center w-full gap-4">
-                      {logos && logos.length > 1 && (
-                          <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
-                              <ChevronLeft />
-                          </Button>
-                      )}
-                      
-                      {isLoadingLogos && !logos ? (
-                          <div className="flex flex-col items-center justify-center h-48 w-48">
-                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                              <p className="mt-2 text-muted-foreground">Loading logos...</p>
-                          </div>
-                      ) : isGeneratingLogo && !currentLogo ? (
-                          <div className="flex flex-col items-center justify-center h-48 w-48">
-                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                              <p className="mt-2 text-muted-foreground">Generating your logo...</p>
-                          </div>
-                      ) : currentLogo ? (
-                          <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
-                              <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
-                          </div>
-                      ) : (
-                          <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
-                              <p className="text-muted-foreground">Click the button to generate a logo.</p>
-                          </div>
-                      )}
+                    <div className="flex flex-col md:flex-row items-center justify-center w-full gap-8">
+                        {isLoadingLogos && !logos ? (
+                            <div className="flex flex-col items-center justify-center h-48 w-48">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <p className="mt-2 text-muted-foreground">Loading logos...</p>
+                            </div>
+                        ) : isGeneratingLogo && !currentLogo ? (
+                            <div className="flex flex-col items-center justify-center h-48 w-48">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <p className="mt-2 text-muted-foreground">Generating your logo...</p>
+                            </div>
+                        ) : currentLogo ? (
+                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
+                                <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
+                            </div>
+                        ) : (
+                            <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
+                                <p className="text-muted-foreground">Click the button to generate a logo.</p>
+                            </div>
+                        )}
+                        
+                        <div className="flex flex-col gap-2 text-center md:text-left">
+                           <h3 className="text-4xl font-bold">{brand.latestName}</h3>
+                            {isLoadingTaglines ? (
+                                <Skeleton className="h-6 w-3/4 mx-auto md:mx-0" />
+                            ): (
+                                <p className="text-lg text-muted-foreground">
+                                    {primaryTagline}
+                                </p>
+                            )}
+                        </div>
+                    </div>
 
-                      {logos && logos.length > 1 && (
-                          <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.min(logos.length - 1, prev + 1))} disabled={currentLogoIndex === logos.length - 1}>
-                              <ChevronRight />
-                          </Button>
-                      )}
-                  </div>
-                  
-                  {logos && logos.length > 1 && (
-                      <p className="text-sm text-muted-foreground">
-                          Logo {currentLogoIndex + 1} of {logos.length}
-                      </p>
-                  )}
-                  
-                  <div className="flex flex-col gap-2">
-                     <h3 className="text-4xl font-bold">{brand.latestName}</h3>
-                      {isLoadingTaglines ? (
-                          <Skeleton className="h-6 w-3/4 mx-auto" />
-                      ): (
-                          <p className="text-lg text-muted-foreground">
-                              {primaryTagline}
-                          </p>
-                      )}
-                  </div>
-
+                    {logos && logos.length > 1 && (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center justify-center w-full gap-4">
+                            <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
+                                <ChevronLeft />
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.min(logos.length - 1, prev + 1))} disabled={currentLogoIndex === logos.length - 1}>
+                                <ChevronRight />
+                            </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Logo {currentLogoIndex + 1} of {logos.length}
+                        </p>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
 
