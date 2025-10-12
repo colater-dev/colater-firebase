@@ -75,7 +75,7 @@ const colorizeLogoFlow = ai.defineFlow(
 
           Instructions:
           1.  Introduce 2-3 complementary, modern, and professional colors to the logo.
-          2.  The output image must be 256x256 pixels.
+          2.  The output image must be 160x160 pixels.
           3.  The final logo must be on a transparent background. Do not add a solid or patterned background.
           4.  Avoid gradients, thin lines, outlines, strokes, and textures.
           5.  Do not add any text to the logo.
