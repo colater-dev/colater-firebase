@@ -25,14 +25,14 @@ const BrandListItem = ({ brand }: { brand: Brand }) => (
                 <CardTitle>{brand.latestName}</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col md:flex-row items-center gap-4">
-                 <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-md flex items-center justify-center border group-hover:border-primary transition-colors">
+                 <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-md flex items-center justify-center group-hover:border-primary transition-colors">
                     {brand.logoUrl ? (
                         <Image
                             src={brand.logoUrl}
                             alt={`${brand.latestName} logo`}
                             width={80}
                             height={80}
-                            className="object-contain"
+                            className="object-contain rounded-md"
                             unoptimized={brand.logoUrl.startsWith('data:')}
                         />
                     ) : (
