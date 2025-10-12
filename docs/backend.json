@@ -146,7 +146,19 @@
           "logoUrl": {
             "type": "string",
             "format": "uri",
-            "description": "The data URI of the generated logo."
+            "description": "The data URI of the generated black and white logo."
+          },
+          "colorLogoUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The data URI of the generated color logo variant."
+          },
+          "palette": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "An array of hex color codes from the color logo."
           },
           "createdAt": {
             "type": "string",

@@ -14,16 +14,18 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { getTaglineSuggestions, getLogoSuggestion } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion, getColorizedLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Brand, Tagline, Logo } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function TaglinesPage() {
   const { brandId } = useParams();
@@ -32,7 +34,9 @@ export default function TaglinesPage() {
   const { toast } = useToast();
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+  const [isColorizing, setIsColorizing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
+  const [showColorLogo, setShowColorLogo] = useState(true);
 
   const brandRef = useMemoFirebase(
     () => user ? doc(firestore, `users/${user.uid}/brands`, brandId as string) : null,
@@ -57,6 +61,8 @@ export default function TaglinesPage() {
     [user, firestore, brandId]
   );
   const { data: logos, isLoading: isLoadingLogos } = useCollection<Logo>(logosQuery);
+
+  const currentLogo = logos?.[currentLogoIndex];
 
   const handleGenerateTaglines = useCallback(async () => {
     if (!brand || !user) return;
@@ -143,6 +149,43 @@ export default function TaglinesPage() {
     }
   }, [brand, user, brandId, firestore, toast]);
 
+  const handleColorizeLogo = useCallback(async () => {
+    if (!currentLogo || !user || !firestore) return;
+    setIsColorizing(true);
+    try {
+      const result = await getColorizedLogo(
+        currentLogo.logoUrl,
+        brand?.latestDesirableCues,
+        brand?.latestUndesirableCues
+      );
+
+      if (result.success && result.data) {
+        const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`, currentLogo.id);
+        await updateDoc(logoRef, {
+            colorLogoUrl: result.data.colorLogoUrl,
+            palette: result.data.palette
+        });
+        setShowColorLogo(true);
+        toast({
+            title: "Logo colorized!",
+            description: "A color version of your logo has been generated.",
+        });
+      } else {
+        throw new Error(result.error || "Failed to colorize logo.");
+      }
+    } catch (error) {
+        console.error('Error colorizing logo:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Colorization Failed',
+            description: (error instanceof Error) ? error.message : 'Could not colorize the logo.',
+        });
+    } finally {
+        setIsColorizing(false);
+    }
+  }, [currentLogo, user, brand, firestore, toast, brandId]);
+
+
   const handleTaglineStatusUpdate = useCallback(async (taglineId: string, status: 'liked' | 'disliked') => {
     if (!user) return;
     const taglineRef = doc(firestore, `users/${user.uid}/brands/${brandId}/taglineGenerations`, taglineId);
@@ -193,14 +236,17 @@ export default function TaglinesPage() {
 
   // Effect to update the brand's primary logoUrl when the paginated logo changes
   useEffect(() => {
-    if (logos && logos.length > 0 && brandRef && logos[currentLogoIndex] && logos[currentLogoIndex].logoUrl !== brand?.logoUrl) {
-      updateDoc(brandRef, { logoUrl: logos[currentLogoIndex].logoUrl });
+    if (logos && logos.length > 0 && brandRef && currentLogo) {
+        const logoToDisplay = (showColorLogo && currentLogo.colorLogoUrl) ? currentLogo.colorLogoUrl : currentLogo.logoUrl;
+        if (logoToDisplay !== brand?.logoUrl) {
+            updateDoc(brandRef, { logoUrl: logoToDisplay });
+        }
     }
-  }, [logos, currentLogoIndex, brandRef, brand?.logoUrl]);
+  }, [logos, currentLogoIndex, brandRef, brand?.logoUrl, currentLogo, showColorLogo]);
   
   const isLoading = isLoadingBrand || (isLoadingTaglines && !allTaglines);
 
-  const currentLogo = logos?.[currentLogoIndex];
+  const displayLogoUrl = currentLogo ? (showColorLogo && currentLogo.colorLogoUrl) ? currentLogo.colorLogoUrl : currentLogo.logoUrl : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -247,9 +293,14 @@ export default function TaglinesPage() {
                         <CardTitle className="flex items-center gap-2"><Wand2 className="text-primary" /> AI Generated Brand Identity</CardTitle>
                         <CardDescription>Your brand logo and primary tagline.</CardDescription>
                     </div>
-                    <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo} size="sm">
-                      {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate Logo'}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleColorizeLogo} disabled={isColorizing || !currentLogo || isGeneratingLogo}>
+                            {isColorizing ? <><Loader2 className="mr-2 animate-spin"/> Colorizing...</> : <><Palette className="mr-2" /> Colorise</>}
+                        </Button>
+                        <Button onClick={handleGenerateLogo} disabled={isGeneratingLogo}>
+                          {isGeneratingLogo ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : 'Regenerate Logo'}
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center text-center space-y-6">
                     
@@ -264,9 +315,9 @@ export default function TaglinesPage() {
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 <p className="mt-2 text-muted-foreground">Generating your logo...</p>
                             </div>
-                        ) : currentLogo ? (
+                        ) : displayLogoUrl ? (
                             <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48 -mr-12">
-                                <Image src={currentLogo.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
+                                <Image src={displayLogoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" unoptimized/>
                             </div>
                         ) : (
                             <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
@@ -285,22 +336,46 @@ export default function TaglinesPage() {
                             )}
                         </div>
                     </div>
-
-                    {logos && logos.length > 1 && (
-                      <div className="flex flex-col items-center gap-2 pt-6">
-                        <div className="flex items-center justify-center w-full gap-4">
-                            <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
-                                <ChevronLeft />
-                            </Button>
-                            <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.min(logos.length - 1, prev + 1))} disabled={currentLogoIndex === logos.length - 1}>
-                                <ChevronRight />
-                            </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Logo {currentLogoIndex + 1} of {logos.length}
-                        </p>
-                      </div>
-                    )}
+                    <div className="w-full space-y-4 pt-6 flex flex-col items-center">
+                        {currentLogo?.colorLogoUrl && (
+                           <div className="flex flex-col gap-4 items-center">
+                                <div className="flex items-center space-x-2">
+                                    <Label htmlFor="color-toggle">B&amp;W</Label>
+                                    <Switch
+                                        id="color-toggle"
+                                        checked={showColorLogo}
+                                        onCheckedChange={setShowColorLogo}
+                                    />
+                                    <Label htmlFor="color-toggle">Color</Label>
+                                </div>
+                                {showColorLogo && currentLogo.palette && (
+                                    <div className="flex items-center gap-4">
+                                        {currentLogo.palette.map((color, index) => (
+                                            <div key={index} className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: color }} />
+                                                <span className="text-sm font-mono text-muted-foreground">{color}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                           </div>
+                        )}
+                        {logos && logos.length > 1 && (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center justify-center w-full gap-4">
+                                    <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.max(0, prev - 1))} disabled={currentLogoIndex === 0}>
+                                        <ChevronLeft />
+                                    </Button>
+                                    <Button variant="outline" size="icon" onClick={() => setCurrentLogoIndex(prev => Math.min(logos.length - 1, prev + 1))} disabled={currentLogoIndex === logos.length - 1}>
+                                        <ChevronRight />
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Logo {currentLogoIndex + 1} of {logos.length}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
               </Card>
 

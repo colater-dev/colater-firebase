@@ -27,4 +27,6 @@ export interface Logo {
     userId: string;
     logoUrl: string;
     createdAt: any; // Firestore Timestamp
+    colorLogoUrl?: string;
+    palette?: string[];
 }
