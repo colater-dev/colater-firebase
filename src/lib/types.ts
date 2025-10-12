@@ -1,3 +1,4 @@
+
 export interface Brand {
     id: string;
     userId: string;
@@ -8,6 +9,7 @@ export interface Brand {
     latestDesirableCues: string;
     latestUndesirableCues: string;
     logoUrl?: string;
+    primaryTagline?: string;
 }
 
 export interface Tagline {
@@ -16,6 +18,7 @@ export interface Tagline {
     userId: string;
     tagline: string;
     createdAt: any; // Firestore Timestamp
+    status?: 'generated' | 'liked' | 'disliked';
 }
 
 export interface Logo {

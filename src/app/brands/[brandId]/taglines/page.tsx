@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -17,11 +17,12 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { getTaglineSuggestions, generateAndSaveLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Brand, Tagline, Logo } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export default function TaglinesPage() {
   const { brandId } = useParams();
@@ -45,7 +46,7 @@ export default function TaglinesPage() {
     ) : null,
     [user, firestore, brandId]
   );
-  const { data: taglines, isLoading: isLoadingTaglines } = useCollection<Tagline>(taglinesQuery);
+  const { data: allTaglines, isLoading: isLoadingTaglines } = useCollection<Tagline>(taglinesQuery);
 
   const logosQuery = useMemoFirebase(
     () => user ? query(
@@ -77,6 +78,7 @@ export default function TaglinesPage() {
             userId: user.uid,
             tagline,
             createdAt: serverTimestamp(),
+            status: 'generated',
           });
         });
         toast({
@@ -131,16 +133,46 @@ export default function TaglinesPage() {
     }
   }, [brand, user, brandId, toast]);
 
+  const handleTaglineStatusUpdate = useCallback(async (taglineId: string, status: 'liked' | 'disliked') => {
+    if (!user) return;
+    const taglineRef = doc(firestore, `users/${user.uid}/brands/${brandId}/taglineGenerations`, taglineId);
+    try {
+        await updateDoc(taglineRef, { status });
+    } catch (error) {
+        console.error(`Error updating tagline ${taglineId} status:`, error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not update the tagline status.',
+        });
+    }
+  }, [user, firestore, brandId, toast]);
+  
+  const visibleTaglines = useMemo(() => {
+    return allTaglines?.filter(t => t.status !== 'disliked') ?? [];
+  }, [allTaglines]);
+  
+  const likedTagline = useMemo(() => {
+    return visibleTaglines.find(t => t.status === 'liked');
+  }, [visibleTaglines]);
+
+  const primaryTagline = useMemo(() => {
+    const liked = likedTagline;
+    if (liked) return liked.tagline;
+    if (visibleTaglines.length > 0) return visibleTaglines[0].tagline;
+    return 'Your tagline will appear here.';
+  }, [visibleTaglines, likedTagline]);
+
   // Effect to generate initial content if it doesn't exist
   useEffect(() => {
-    if (brand && !isLoadingTaglines && taglines?.length === 0) {
+    if (brand && !isLoadingTaglines && allTaglines?.length === 0) {
         handleGenerateTaglines();
     }
     // Auto-generate logo if none exist
     if (brand && user && !isLoadingLogos && logos?.length === 0 && !isGeneratingLogo) {
         handleGenerateLogo();
     }
-  }, [brand, user, taglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
+  }, [brand, user, allTaglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
 
   // Effect to update the brand's primary logoUrl when the paginated logo changes
   useEffect(() => {
@@ -149,7 +181,7 @@ export default function TaglinesPage() {
     }
   }, [logos, currentLogoIndex, brandRef, brand?.logoUrl]);
   
-  const isLoading = isLoadingBrand || (isLoadingTaglines && !taglines);
+  const isLoading = isLoadingBrand || (isLoadingTaglines && !allTaglines);
 
   const currentLogo = logos?.[currentLogoIndex];
 
@@ -250,7 +282,7 @@ export default function TaglinesPage() {
                           <Skeleton className="h-6 w-3/4 mx-auto" />
                       ): (
                           <p className="text-lg text-muted-foreground">
-                              {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
+                              {primaryTagline}
                           </p>
                       )}
                   </div>
@@ -270,15 +302,23 @@ export default function TaglinesPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {isLoadingTaglines && taglines === null ? (
+                {isLoadingTaglines && visibleTaglines.length === 0 ? (
                     <div className="flex items-center justify-center h-40">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : taglines && taglines.length > 0 ? (
+                ) : visibleTaglines.length > 0 ? (
                     <ul className="space-y-4">
-                        {taglines.map((item) => (
-                            <li key={item.id} className="p-4 bg-muted/50 rounded-lg border">
-                                {item.tagline}
+                        {visibleTaglines.map((item) => (
+                            <li key={item.id} className="group flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                                <span>{item.tagline}</span>
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button size="icon" variant="ghost" onClick={() => handleTaglineStatusUpdate(item.id, 'liked')}>
+                                        <Star className={cn("h-5 w-5", item.status === 'liked' ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                                    </Button>
+                                     <Button size="icon" variant="ghost" onClick={() => handleTaglineStatusUpdate(item.id, 'disliked')}>
+                                        <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                                    </Button>
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -295,5 +335,3 @@ export default function TaglinesPage() {
     </div>
   );
 }
-
-    
