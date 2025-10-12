@@ -175,28 +175,32 @@ export default function TaglinesPage() {
                   </Button>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
-                    {isGeneratingLogo && !brand.logoUrl ? (
-                        <div className="flex flex-col items-center justify-center h-64 w-64">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="mt-2 text-muted-foreground">Generating your logo...</p>
+                    <div className="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-8 w-full">
+                        {isGeneratingLogo && !brand.logoUrl ? (
+                            <div className="flex flex-col items-center justify-center h-48 w-48">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <p className="mt-2 text-muted-foreground">Generating your logo...</p>
+                            </div>
+                        ) : brand.logoUrl ? (
+                            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-48 h-48">
+                                <Image src={brand.logoUrl} alt="Generated brand logo" width={192} height={192} className="object-contain" />
+                            </div>
+                        ) : (
+                            <div className="text-center flex items-center justify-center h-48 w-48 border-2 border-dashed rounded-lg">
+                                <p className="text-muted-foreground">Click the button to generate a logo.</p>
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-2">
+                           <h3 className="text-4xl font-bold">{brand.latestName}</h3>
+                            {isLoadingTaglines ? (
+                                <Skeleton className="h-6 w-3/4" />
+                            ): (
+                                <p className="text-lg text-muted-foreground">
+                                    {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
+                                </p>
+                            )}
                         </div>
-                    ) : brand.logoUrl ? (
-                        <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center p-4 w-64 h-64">
-                            <Image src={brand.logoUrl} alt="Generated brand logo" width={256} height={256} className="object-contain" />
-                        </div>
-                    ) : (
-                        <div className="text-center flex items-center justify-center h-64 w-64 border-2 border-dashed rounded-lg">
-                            <p className="text-muted-foreground">Click the button to generate a logo.</p>
-                        </div>
-                    )}
-                    <h3 className="text-2xl font-bold pt-4">{brand.latestName}</h3>
-                    {isLoadingTaglines ? (
-                        <Skeleton className="h-6 w-3/4" />
-                    ): (
-                        <p className="text-lg text-muted-foreground">
-                            {taglines && taglines.length > 0 ? taglines[0].tagline : 'Your tagline will appear here.'}
-                        </p>
-                    )}
+                    </div>
                 </CardContent>
               </Card>
 
