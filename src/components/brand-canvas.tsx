@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect, type FC, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, type FC } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  animate,
+} from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Check, Sparkles, LoaderCircle, Milestone } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 import type { CardData } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +28,9 @@ const BrandNameCard: FC<{
   return (
     <>
       <CardHeader>
-        <CardTitle className="font-headline">Let's start with your brand</CardTitle>
+        <CardTitle className="font-headline">
+          Let's start with your brand
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p>What is the name of your brand or product?</p>
@@ -60,7 +64,9 @@ const ElevatorPitchCard: FC<{
   return (
     <>
       <CardHeader>
-        <CardTitle className="font-headline">What's your elevator pitch?</CardTitle>
+        <CardTitle className="font-headline">
+          What's your elevator pitch?
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p>Describe your brand in a few sentences.</p>
@@ -89,7 +95,7 @@ const AudienceCard: FC<{
   isCompleted: boolean;
 }> = ({ onDone, isCompleted }) => {
   const [audience, setAudience] = useState("");
-  
+
   return (
     <>
       <CardHeader>
@@ -118,62 +124,78 @@ const AudienceCard: FC<{
   );
 };
 
-
 // --- Main Canvas Component ---
 
 export default function BrandCanvas() {
   const [cards, setCards] = useState<CardData[]>([]);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panX = useMotionValue(0);
+  const panY = useMotionValue(0);
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const centerOnCard = (card: CardData) => {
+    const { x, y, width, height } = card;
+    const newPanX = -x + (window.innerWidth - width) / 2;
+    const newPanY = -y + (window.innerHeight - height) / 2;
+
+    animate(panX, newPanX, { duration: 0.8, ease: "easeInOut" });
+    animate(panY, newPanY, { duration: 0.8, ease: "easeInOut" });
+  };
+
   useEffect(() => {
     // Center the first card on mount
-    const x = (window.innerWidth - CARD_WIDTH) / 2;
-    const y = window.innerHeight / 2 - 150;
-    setCards([
-      {
-        id: "brand-name",
-        type: "brand-name",
-        position: { x, y },
-        width: CARD_WIDTH,
-        height: 200,
-        data: {},
-      },
-    ]);
-  }, []);
+    const firstCard: CardData = {
+      id: "brand-name",
+      type: "brand-name",
+      position: { x: 0, y: 0 },
+      width: CARD_WIDTH,
+      height: 200,
+      data: {},
+    };
+    setCards([firstCard]);
+    // We position the card at 0,0 and pan the canvas to center it.
+    centerOnCard(firstCard);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       isPanning.current = true;
-      panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+      panStart.current = {
+        x: e.clientX - panX.get(),
+        y: e.clientY - panY.get(),
+      };
       e.currentTarget.style.cursor = "grabbing";
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isPanning.current) return;
-    setPan({
-      x: e.clientX - panStart.current.x,
-      y: e.clientY - panStart.current.y,
-    });
+    panX.set(e.clientX - panStart.current.x);
+    panY.set(e.clientY - panStart.current.y);
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-        isPanning.current = false;
+    if (isPanning.current) {
+      isPanning.current = false;
+      if (e.currentTarget) {
         e.currentTarget.style.cursor = "grab";
+      }
     }
   };
 
   const addCard = (newCard: CardData) => {
     setCards((prev) => [...prev, newCard]);
+    centerOnCard(newCard);
   };
-  
+
   const handleBrandNameDone = (brandName: string) => {
-    setCards(cs => cs.map(c => c.id === 'brand-name' ? {...c, data: {...c.data, completed: true}} : c))
+    setCards((cs) =>
+      cs.map((c) =>
+        c.id === "brand-name" ? { ...c, data: { ...c.data, completed: true } } : c
+      )
+    );
     const fromCard = cards.find((c) => c.id === "brand-name");
     if (!fromCard) return;
 
@@ -192,7 +214,13 @@ export default function BrandCanvas() {
   };
 
   const handlePitchDone = async (pitch: string) => {
-    setCards(cs => cs.map(c => c.id === 'elevator-pitch' ? {...c, data: {...c.data, completed: true}} : c))
+    setCards((cs) =>
+      cs.map((c) =>
+        c.id === "elevator-pitch"
+          ? { ...c, data: { ...c.data, completed: true } }
+          : c
+      )
+    );
     const fromCard = cards.find((c) => c.id === "elevator-pitch");
     if (!fromCard) return;
 
@@ -205,24 +233,43 @@ export default function BrandCanvas() {
       },
       width: CARD_WIDTH,
       height: 260,
-      data: { },
+      data: {},
       connections: ["elevator-pitch"],
     };
     addCard(audienceCard);
   };
 
   const handleAudienceDone = (audience: string) => {
-    setCards(cs => cs.map(c => c.id === 'audience' ? {...c, data: {...c.data, completed: true}} : c))
+    setCards((cs) =>
+      cs.map((c) =>
+        c.id === "audience" ? { ...c, data: { ...c.data, completed: true } } : c
+      )
+    );
   };
 
   const getCardComponent = (card: CardData) => {
     switch (card.type) {
       case "brand-name":
-        return <BrandNameCard onDone={handleBrandNameDone} isCompleted={!!card.data.completed} />;
+        return (
+          <BrandNameCard
+            onDone={handleBrandNameDone}
+            isCompleted={!!card.data.completed}
+          />
+        );
       case "elevator-pitch":
-        return <ElevatorPitchCard onDone={handlePitchDone} isCompleted={!!card.data.completed} />;
+        return (
+          <ElevatorPitchCard
+            onDone={handlePitchDone}
+            isCompleted={!!card.data.completed}
+          />
+        );
       case "audience":
-        return <AudienceCard onDone={handleAudienceDone} isCompleted={!!card.data.completed} />;
+        return (
+          <AudienceCard
+            onDone={handleAudienceDone}
+            isCompleted={!!card.data.completed}
+          />
+        );
       default:
         return null;
     }
@@ -239,8 +286,7 @@ export default function BrandCanvas() {
     >
       <motion.div
         className="relative w-full h-full"
-        animate={{ x: pan.x, y: pan.y }}
-        transition={{ type: "tween", ease: "linear", duration: 0 }}
+        style={{ x: panX, y: panY }}
       >
         <AnimatePresence>
           {cards.map((card) => (
@@ -256,28 +302,29 @@ export default function BrandCanvas() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Card className="shadow-2xl">
-                {getCardComponent(card)}
-              </Card>
+              <Card className="shadow-2xl">{getCardComponent(card)}</Card>
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
-      
+
       <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <motion.g animate={{ x: pan.x, y: pan.y }}>
+        <motion.g style={{ x: panX, y: panY }}>
           <AnimatePresence>
-            {cards.map(card =>
-              card.connections?.map(connId => {
-                const fromCard = cards.find(c => c.id === connId);
+            {cards.map((card) =>
+              card.connections?.map((connId) => {
+                const fromCard = cards.find((c) => c.id === connId);
                 if (!fromCard) return null;
 
+                // Adjust for card centering if needed by your layout logic
                 const x1 = fromCard.position.x + fromCard.width;
                 const y1 = fromCard.position.y + fromCard.height / 2;
                 const x2 = card.position.x;
                 const y2 = card.position.y + card.height / 2;
 
-                const pathData = `M ${x1} ${y1} C ${x1 + CARD_SPACING/2} ${y1}, ${x2 - CARD_SPACING/2} ${y2}, ${x2} ${y2}`;
+                const pathData = `M ${x1} ${y1} C ${
+                  x1 + CARD_SPACING / 2
+                } ${y1}, ${x2 - CARD_SPACING / 2} ${y2}, ${x2} ${y2}`;
 
                 return (
                   <motion.path
@@ -289,9 +336,13 @@ export default function BrandCanvas() {
                     strokeDasharray="4 4"
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.5, ease: "easeInOut" }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.5,
+                      ease: "easeInOut",
+                    }}
                   />
-                )
+                );
               })
             )}
           </AnimatePresence>
