@@ -11,10 +11,10 @@ import {
   query,
   orderBy,
   updateDoc,
+  addDoc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { getTaglineSuggestions, generateAndSaveLogo } from '@/app/actions';
+import { getTaglineSuggestions, getLogoSuggestion } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Sparkles, Wand2, ChevronLeft, ChevronRight, Star, Trash2 } from 'lucide-react';
@@ -23,6 +23,7 @@ import type { Brand, Tagline, Logo } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function TaglinesPage() {
   const { brandId } = useParams();
@@ -101,12 +102,10 @@ export default function TaglinesPage() {
   }, [brand, user, brandId, firestore, toast]);
 
   const handleGenerateLogo = useCallback(async () => {
-    if (!brand || !user) return;
+    if (!brand || !user || !firestore) return;
     setIsGeneratingLogo(true);
     try {
-      const result = await generateAndSaveLogo(
-        brandId as string,
-        user.uid,
+      const result = await getLogoSuggestion(
         brand.latestName,
         brand.latestElevatorPitch,
         brand.latestAudience,
@@ -114,10 +113,20 @@ export default function TaglinesPage() {
         brand.latestUndesirableCues
       );
       if (result.success && result.data) {
+        const logoData = {
+          brandId,
+          userId: user.uid,
+          logoUrl: result.data,
+          createdAt: serverTimestamp(),
+        };
+        const logosCollection = collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`);
+        await addDoc(logosCollection, logoData);
+        
         toast({
           title: "New logo generated!",
           description: "Your new brand logo has been saved.",
         });
+        setCurrentLogoIndex(0); // Reset to show the newest logo
       } else {
         throw new Error(result.error || "Failed to generate and save logo.");
       }
@@ -131,7 +140,7 @@ export default function TaglinesPage() {
     } finally {
         setIsGeneratingLogo(false);
     }
-  }, [brand, user, brandId, toast]);
+  }, [brand, user, brandId, firestore, toast]);
 
   const handleTaglineStatusUpdate = useCallback(async (taglineId: string, status: 'liked' | 'disliked') => {
     if (!user) return;
