@@ -2,6 +2,7 @@
 
 import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
+import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
 import { getAdminApp, getAdminStorage } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -48,6 +49,23 @@ export async function getLogoSuggestion(
     return {
       success: false,
       error: `An unexpected error occurred while generating a logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getBrandSuggestions(topic: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    if (!topic) {
+      return { success: false, error: "Topic is required." };
+    }
+    const result = await generateBrandDetails({ topic });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error generating brand suggestions:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while generating brand details: ${errorMessage}`,
     };
   }
 }
