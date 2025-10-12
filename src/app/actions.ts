@@ -4,6 +4,7 @@ import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
 import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
+import { uploadDataUriToStorage } from "@/lib/storage";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -33,14 +34,21 @@ export async function getLogoSuggestion(
   elevatorPitch: string,
   audience: string,
   desirableCues: string,
-  undesirableCues: string
+  undesirableCues: string,
+  userId: string,
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
     }
+    if (!userId) {
+      return { success: false, error: "User ID is required for storage." };
+    }
+
     const result = await generateLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
-    return { success: true, data: result.logoUrl };
+    const logoUrl = await uploadDataUriToStorage(result.logoUrl, userId);
+
+    return { success: true, data: logoUrl };
   } catch (error) {
     console.error("Error generating logo suggestion:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -70,14 +78,21 @@ export async function getBrandSuggestions(topic: string): Promise<{ success: boo
 
 
 export async function getColorizedLogo(
-  input: ColorizeLogoInput
+  input: ColorizeLogoInput,
+  userId: string,
 ): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
   try {
      if (!input.logoUrl || !input.name || !input.elevatorPitch || !input.audience) {
       return { success: false, error: "A logo and brand details are required to generate a color logo." };
     }
+    if (!userId) {
+      return { success: false, error: "User ID is required for storage." };
+    }
+
     const result = await colorizeLogo(input);
-    return { success: true, data: result };
+    const colorLogoUrl = await uploadDataUriToStorage(result.colorLogoUrl, userId);
+
+    return { success: true, data: { ...result, colorLogoUrl } };
   } catch (error) {
     console.error("Error colorizing logo:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
