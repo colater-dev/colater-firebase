@@ -143,15 +143,15 @@ export async function handleRedirectResult(authInstance: Auth) {
       // This is normal - either the user visited the page directly or is already signed in
       return null;
     }
-  } catch (error) {
+  } catch (error: any) {
     // Handle errors here, such as `auth/account-exists-with-different-credential`.
     console.error("Error handling redirect result:", error);
     sessionStorage.setItem('auth-debug-error', JSON.stringify({
       timestamp: new Date().toISOString(),
       error: {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
       }
     }));
     throw error;
