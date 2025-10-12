@@ -1,21 +1,23 @@
 "use server";
 
-import { generateTargetAudienceDemographics } from "@/ai/flows/generate-target-audience-demographics";
+import { generateTagline } from "@/ai/flows/generate-tagline";
 
-export async function getAudienceSuggestions(
-  elevatorPitch: string
-): Promise<{ success: boolean; data?: string[]; error?: string }> {
+export async function getTaglineSuggestion(
+  name: string,
+  elevatorPitch: string,
+  audience: string
+): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
-    if (!elevatorPitch.trim()) {
-      return { success: false, error: "Elevator pitch cannot be empty." };
+    if (!name || !elevatorPitch || !audience) {
+      return { success: false, error: "Brand details are required." };
     }
-    const result = await generateTargetAudienceDemographics({ elevatorPitch });
-    return { success: true, data: result.suggestedDemographics };
+    const result = await generateTagline({ name, elevatorPitch, audience });
+    return { success: true, data: result.tagline };
   } catch (error) {
-    console.error("Error generating audience suggestions:", error);
+    console.error("Error generating tagline suggestion:", error);
     return {
       success: false,
-      error: "An unexpected error occurred while generating suggestions.",
+      error: "An unexpected error occurred while generating a tagline.",
     };
   }
 }

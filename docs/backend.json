@@ -1,181 +1,158 @@
 {
   "entities": {
-    "BrandCanvas": {
+    "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BrandCanvas",
+      "title": "User Profile",
       "type": "object",
-      "description": "Represents the overall brand canvas and its associated cards.",
+      "description": "Represents a user's profile information.",
       "properties": {
-        "id": {
+        "email": {
           "type": "string",
-          "description": "Unique identifier for the Brand Canvas."
+          "format": "email",
+          "description": "The user's email address."
         },
-        "name": {
+        "createdAt": {
           "type": "string",
-          "description": "The name of the brand."
+          "format": "date-time",
+          "description": "The timestamp when the user profile was created."
         }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["email", "createdAt"]
     },
-    "Card": {
+    "Brand": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Card",
+      "title": "Brand",
       "type": "object",
-      "description": "Represents a single card within the brand canvas, containing a question and potentially an answer.",
+      "description": "Represents a single brand created by a user.",
       "properties": {
-        "id": {
+        "userId": {
           "type": "string",
-          "description": "Unique identifier for the Card."
+          "description": "The ID of the user who owns this brand."
         },
-        "brandCanvasId": {
+        "createdAt": {
           "type": "string",
-          "description": "Reference to BrandCanvas. (Relationship: BrandCanvas 1:N Card)"
+          "format": "date-time",
+          "description": "The timestamp when the brand was created."
         },
-        "question": {
+        "latestName": {
           "type": "string",
-          "description": "The question displayed on the card (e.g., 'What is your brand name?', 'What is your elevator pitch?')."
+          "description": "The latest name of the brand."
         },
-        "answer": {
+        "latestElevatorPitch": {
           "type": "string",
-          "description": "The user's answer to the question on the card."
+          "description": "The latest elevator pitch for the brand."
         },
-        "order": {
-          "type": "number",
-          "description": "The order of the card in the canvas."
-        },
-        "cardType": {
+        "latestAudience": {
           "type": "string",
-          "description": "The type of card such as 'Brand Name', 'Elevator Pitch', or 'Target Audience'."
+          "description": "The latest target audience for the brand."
         }
       },
-      "required": [
-        "id",
-        "brandCanvasId",
-        "question",
-        "order",
-        "cardType"
-      ]
+      "required": ["userId", "createdAt"]
     },
-    "TargetAudience": {
+    "BrandInputVersion": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "TargetAudience",
+      "title": "Brand Input Version",
       "type": "object",
-      "description": "Represents a target audience option, including AI-suggested demographics.",
+      "description": "Represents a single version of a brand input field (e.g., name, elevator pitch).",
       "properties": {
-        "id": {
+        "brandId": {
           "type": "string",
-          "description": "Unique identifier for the Target Audience."
+          "description": "The ID of the brand this input version belongs to."
         },
-        "cardId": {
+        "userId": {
           "type": "string",
-          "description": "Reference to Card. (Relationship: Card 1:N TargetAudience)"
+          "description": "The ID of the user who owns this input version."
         },
-        "name": {
+        "inputType": {
           "type": "string",
-          "description": "The name of the target audience (e.g., 'Millennials', 'Tech Enthusiasts')."
+          "enum": ["name", "elevatorPitch", "audience"],
+          "description": "The type of input this version represents."
         },
-        "isSelected": {
-          "type": "boolean",
-          "description": "Indicates whether this target audience is selected by the user."
+        "value": {
+          "type": "string",
+          "description": "The value of the input at this version."
         },
-        "isAiSuggested": {
-          "type": "boolean",
-          "description": "Indicates whether this target audience was suggested by AI."
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when this version was created."
         }
       },
-      "required": [
-        "id",
-        "cardId",
-        "name",
-        "isSelected",
-        "isAiSuggested"
-      ]
+      "required": ["brandId", "userId", "inputType", "value", "createdAt"]
+    },
+    "TaglineGeneration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tagline Generation",
+      "type": "object",
+      "description": "Represents an AI-generated tagline for a brand.",
+      "properties": {
+        "brandId": {
+          "type": "string",
+          "description": "The ID of the brand this tagline was generated for."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this tagline."
+        },
+        "tagline": {
+          "type": "string",
+          "description": "The generated tagline."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the tagline was generated."
+        }
+      },
+      "required": ["brandId", "userId", "tagline", "createdAt"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/brandCanvases/{brandCanvasId}",
+        "path": "/users/{userId}",
         "definition": {
-          "entityName": "BrandCanvas",
+          "entityName": "UserProfile",
           "schema": {
-            "$ref": "#/backend/entities/BrandCanvas"
+            "$ref": "#/entities/UserProfile"
           },
-          "description": "Stores BrandCanvas data. Path-based ownership: only the user with userId can access brandCanvases under /users/{userId}.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the BrandCanvas."
-            },
-            {
-              "name": "brandCanvasId",
-              "description": "The ID of the BrandCanvas."
-            }
-          ]
+          "description": "Stores public profile data for users."
         }
       },
       {
-        "path": "/users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}",
+        "path": "/users/{userId}/brands/{brandId}",
         "definition": {
-          "entityName": "Card",
+          "entityName": "Brand",
           "schema": {
-            "$ref": "#/backend/entities/Card"
+            "$ref": "#/entities/Brand"
           },
-          "description": "Stores Card data associated with a specific BrandCanvas. Path-based ownership: inherits access from its parent BrandCanvas, ensuring only the owner can access the cards.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the BrandCanvas and its associated cards."
-            },
-            {
-              "name": "brandCanvasId",
-              "description": "The ID of the BrandCanvas to which this card belongs."
-            },
-            {
-              "name": "cardId",
-              "description": "The ID of the Card."
-            }
-          ]
+          "description": "Stores brands created by users. Path-based ownership."
         }
       },
       {
-        "path": "/users/{userId}/brandCanvases/{brandCanvasId}/cards/{cardId}/targetAudiences/{targetAudienceId}",
+        "path": "/users/{userId}/brands/{brandId}/inputVersions/{versionId}",
         "definition": {
-          "entityName": "TargetAudience",
+          "entityName": "BrandInputVersion",
           "schema": {
-            "$ref": "#/backend/entities/TargetAudience"
+            "$ref": "#/entities/BrandInputVersion"
           },
-          "description": "Stores TargetAudience data associated with a specific Card. Path-based ownership: inherits access from its parent Card, ensuring only the owner can access the target audiences.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the BrandCanvas and its associated cards and target audiences."
-            },
-            {
-              "name": "brandCanvasId",
-              "description": "The ID of the BrandCanvas to which this card belongs."
-            },
-            {
-              "name": "cardId",
-              "description": "The ID of the Card to which this targetAudience belongs."
-            },
-            {
-              "name": "targetAudienceId",
-              "description": "The ID of the TargetAudience."
-            }
-          ]
+          "description": "Stores the history of changes for brand inputs. Inherits ownership from the parent brand."
+        }
+      },
+      {
+        "path": "/users/{userId}/brands/{brandId}/taglineGenerations/{generationId}",
+        "definition": {
+          "entityName": "TaglineGeneration",
+          "schema": {
+            "$ref": "#/entities/TaglineGeneration"
+          },
+          "description": "Stores AI-generated taglines for a brand. Inherits ownership from the parent brand."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to securely manage BrandCanvas, Cards, and TargetAudience entities while adhering to the principles of Authorization Independence and clear access control. It leverages path-based ownership for BrandCanvas and its related entities, ensuring that only the owning user can access and modify them.  \n\nThe structure is designed to facilitate simple, robust, and easily debuggable security rules. \n\n**Authorization Independence**: Achieved by using path-based ownership (`/users/{userId}/brandCanvases/{brandCanvasId}`). No `get()` calls are needed in security rules to verify ownership.\n\n**QAPs**: Secure list operations are supported because each user's data is stored under their own user ID, preventing unauthorized access to other users' canvases and cards.\n\nThe relationship BrandCanvas 1:N Card and Card 1:N TargetAudience are modeled with nested path ownership."
+    "reasoning": "This structure enforces data ownership by scoping all user-related data under `/users/{userId}`. Brands are a subcollection of users, and input versions and tagline generations are subcollections of brands, ensuring a clear ownership hierarchy and enabling straightforward security rules."
   }
 }

@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Check, Sparkles, LoaderCircle, Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CardData } from "@/lib/types";
-import { getAudienceSuggestions } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 
 const CARD_WIDTH = 384; // w-96
@@ -86,17 +85,11 @@ const ElevatorPitchCard: FC<{
 };
 
 const AudienceCard: FC<{
-  aiSuggestions: string[];
-  isLoading: boolean;
-}> = ({ aiSuggestions, isLoading }) => {
-  const fixedOptions = [
-    "Teenagers (13-18)",
-    "Young Adults (19-25)",
-    "Adults (26-45)",
-    "Middle-Aged (46-64)",
-    "Seniors (65+)",
-  ];
-
+  onDone: (audience: string) => void;
+  isCompleted: boolean;
+}> = ({ onDone, isCompleted }) => {
+  const [audience, setAudience] = useState("");
+  
   return (
     <>
       <CardHeader>
@@ -105,35 +98,21 @@ const AudienceCard: FC<{
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <h4 className="font-semibold text-sm text-muted-foreground">
-            General Demographics
-          </h4>
-          {fixedOptions.map((opt) => (
-            <div key={opt} className="flex items-center space-x-2">
-              <Checkbox id={opt} />
-              <Label htmlFor={opt}>{opt}</Label>
-            </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-accent" />
-            AI Suggestions
-          </h4>
-          {isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <LoaderCircle className="w-4 h-4 animate-spin" />
-              <span>Generating ideas...</span>
-            </div>
-          )}
-          {aiSuggestions.map((opt) => (
-            <div key={opt} className="flex items-center space-x-2">
-              <Checkbox id={opt} className="border-accent data-[state=checked]:bg-accent" />
-              <Label htmlFor={opt}>{opt}</Label>
-            </div>
-          ))}
-        </div>
+        <Textarea
+          placeholder="e.g., 'Tech-savvy millennials who value design and sustainability...'"
+          value={audience}
+          onChange={(e) => setAudience(e.target.value)}
+          disabled={isCompleted}
+          rows={4}
+        />
+        <Button
+          onClick={() => onDone(audience)}
+          disabled={!audience.trim() || isCompleted}
+          className="bg-primary hover:bg-primary/90"
+        >
+          <Check className="h-4 w-4" />
+          Done
+        </Button>
       </CardContent>
     </>
   );
@@ -225,36 +204,15 @@ export default function BrandCanvas() {
         y: fromCard.position.y + fromCard.height + CARD_SPACING,
       },
       width: CARD_WIDTH,
-      height: 450,
-      data: { aiSuggestions: [], isLoading: true },
+      height: 260,
+      data: { },
       connections: ["elevator-pitch"],
     };
     addCard(audienceCard);
+  };
 
-    const result = await getAudienceSuggestions(pitch);
-
-    if (result.success && result.data) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === "audience"
-            ? { ...c, data: { aiSuggestions: result.data, isLoading: false } }
-            : c
-        )
-      );
-    } else {
-      toast({
-        title: "AI Error",
-        description: result.error || "Could not generate suggestions.",
-        variant: "destructive",
-      });
-       setCards((prev) =>
-        prev.map((c) =>
-          c.id === "audience"
-            ? { ...c, data: { ...c.data, isLoading: false } }
-            : c
-        )
-      );
-    }
+  const handleAudienceDone = (audience: string) => {
+    setCards(cs => cs.map(c => c.id === 'audience' ? {...c, data: {...c.data, completed: true}} : c))
   };
 
   const getCardComponent = (card: CardData) => {
@@ -264,7 +222,7 @@ export default function BrandCanvas() {
       case "elevator-pitch":
         return <ElevatorPitchCard onDone={handlePitchDone} isCompleted={!!card.data.completed} />;
       case "audience":
-        return <AudienceCard aiSuggestions={card.data.aiSuggestions} isLoading={card.data.isLoading} />;
+        return <AudienceCard onDone={handleAudienceDone} isCompleted={!!card.data.completed} />;
       default:
         return null;
     }
