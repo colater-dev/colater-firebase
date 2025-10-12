@@ -6,35 +6,44 @@ import { getStorage, Storage } from "firebase-admin/storage";
 import { firebaseConfig } from "@/firebase/config";
 import "server-only";
 
+let adminApp: App;
+let adminStorage: Storage;
+
+// Helper function to get the initialization options
+function getInitOptions() {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        return {
+          credential: cert(serviceAccount),
+          storageBucket: `${serviceAccount.project_id}.appspot.com`,
+        };
+      } catch (e) {
+         console.error("Firebase Admin SDK: Error parsing service account key:", e);
+      }
+    }
+    // Fallback to Application Default Credentials and config for storage bucket
+    return {
+      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+    };
+}
+
+
 // Helper function to initialize the Firebase Admin app
 function initializeAdminApp(): App {
   try {
-    // Check if the app is already initialized
+    // If the app is already initialized, just return it.
     return getApp();
   } catch {
-    // If not initialized, try to initialize with Application Default Credentials
+    // Otherwise, initialize it with the correct options.
     try {
-      return initializeApp({
-        storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-      });
-    } catch (e: any) {
-        if (e.code === 'app/invalid-credential' && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-            // Fallback for environments where ADC is not set up but a service account key is provided
-            console.log("Initializing Firebase Admin with service account key...");
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-            return initializeApp({
-              credential: cert(serviceAccount),
-              storageBucket: `${serviceAccount.project_id}.appspot.com`,
-            });
-        }
+        return initializeApp(getInitOptions());
+    } catch (e) {
       console.error("Firebase Admin SDK initialization failed:", e);
       throw new Error("Could not initialize Firebase Admin SDK. Ensure Application Default Credentials or a service account key are set up correctly.");
     }
   }
 }
-
-let adminApp: App;
-let adminStorage: Storage;
 
 // Export a function to get the singleton app instance
 export function getAdminApp(): App {
