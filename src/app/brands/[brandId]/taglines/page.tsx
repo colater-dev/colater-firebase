@@ -52,7 +52,7 @@ export default function TaglinesPage() {
   const logosQuery = useMemoFirebase(
     () => user ? query(
         collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'asc') // Sort oldest to newest
     ) : null,
     [user, firestore, brandId]
   );
@@ -126,7 +126,8 @@ export default function TaglinesPage() {
           title: "New logo generated!",
           description: "Your new brand logo has been saved.",
         });
-        setCurrentLogoIndex(0); // Reset to show the newest logo
+        // The new logo will be the last one, so we don't need to set the index here.
+        // The `useEffect` below will handle setting the index when `logos` updates.
       } else {
         throw new Error(result.error || "Failed to generate and save logo.");
       }
@@ -183,9 +184,16 @@ export default function TaglinesPage() {
     }
   }, [brand, user, allTaglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
 
+  // When logos load or a new one is added, set index to the newest one (the last one).
+  useEffect(() => {
+    if (logos && logos.length > 0) {
+      setCurrentLogoIndex(logos.length - 1);
+    }
+  }, [logos?.length]); // Depend on the count of logos
+
   // Effect to update the brand's primary logoUrl when the paginated logo changes
   useEffect(() => {
-    if (logos && logos.length > 0 && brandRef && logos[currentLogoIndex].logoUrl !== brand?.logoUrl) {
+    if (logos && logos.length > 0 && brandRef && logos[currentLogoIndex] && logos[currentLogoIndex].logoUrl !== brand?.logoUrl) {
       updateDoc(brandRef, { logoUrl: logos[currentLogoIndex].logoUrl });
     }
   }, [logos, currentLogoIndex, brandRef, brand?.logoUrl]);
