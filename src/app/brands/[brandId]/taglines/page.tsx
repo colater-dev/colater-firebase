@@ -216,17 +216,6 @@ export default function TaglinesPage() {
     return 'Your tagline will appear here.';
   }, [visibleTaglines, likedTagline]);
 
-  // Effect to generate initial content if it doesn't exist
-  useEffect(() => {
-    if (brand && !isLoadingTaglines && allTaglines?.length === 0) {
-        handleGenerateTaglines();
-    }
-    // Auto-generate logo if none exist
-    if (brand && user && !isLoadingLogos && logos?.length === 0 && !isGeneratingLogo) {
-        handleGenerateLogo();
-    }
-  }, [brand, user, allTaglines, isLoadingTaglines, handleGenerateTaglines, logos, isLoadingLogos, isGeneratingLogo, handleGenerateLogo]);
-
   // When logos load or a new one is added, set index to the newest one (the last one).
   useEffect(() => {
     if (logos && logos.length > 0) {
