@@ -15,13 +15,18 @@ export const firebaseConfig = {
 
 
 /**
- * Initializes Firebase, creating a new app if one doesn't already exist.
- * This function ensures Firebase is initialized correctly in any environment (client or server).
+ * Initializes and/or returns the singleton FirebaseApp instance.
+ * Ensures Firebase is initialized correctly in any environment (client or server).
+ * This function is idempotent.
  * @returns The initialized FirebaseApp instance.
  */
 export function initializeFirebaseApp(): FirebaseApp {
-  if (getApps().length > 0) {
+  // If apps are already initialized, return the default app.
+  // This is safe for both client and server environments.
+  if (getApps().length) {
     return getApp();
   }
+  // Otherwise, initialize the app with the provided config.
+  // This will only run once.
   return initializeApp(firebaseConfig);
 }
