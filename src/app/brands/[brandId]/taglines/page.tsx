@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -11,7 +12,8 @@ import {
   orderBy,
   updateDoc,
 } from 'firebase/firestore';
-import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { getTaglineSuggestions, generateAndSaveLogo } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -293,3 +295,5 @@ export default function TaglinesPage() {
     </div>
   );
 }
+
+    
