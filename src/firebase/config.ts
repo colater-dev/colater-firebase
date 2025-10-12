@@ -3,14 +3,40 @@ import { initializeApp, getApps, FirebaseApp, getApp } from "firebase/app";
 
 // This is a public configuration and can be safely exposed.
 // Security is enforced by Firestore and Storage security rules.
-export const firebaseConfig = {
+const baseConfig = {
   "projectId": "studio-6830756272-ca1a2",
   "appId": "1:251098089151:web:7dfc5b869ff6e11af6e80a",
   "apiKey": "AIzaSyCVNej025Wh4yX0SP_Vl0ODl6Bq259CCFY",
-  "authDomain": "studio-6830756272-ca1a2.firebaseapp.com",
   "storageBucket": "studio-6830756272-ca1a2.appspot.com",
   "measurementId": "",
   "messagingSenderId": "251098089151"
+};
+
+// Environment-aware configuration
+export const firebaseConfig = {
+  ...baseConfig,
+  "authDomain": (() => {
+    if (typeof window === 'undefined') {
+      // Server-side rendering - use default
+      return "studio-6830756272-ca1a2.firebaseapp.com";
+    }
+    
+    const hostname = window.location.hostname;
+    
+    // For localhost development, use test.colater.com as auth domain
+    // This allows proper redirect handling since test.colater.com is already authorized
+    if (hostname === 'localhost') {
+      return "test.colater.com";
+    }
+    
+    // Custom domain (test.colater.com or production)
+    if (hostname === 'test.colater.com' || hostname.includes('colater.com')) {
+      return hostname; // Use the actual domain for custom domains
+    }
+    
+    // Default Firebase domain for other cases
+    return "studio-6830756272-ca1a2.firebaseapp.com";
+  })()
 };
 
 
