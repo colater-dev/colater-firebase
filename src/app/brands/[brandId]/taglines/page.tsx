@@ -153,13 +153,14 @@ export default function TaglinesPage() {
     if (!currentLogo || !user || !firestore || !brand) return;
     setIsColorizing(true);
     try {
-      const result = await getColorizedLogo(
-        brand.latestName,
-        brand.latestElevatorPitch,
-        brand.latestAudience,
-        brand.latestDesirableCues,
-        brand.latestUndesirableCues
-      );
+      const result = await getColorizedLogo({
+        logoUrl: currentLogo.logoUrl,
+        name: brand.latestName,
+        elevatorPitch: brand.latestElevatorPitch,
+        audience: brand.latestAudience,
+        desirableCues: brand.latestDesirableCues,
+        undesirableCues: brand.latestUndesirableCues,
+      });
 
       if (result.success && result.data) {
         const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`, currentLogo.id);
