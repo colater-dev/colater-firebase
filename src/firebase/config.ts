@@ -1,5 +1,5 @@
 
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { initializeApp, getApps, FirebaseApp, getApp } from "firebase/app";
 
 // This is a public configuration and can be safely exposed.
 // Security is enforced by Firestore and Storage security rules.
@@ -20,12 +20,8 @@ export const firebaseConfig = {
  * @returns The initialized FirebaseApp instance.
  */
 export function initializeFirebaseApp(): FirebaseApp {
-  const apps = getApps();
-  if (apps.length > 0) {
-    return apps[0];
+  if (getApps().length > 0) {
+    return getApp();
   }
-  
-  // In both client and server contexts for this setup, we must provide the config
-  // to ensure consistent and correct initialization.
   return initializeApp(firebaseConfig);
 }
