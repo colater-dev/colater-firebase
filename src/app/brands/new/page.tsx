@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { collection, serverTimestamp } from 'firebase/firestore';
-import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { useUser, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -68,7 +68,7 @@ export default function NewBrandPage() {
       };
 
       const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
-      const brandDocRef = await addDocumentNonBlocking(brandsCollection, brandData);
+      const brandDocRef = await addDoc(brandsCollection, brandData);
 
       if (!brandDocRef) {
         throw new Error('Failed to create brand document.');
