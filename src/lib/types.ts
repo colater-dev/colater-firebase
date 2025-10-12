@@ -1,9 +1,16 @@
-export interface CardData {
-  id: string;
-  type: "brand-name" | "elevator-pitch" | "audience" | "existing-brand" | "taglines";
-  position: { x: number; y: number };
-  width: number;
-  height: number;
-  data: { [key: string]: any };
-  connections?: string[];
+export interface Brand {
+    id: string;
+    userId: string;
+    createdAt: any; // Firestore Timestamp
+    latestName: string;
+    latestElevatorPitch: string;
+    latestAudience: string;
+}
+
+export interface Tagline {
+    id: string;
+    brandId: string;
+    userId: string;
+    tagline: string;
+    createdAt: any; // Firestore Timestamp
 }
