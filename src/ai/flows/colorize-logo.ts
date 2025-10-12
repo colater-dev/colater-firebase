@@ -85,7 +85,7 @@ const colorizeLogoFlow = ai.defineFlow(
         },
       ],
       config: {
-        responseModalities: ['IMAGE', 'TOOL_CALL'],
+        responseModalities: ['IMAGE'],
       },
       tools: [colorTool],
     });
