@@ -16,8 +16,7 @@ export const firebaseConfig = {
 
 /**
  * Initializes Firebase, creating a new app if one doesn't already exist.
- * This is a simplified function to be used where needed.
- * For client-side React components, initialization should happen once in the provider.
+ * This function ensures Firebase is initialized correctly in any environment (client or server).
  * @returns The initialized FirebaseApp instance.
  */
 export function initializeFirebaseApp(): FirebaseApp {
@@ -25,19 +24,8 @@ export function initializeFirebaseApp(): FirebaseApp {
   if (apps.length > 0) {
     return apps[0];
   }
-  // In a client-side context (like FirebaseProvider), App Hosting will auto-configure.
-  // In a server-side context (like a server action), we must provide the config.
-  // We check if window is defined to differentiate.
-  if (typeof window !== 'undefined') {
-    try {
-        // This will be auto-configured by App Hosting in production.
-        return initializeApp();
-    } catch (e) {
-        // Fallback for local dev where auto-config isn't present.
-        return initializeApp(firebaseConfig);
-    }
-  }
   
-  // If not in a browser (e.g., server action), initialize with the explicit config.
+  // In both client and server contexts for this setup, we must provide the config
+  // to ensure consistent and correct initialization.
   return initializeApp(firebaseConfig);
 }
