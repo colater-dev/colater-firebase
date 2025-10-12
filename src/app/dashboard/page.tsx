@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   collection,
   query,
@@ -18,13 +19,27 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => (
-    <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors">
-        <Card className="h-full">
-            <CardHeader>
+    <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors group">
+        <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
                 <CardTitle>{brand.latestName}</CardTitle>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">{brand.latestElevatorPitch}</p>
+            <CardContent className="flex-grow flex flex-col md:flex-row items-center gap-4">
+                 <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-md flex items-center justify-center border group-hover:border-primary transition-colors">
+                    {brand.logoUrl ? (
+                        <Image
+                            src={brand.logoUrl}
+                            alt={`${brand.latestName} logo`}
+                            width={80}
+                            height={80}
+                            className="object-contain"
+                            unoptimized={brand.logoUrl.startsWith('data:')}
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-muted/50 rounded-md" />
+                    )}
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
             </CardContent>
         </Card>
     </Link>
