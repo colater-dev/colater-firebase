@@ -269,6 +269,20 @@ export default function TaglinesPage() {
     }
   }, [brand, user, brandId, firestore, toast]);
 
+  // Automatically generate a logo if there are none.
+  useEffect(() => {
+    if (
+      !isLoadingLogos &&
+      logos &&
+      logos.length === 0 &&
+      brand &&
+      user &&
+      !isGeneratingLogo
+    ) {
+      handleGenerateLogo();
+    }
+  }, [isLoadingLogos, logos, brand, user, handleGenerateLogo, isGeneratingLogo]);
+
   const handleColorizeLogo = useCallback(async () => {
     if (!currentLogo || !user || !firestore || !brand) return;
     setIsColorizing(true);
