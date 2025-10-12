@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, type FC } from "react";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import type { CardData } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -128,6 +129,7 @@ const AudienceCard: FC<{
 
 export default function BrandCanvas() {
   const [cards, setCards] = useState<CardData[]>([]);
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
   const panX = useMotionValue(0);
   const panY = useMotionValue(0);
   const isPanning = useRef(false);
@@ -150,19 +152,13 @@ export default function BrandCanvas() {
   };
 
   useEffect(() => {
-    // Center the first card on mount
-    const firstCard: CardData = {
-      id: "brand-name",
-      type: "brand-name",
-      position: { x: 0, y: 0 },
-      width: CARD_WIDTH,
-      height: 200,
-      data: {},
-    };
-    setCards([firstCard]);
-    // We position the card at 0,0 and pan the canvas to center it.
-    // Use a timeout to ensure the container has dimensions.
-    setTimeout(() => centerOnCard(firstCard), 100);
+    // Center the view on initial load
+    if (containerRef.current && cards.length === 0) {
+      const containerWidth = containerRef.current.clientWidth;
+      const containerHeight = containerRef.current.clientHeight;
+      panX.set(containerWidth / 2);
+      panY.set(containerHeight / 2);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -189,6 +185,20 @@ export default function BrandCanvas() {
         e.currentTarget.style.cursor = "grab";
       }
     }
+  };
+
+  const handleCreateNewBrand = () => {
+    setIsCreatingBrand(true);
+    const firstCard: CardData = {
+      id: "brand-name",
+      type: "brand-name",
+      position: { x: 0, y: 0 },
+      width: CARD_WIDTH,
+      height: 200,
+      data: {},
+    };
+    setCards([firstCard]);
+    setTimeout(() => centerOnCard(firstCard), 100);
   };
 
   const addCard = (newCard: CardData) => {
@@ -314,6 +324,15 @@ export default function BrandCanvas() {
         </AnimatePresence>
       </motion.div>
 
+      {!isCreatingBrand && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Button size="lg" onClick={handleCreateNewBrand}>
+            <Plus className="mr-2 h-5 w-5" />
+            Create New Brand
+          </Button>
+        </div>
+      )}
+
       <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <motion.g style={{ x: panX, y: panY }}>
           <AnimatePresence>
@@ -377,3 +396,6 @@ export default function BrandCanvas() {
     </div>
   );
 }
+
+
+    
