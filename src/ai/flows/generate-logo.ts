@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a logo for a brand using AI.
@@ -44,12 +45,10 @@ const generateLogoFlow = ai.defineFlow(
   },
   async input => {
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
+      model: 'googleai/imagen-4.0-fast-generate-001',
       temperature: 0.8,
-      prompt: [
-        {
-          text: `
-          You are a world-class brand designer. Your task is to generate an icon for the brand described below.
+      prompt: `
+          Generate a modern, minimalist, and geometric vector-style icon for the brand described below.
 
           **Brand Details:**
           - **Brand Name:** ${input.name}
@@ -57,19 +56,14 @@ const generateLogoFlow = ai.defineFlow(
           - **Target Audience:** ${input.audience}
 
           **Design System & Style Guidelines:**
-          - **Overall Style:** Create a vector-style icon that is modern, minimalist, and geometric. The logo should be an abstract, symbolic entity.
-          - **Color:** The logo must use only black shapes against a transparent background.
-          - **Output Size:** The output image must be exactly 160x160 pixels.
-          - **Background:** The final logo must be on a transparent background. Do not add any color or patterns to the background.
-          - **Desirable Cues:** ${input.desirableCues || 'None'}
-          - **Undesirable Cues:** ${input.undesirableCues || 'None'}
-          - **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
-          `,
-        },
-      ],
-      config: {
-        responseModalities: ['IMAGE'],
-      },
+          - The logo must be a simple, abstract, and symbolic entity.
+          - The logo must use only black shapes against a transparent background.
+          - The output image must be exactly 160x160 pixels.
+          - Desirable Cues: ${input.desirableCues || 'None'}
+          - Undesirable Cues: ${input.undesirableCues || 'None'}
+          
+          **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
+        `,
     });
 
     if (!media?.url) {
