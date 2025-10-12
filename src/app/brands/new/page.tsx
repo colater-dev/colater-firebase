@@ -6,7 +6,7 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -55,41 +55,53 @@ export default function NewBrandPage() {
     }
 
     setIsSubmitting(true);
+    
+    const brandData = {
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      latestName: values.name,
+      latestElevatorPitch: values.elevatorPitch,
+      latestAudience: values.audience,
+      latestDesirableCues: values.desirableCues || '',
+      latestUndesirableCues: values.undesirableCues || '',
+    };
+    
+    const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
+    
+    addDoc(brandsCollection, brandData)
+      .then((brandDocRef) => {
+        if (!brandDocRef) {
+          throw new Error('Failed to create brand document.');
+        }
 
-    try {
-      const brandData = {
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-        latestName: values.name,
-        latestElevatorPitch: values.elevatorPitch,
-        latestAudience: values.audience,
-        latestDesirableCues: values.desirableCues || '',
-        latestUndesirableCues: values.undesirableCues || '',
-      };
+        toast({
+          title: 'Brand Created!',
+          description: 'Redirecting to generate taglines...',
+        });
 
-      const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
-      const brandDocRef = await addDoc(brandsCollection, brandData);
+        router.push(`/brands/${brandDocRef.id}/taglines`);
+      })
+      .catch((error) => {
+        setIsSubmitting(false);
 
-      if (!brandDocRef) {
-        throw new Error('Failed to create brand document.');
-      }
-
-      toast({
-        title: 'Brand Created!',
-        description: 'Redirecting to generate taglines...',
+        // Check if it's a permission error, otherwise show generic toast
+        if (error.code === 'permission-denied') {
+             // Construct and emit the specialized error for debugging
+             const permissionError = new FirestorePermissionError({
+                path: brandsCollection.path,
+                operation: 'create',
+                requestResourceData: brandData,
+             });
+             errorEmitter.emit('permission-error', permissionError);
+        } else {
+            console.error('Error creating brand:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Something went wrong',
+                description: (error instanceof Error) ? error.message : 'Could not save the brand.',
+            });
+        }
       });
-
-      router.push(`/brands/${brandDocRef.id}/taglines`);
-
-    } catch (error) {
-      console.error('Error creating brand:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Something went wrong',
-        description: (error instanceof Error) ? error.message : 'Could not save the brand.',
-      });
-      setIsSubmitting(false);
-    }
   };
 
   return (
