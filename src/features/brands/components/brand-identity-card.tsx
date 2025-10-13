@@ -63,7 +63,8 @@ export function BrandIdentityCard({
   useEffect(() => {
     if (currentLogo?.palette) {
       setHueShift(0);
-      handleHueChange([0]);
+      // Initialize displayedPalette with the original palette when logo changes
+      setDisplayedPalette(currentLogo.palette);
     } else {
       setDisplayedPalette(undefined);
     }
@@ -183,7 +184,7 @@ export function BrandIdentityCard({
                 />
                 <Label htmlFor="color-toggle">Color</Label>
               </div>
-              {showColorLogo && displayedPalette && (
+              {showColorLogo && displayedPalette && displayedPalette.length > 0 && (
                 <>
                   <Slider
                     defaultValue={[0]}
@@ -193,11 +194,11 @@ export function BrandIdentityCard({
                     onValueChange={handleHueChange}
                     value={[hueShift]}
                   />
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap justify-center">
                     {displayedPalette.map((color, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <div
-                          className="w-6 h-6 rounded-full border"
+                          className="w-6 h-6 rounded-full border border-gray-300"
                           style={{ backgroundColor: color }}
                         />
                         <span className="text-sm font-mono text-muted-foreground">

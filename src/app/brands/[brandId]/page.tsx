@@ -11,13 +11,14 @@ import {
   updateDoc,
   addDoc,
 } from 'firebase/firestore';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import {
   getTaglineSuggestions,
   getLogoSuggestion,
   getColorizedLogo,
   convertUrlToDataUri,
 } from '@/app/actions';
+import { uploadDataUriToStorageClient } from '@/lib/client-storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function BrandPage() {
   const { brandId } = useParams();
   const { user } = useUser();
   const firestore = useFirestore();
+  const { storage } = useFirebase();
   const { toast } = useToast();
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
@@ -146,22 +148,28 @@ export default function BrandPage() {
 
   // Logo handlers
   const handleGenerateLogo = useCallback(async () => {
-    if (!brand || !user || !firestore) return;
+    if (!brand || !user || !firestore || !storage) return;
     setIsGeneratingLogo(true);
     try {
+      // Get the data URI from the server action
       const result = await getLogoSuggestion(
         brand.latestName,
         brand.latestElevatorPitch,
         brand.latestAudience,
         brand.latestDesirableCues,
-        brand.latestUndesirableCues,
-        user.uid
+        brand.latestUndesirableCues
       );
       if (result.success && result.data) {
+        // Upload the data URI to Firebase Storage from client side
+        console.log('Uploading logo to Firebase Storage...');
+        const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
+        console.log('Logo uploaded successfully:', logoUrl);
+
+        // Save the public URL to Firestore
         const logoData = {
           brandId,
           userId: user.uid,
-          logoUrl: result.data,
+          logoUrl: logoUrl,
           createdAt: serverTimestamp(),
         };
         const logosCollection = collection(
@@ -187,7 +195,7 @@ export default function BrandPage() {
     } finally {
       setIsGeneratingLogo(false);
     }
-  }, [brand, user, brandId, firestore, toast]);
+  }, [brand, user, brandId, firestore, storage, toast]);
 
   // Auto-generate logo if there are none
   useEffect(() => {
@@ -204,7 +212,7 @@ export default function BrandPage() {
   }, [isLoadingLogos, logos, brand, user, handleGenerateLogo, isGeneratingLogo]);
 
   const handleColorizeLogo = useCallback(async () => {
-    if (!currentLogo || !user || !firestore || !brand) return;
+    if (!currentLogo || !user || !firestore || !brand || !storage) return;
     setIsColorizing(true);
     try {
       const dataUriResult = await convertUrlToDataUri(currentLogo.logoUrl);
@@ -212,22 +220,25 @@ export default function BrandPage() {
         throw new Error(dataUriResult.error || 'Failed to prepare image for colorization.');
       }
 
-      const result = await getColorizedLogo(
-        {
-          logoUrl: dataUriResult.data,
-          name: brand.latestName,
-          elevatorPitch: brand.latestElevatorPitch,
-          audience: brand.latestAudience,
-          desirableCues: brand.latestDesirableCues,
-          undesirableCues: brand.latestUndesirableCues,
-        },
-        user.uid
-      );
+      const result = await getColorizedLogo({
+        logoUrl: dataUriResult.data,
+        name: brand.latestName,
+        elevatorPitch: brand.latestElevatorPitch,
+        audience: brand.latestAudience,
+        desirableCues: brand.latestDesirableCues,
+        undesirableCues: brand.latestUndesirableCues,
+      });
 
       if (result.success && result.data) {
+        // Upload the colorized logo to Firebase Storage from client side
+        console.log('Uploading colorized logo to Firebase Storage...');
+        const colorLogoUrl = await uploadDataUriToStorageClient(result.data.colorLogoUrl, user.uid, storage);
+        console.log('Colorized logo uploaded successfully:', colorLogoUrl);
+
+        // Update the brand document with the colorized logo URL and palette
         const logoRef = brandService.getBrandDoc(user.uid, brandId as string);
         await updateDoc(logoRef, {
-          colorLogoUrl: result.data.colorLogoUrl,
+          colorLogoUrl: colorLogoUrl,
           palette: result.data.palette,
         });
         toast({
@@ -247,7 +258,7 @@ export default function BrandPage() {
     } finally {
       setIsColorizing(false);
     }
-  }, [currentLogo, user, brand, firestore, toast, brandId, brandService]);
+  }, [currentLogo, user, brand, firestore, storage, toast, brandId, brandService]);
 
   const handleTaglineStatusUpdate = useCallback(
     async (taglineId: string, status: 'liked' | 'disliked') => {

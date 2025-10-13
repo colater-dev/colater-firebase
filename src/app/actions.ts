@@ -36,7 +36,6 @@ export async function getLogoSuggestion(
   audience: string,
   desirableCues: string,
   undesirableCues: string,
-  userId: string,
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   console.log("getLogoSuggestion: Starting...");
   try {
@@ -44,11 +43,7 @@ export async function getLogoSuggestion(
       console.error("getLogoSuggestion: Missing brand details.");
       return { success: false, error: "Brand details are required." };
     }
-    if (!userId) {
-      console.error("getLogoSuggestion: Missing user ID.");
-      return { success: false, error: "User ID is required for storage." };
-    }
-    console.log("getLogoSuggestion: Brand details and userId are present.");
+    console.log("getLogoSuggestion: Brand details are present.");
 
     const result = await generateLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
     console.log("getLogoSuggestion: AI generation complete.");
@@ -59,12 +54,9 @@ export async function getLogoSuggestion(
     }
     // Log the beginning of the data URI to confirm it's what we expect
     console.log("getLogoSuggestion: Received data URI from AI:", result.logoUrl.substring(0, 100));
-    
-    console.log("getLogoSuggestion: Attempting to upload to storage...");
-    const logoUrl = await uploadDataUriToStorage(result.logoUrl, userId);
-    console.log("getLogoSuggestion: Upload successful. Public URL:", logoUrl);
 
-    return { success: true, data: logoUrl };
+    // Return the data URI directly - upload will happen on client side
+    return { success: true, data: result.logoUrl };
   } catch (error) {
     console.error("Error in getLogoSuggestion action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -118,20 +110,16 @@ export async function convertUrlToDataUri(url: string): Promise<{ success: boole
 
 export async function getColorizedLogo(
   input: ColorizeLogoInput,
-  userId: string,
 ): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
   try {
      if (!input.logoUrl || !input.name || !input.elevatorPitch || !input.audience) {
       return { success: false, error: "A logo and brand details are required to generate a color logo." };
     }
-    if (!userId) {
-      return { success: false, error: "User ID is required for storage." };
-    }
 
     const result = await colorizeLogo(input);
-    const colorLogoUrl = await uploadDataUriToStorage(result.colorLogoUrl, userId);
 
-    return { success: true, data: { ...result, colorLogoUrl } };
+    // Return the data URI directly - upload will happen on client side
+    return { success: true, data: result };
   } catch (error) {
     console.error("Error colorizing logo:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
