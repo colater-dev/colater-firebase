@@ -34,10 +34,9 @@ export async function generateLogoOpenAI(
   const result = await client.images.generate({
     model: 'gpt-image-1',
     prompt,
-    size: '512x512',
+    size: '1024x1024',
     background: 'transparent',
     quality: 'medium',
-    response_format: 'b64_json',
   });
 
   const image_base64 = (result as any).data?.[0]?.b64_json as string | undefined;
