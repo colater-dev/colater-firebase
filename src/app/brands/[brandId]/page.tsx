@@ -10,6 +10,7 @@ import {
   orderBy,
   updateDoc,
   addDoc,
+  doc,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import {
@@ -235,9 +236,12 @@ export default function BrandPage() {
         const colorLogoUrl = await uploadDataUriToStorageClient(result.data.colorLogoUrl, user.uid, storage);
         console.log('Colorized logo uploaded successfully:', colorLogoUrl);
 
-        // Update the brand document with the colorized logo URL and palette
-        const logoRef = brandService.getBrandDoc(user.uid, brandId as string);
-        await updateDoc(logoRef, {
+        // Update the current logo document with the colorized URL and palette so UI can display it
+        const currentLogoDocRef = doc(
+          firestore,
+          `users/${user.uid}/brands/${brandId}/logoGenerations/${currentLogo.id}`
+        );
+        await updateDoc(currentLogoDocRef, {
           colorLogoUrl: colorLogoUrl,
           palette: result.data.palette,
         });
