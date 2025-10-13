@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {getGenerateLogoPrompt} from '@/ai/prompts/generate-logo';
 
 const GenerateLogoInputSchema = z.object({
   name: z.string().describe('The name of the brand.'),
@@ -23,6 +24,7 @@ const GenerateLogoInputSchema = z.object({
     .string()
     .optional()
     .describe('Undesirable visual cues for the logo.'),
+  promptName: z.string().optional().describe('Optional prompt name to select a prompt variant'),
 });
 export type GenerateLogoInput = z.infer<typeof GenerateLogoInputSchema>;
 
@@ -44,29 +46,22 @@ const generateLogoFlow = ai.defineFlow(
     outputSchema: GenerateLogoOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
-      prompt: `
-        You are a world class brand designer. Design a modern, minimalist, and geometric vector-style icon for the brand described below.
-        **Brand Details:**
-        - **Brand Name:** ${input.name}
-        - **Brand Description:** ${input.elevatorPitch}
-        - **Target Audience:** ${input.audience}
+    const {key, prompt} = getGenerateLogoPrompt(input.promptName, input);
+    console.log(`[generate-logo] Prompt key: ${key}`);
 
-        **Design System & Style Guidelines:**
-        - The logo must be a simple, abstract, and symbolic. 
-        - It must be able to stand by itself as a logo, and evoke the sense of the brand.
-        - The logo must use only black shapes against a plain white background.
-        - You can combine shapes to create the logo, but avoid combining more than 2 shape ideas to avoid an overly complex design.
-        - Desirable Cues: ${input.desirableCues || 'None'}
-        - Undesirable Cues: ${input.undesirableCues || 'None'}
-        
-        **Things to AVOID:** Do not use gradients, thin lines, outlines, strokes, textures, multiple colors, or any form of realism. The logo must be a clean, vector-style graphic. Avoid overly literal interpretations.
-      `,
+    const tryGenerate = async () => ai.generate({
+      model: 'googleai/gemini-2.5-flash-image-preview',
+      prompt,
       config: {
         responseModalities: ['IMAGE'],
       },
     });
+
+    let {media} = await tryGenerate();
+    if (!media?.url) {
+      console.warn('[generate-logo] First attempt returned no media URL. Retrying once...');
+      ({media} = await tryGenerate());
+    }
 
     if (!media?.url) {
       throw new Error('Image generation failed to return a data URI.');
