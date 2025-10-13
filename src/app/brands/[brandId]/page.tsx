@@ -18,6 +18,7 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useFireb
 import {
   getTaglineSuggestions,
   getLogoSuggestion,
+  getLogoSuggestionOpenAI,
   getColorizedLogo,
   convertUrlToDataUri,
 } from '@/app/actions';
@@ -39,6 +40,7 @@ export default function BrandPage() {
   const { toast } = useToast();
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+  const [isGeneratingLogoOpenAI, setIsGeneratingLogoOpenAI] = useState(false);
   const [isColorizing, setIsColorizing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
 
@@ -197,6 +199,54 @@ export default function BrandPage() {
       });
     } finally {
       setIsGeneratingLogo(false);
+    }
+  }, [brand, user, brandId, firestore, storage, toast]);
+
+  const handleGenerateLogoOpenAI = useCallback(async () => {
+    if (!brand || !user || !firestore || !storage) return;
+    setIsGeneratingLogoOpenAI(true);
+    try {
+      const result = await getLogoSuggestionOpenAI(
+        brand.latestName,
+        brand.latestElevatorPitch,
+        brand.latestAudience,
+        brand.latestDesirableCues,
+        brand.latestUndesirableCues,
+        { size: '512x512' }
+      );
+      if (result.success && result.data) {
+        console.log('Uploading OpenAI logo to Firebase Storage...');
+        const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
+        console.log('OpenAI logo uploaded successfully:', logoUrl);
+
+        const logoData = {
+          brandId,
+          userId: user.uid,
+          logoUrl: logoUrl,
+          createdAt: serverTimestamp(),
+        };
+        const logosCollection = collection(
+          firestore,
+          `users/${user.uid}/brands/${brandId}/logoGenerations`
+        );
+        await addDoc(logosCollection, logoData);
+
+        toast({
+          title: 'New logo generated (OpenAI)!',
+          description: 'Your new brand logo has been saved.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to generate and save logo (OpenAI).');
+      }
+    } catch (error) {
+      console.error('Error generating OpenAI logo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Logo Generation Failed',
+        description: error instanceof Error ? error.message : 'Could not generate a new logo.',
+      });
+    } finally {
+      setIsGeneratingLogoOpenAI(false);
     }
   }, [brand, user, brandId, firestore, storage, toast]);
 
@@ -403,9 +453,11 @@ export default function BrandPage() {
               currentLogoIndex={currentLogoIndex}
               isLoadingLogos={isLoadingLogos}
               isGeneratingLogo={isGeneratingLogo}
+              isGeneratingLogoOpenAI={isGeneratingLogoOpenAI}
               isColorizing={isColorizing}
               isLoadingTaglines={isLoadingTaglines}
               onGenerateLogo={handleGenerateLogo}
+              onGenerateLogoOpenAI={handleGenerateLogoOpenAI}
               onColorizeLogo={handleColorizeLogo}
               onLogoIndexChange={setCurrentLogoIndex}
             />

@@ -31,9 +31,11 @@ interface BrandIdentityCardProps {
   currentLogoIndex: number;
   isLoadingLogos: boolean;
   isGeneratingLogo: boolean;
+  isGeneratingLogoOpenAI?: boolean;
   isColorizing: boolean;
   isLoadingTaglines: boolean;
   onGenerateLogo: () => void;
+  onGenerateLogoOpenAI?: () => void;
   onColorizeLogo: () => void;
   onLogoIndexChange: (index: number) => void;
 }
@@ -45,9 +47,11 @@ export function BrandIdentityCard({
   currentLogoIndex,
   isLoadingLogos,
   isGeneratingLogo,
+  isGeneratingLogoOpenAI,
   isColorizing,
   isLoadingTaglines,
   onGenerateLogo,
+  onGenerateLogoOpenAI,
   onColorizeLogo,
   onLogoIndexChange,
 }: BrandIdentityCardProps) {
@@ -120,9 +124,21 @@ export function BrandIdentityCard({
                 Generating...
               </>
             ) : (
-              'Another Logo'
+              'Logo (Gem)'
             )}
           </Button>
+          {onGenerateLogoOpenAI && (
+            <Button onClick={onGenerateLogoOpenAI} disabled={!!isGeneratingLogoOpenAI}>
+              {isGeneratingLogoOpenAI ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Logo (OAI)'
+              )}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6">

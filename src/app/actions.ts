@@ -6,6 +6,7 @@ import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
 import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
 import { uploadDataUriToStorage } from "@/lib/storage";
+import { generateLogoOpenAI } from "@/ai/flows/generate-logo-openai";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -64,6 +65,37 @@ export async function getLogoSuggestion(
       success: false,
       error: `An unexpected error occurred while generating a logo: ${errorMessage}`,
     };
+  }
+}
+
+export async function getLogoSuggestionOpenAI(
+  name: string,
+  elevatorPitch: string,
+  audience: string,
+  desirableCues: string,
+  undesirableCues: string,
+  options?: { size?: '512x512' | '768x768' | '1024x1024' }
+): Promise<{ success: boolean; data?: string; error?: string }> {
+  try {
+    if (!name || !elevatorPitch || !audience) {
+      return { success: false, error: "Brand details are required." };
+    }
+    const result = await generateLogoOpenAI({
+      name,
+      elevatorPitch,
+      audience,
+      desirableCues,
+      undesirableCues,
+      size: options?.size,
+    });
+    if (!result || !result.logoUrl) {
+      throw new Error("OpenAI image generation failed to return a result.");
+    }
+    return { success: true, data: result.logoUrl };
+  } catch (error) {
+    console.error("Error in getLogoSuggestionOpenAI action:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return { success: false, error: `An unexpected error occurred while generating a logo (OpenAI): ${errorMessage}` };
   }
 }
 
