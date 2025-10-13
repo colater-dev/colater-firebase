@@ -2,6 +2,7 @@ import type {GenerateLogoInput} from '@/ai/flows/generate-logo';
 import {buildPrompt as modernMinimal} from './modern-minimal';
 import {buildPrompt as geometricSymbol} from './geometric-symbol';
 import {buildPrompt as letterInitial} from './letter-initial';
+import {buildPrompt as threeD} from './three-d';
 
 type PromptBuilder = (input: GenerateLogoInput) => string;
 
@@ -22,5 +23,3 @@ export function getGenerateLogoPrompt(
   console.log(`[generate-logo] Using prompt: ${key}`);
   return { key, prompt: generateLogoPrompts[key](input) };
 }
-
-
