@@ -47,17 +47,17 @@ const generateLogoFlow = ai.defineFlow(
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',
       prompt: `
-        A modern, minimalist, and geometric vector-style icon for the brand described below.
-
+        You are a world class brand designer. Design a modern, minimalist, and geometric vector-style icon for the brand described below.
         **Brand Details:**
         - **Brand Name:** ${input.name}
         - **Brand Description:** ${input.elevatorPitch}
         - **Target Audience:** ${input.audience}
 
         **Design System & Style Guidelines:**
-        - The logo must be a simple, abstract, and symbolic entity.
-        - The logo must use only black shapes against a transparent background.
-        - The output image must be exactly 160x160 pixels.
+        - The logo must be a simple, abstract, and symbolic. 
+        - It must be able to stand by itself as a logo, and evoke the sense of the brand.
+        - The logo must use only black shapes against a plain white background.
+        - You can combine shapes to create the logo, but avoid combining more than 2 shape ideas to avoid an overly complex design.
         - Desirable Cues: ${input.desirableCues || 'None'}
         - Undesirable Cues: ${input.undesirableCues || 'None'}
         
