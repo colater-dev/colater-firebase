@@ -56,6 +56,7 @@ export function BrandIdentityCard({
   const [displayedPalette, setDisplayedPalette] = useState<string[] | undefined>(
     undefined
   );
+  const [contrast, setContrast] = useState(100);
 
   const currentLogo = logos?.[currentLogoIndex];
 
@@ -63,6 +64,7 @@ export function BrandIdentityCard({
   useEffect(() => {
     if (currentLogo?.palette) {
       setHueShift(0);
+      setContrast(100);
       // Initialize displayedPalette with the original palette when logo changes
       setDisplayedPalette(currentLogo.palette);
     } else {
@@ -126,35 +128,35 @@ export function BrandIdentityCard({
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6">
         <div className="flex flex-col md:flex-row items-center justify-center w-full gap-8">
           {isLoadingLogos && !logos ? (
-            <div className="flex flex-col items-center justify-center h-40 w-40">
+            <div className="flex flex-col items-center justify-center h-80 w-80">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="mt-2 text-muted-foreground">Loading logos...</p>
             </div>
           ) : isGeneratingLogo && !currentLogo ? (
-            <div className="flex flex-col items-center justify-center h-40 w-40">
+            <div className="flex flex-col items-center justify-center h-80 w-80">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="mt-2 text-muted-foreground">Generating your logo...</p>
             </div>
           ) : displayLogoUrl ? (
-            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-40 h-40">
+            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-80 h-80">
               <Image
                 src={displayLogoUrl}
                 alt="Generated brand logo"
-                width={160}
-                height={160}
+                width={320}
+                height={320}
                 className="object-contain"
                 unoptimized={displayLogoUrl.startsWith('data:')}
                 style={{
                   filter:
                     showColorLogo && currentLogo?.colorLogoUrl
-                      ? `hue-rotate(${hueShift}deg)`
+                      ? `hue-rotate(${hueShift}deg) contrast(${contrast}%)`
                       : 'none',
                 }}
               />
             </div>
           ) : (
             !isGeneratingLogo && (
-              <div className="text-center flex items-center justify-center h-40 w-40 border-2 border-dashed rounded-lg">
+              <div className="text-center flex items-center justify-center h-80 w-80 border-2 border-dashed rounded-lg">
                 <p className="text-muted-foreground">
                   Click the button to generate a logo.
                 </p>
@@ -184,6 +186,21 @@ export function BrandIdentityCard({
                 />
                 <Label htmlFor="color-toggle">Color</Label>
               </div>
+              {showColorLogo && (
+                <div className="w-full space-y-2">
+                  <Label htmlFor="contrast-slider">Contrast</Label>
+                  <Slider
+                    id="contrast-slider"
+                    defaultValue={[100]}
+                    min={50}
+                    max={150}
+                    step={1}
+                    className="w-full"
+                    onValueChange={(v) => setContrast(v[0])}
+                    value={[contrast]}
+                  />
+                </div>
+              )}
               {showColorLogo && displayedPalette && displayedPalette.length > 0 && (
                 <>
                   <Slider
@@ -198,7 +215,7 @@ export function BrandIdentityCard({
                     {displayedPalette.map((color, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <div
-                          className="w-6 h-6 rounded-full border border-gray-300"
+                          className="w-6 h-6 shrink-0 rounded-full border border-gray-300"
                           style={{ backgroundColor: color }}
                         />
                         <span className="text-sm font-mono text-muted-foreground">

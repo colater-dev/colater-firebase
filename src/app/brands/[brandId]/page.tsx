@@ -11,6 +11,8 @@ import {
   updateDoc,
   addDoc,
   doc,
+  writeBatch,
+  getDocs,
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import {
@@ -267,12 +269,34 @@ export default function BrandPage() {
   const handleTaglineStatusUpdate = useCallback(
     async (taglineId: string, status: 'liked' | 'disliked') => {
       if (!user) return;
-      const taglineRef = brandService.getBrandDoc(
-        user.uid,
-        `${brandId}/taglineGenerations/${taglineId}`
-      );
       try {
-        await updateDoc(taglineRef, { status });
+        // If liking one, un-like others in a batch to enforce single selection
+        if (status === 'liked') {
+          const taglinesCollection = collection(
+            firestore,
+            `users/${user.uid}/brands/${brandId}/taglineGenerations`
+          );
+          const snapshot = await getDocs(taglinesCollection);
+          const batch = writeBatch(firestore);
+          snapshot.forEach((docSnap) => {
+            const ref = doc(
+              firestore,
+              `users/${user.uid}/brands/${brandId}/taglineGenerations/${docSnap.id}`
+            );
+            if (docSnap.id === taglineId) {
+              batch.update(ref, { status: 'liked' });
+            } else if ((docSnap.data() as any).status === 'liked') {
+              batch.update(ref, { status: 'generated' });
+            }
+          });
+          await batch.commit();
+        } else {
+          const taglineRef = doc(
+            firestore,
+            `users/${user.uid}/brands/${brandId}/taglineGenerations/${taglineId}`
+          );
+          await updateDoc(taglineRef, { status });
+        }
       } catch (error) {
         console.error(`Error updating tagline ${taglineId} status:`, error);
         toast({
@@ -282,7 +306,28 @@ export default function BrandPage() {
         });
       }
     },
-    [user, brandId, toast, brandService]
+    [user, brandId, toast, firestore]
+  );
+
+  const handleTaglineEdit = useCallback(
+    async (taglineId: string, text: string) => {
+      if (!user) return;
+      try {
+        const taglineRef = doc(
+          firestore,
+          `users/${user.uid}/brands/${brandId}/taglineGenerations/${taglineId}`
+        );
+        await updateDoc(taglineRef, { tagline: text });
+      } catch (error) {
+        console.error(`Error editing tagline ${taglineId}:`, error);
+        toast({
+          variant: 'destructive',
+          title: 'Save Failed',
+          description: 'Could not save your edits.',
+        });
+      }
+    },
+    [user, brandId, firestore, toast]
   );
 
   // Computed values
@@ -371,6 +416,7 @@ export default function BrandPage() {
               isGenerating={isGeneratingTaglines}
               onGenerate={handleGenerateTaglines}
               onStatusUpdate={handleTaglineStatusUpdate}
+              onEdit={handleTaglineEdit}
             />
           </div>
         )}

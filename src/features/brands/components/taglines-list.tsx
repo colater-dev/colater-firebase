@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Loader2, Sparkles, Plus, Star, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Tagline } from '@/lib/types';
+import { useState, useCallback } from 'react';
 
 interface TaglinesListProps {
   taglines: Tagline[];
@@ -12,6 +13,7 @@ interface TaglinesListProps {
   isGenerating: boolean;
   onGenerate: () => void;
   onStatusUpdate: (taglineId: string, status: 'liked' | 'disliked') => void;
+  onEdit: (taglineId: string, text: string) => void;
 }
 
 export function TaglinesList({
@@ -20,7 +22,38 @@ export function TaglinesList({
   isGenerating,
   onGenerate,
   onStatusUpdate,
+  onEdit,
 }: TaglinesListProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+
+  const startEditing = useCallback((item: Tagline) => {
+    setEditingId(item.id);
+    setEditingValue(item.tagline);
+  }, []);
+
+  const stopEditing = useCallback(() => {
+    setEditingId(null);
+    setEditingValue('');
+  }, []);
+
+  const handleBlurSave = useCallback(() => {
+    if (editingId != null) {
+      onEdit(editingId, editingValue.trim());
+    }
+    stopEditing();
+  }, [editingId, editingValue, onEdit, stopEditing]);
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      if (e.key === 'Enter') {
+        (e.target as HTMLInputElement).blur();
+      } else if (e.key === 'Escape') {
+        stopEditing();
+      }
+    },
+    [stopEditing]
+  );
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between">
@@ -56,12 +89,52 @@ export function TaglinesList({
                 key={item.id}
                 className="group flex items-center justify-between p-4 bg-muted/50 rounded-lg border"
               >
-                <span>{item.tagline}</span>
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex-1 pr-4">
+                  {editingId === item.id ? (
+                    <input
+                      autoFocus
+                      className="w-full bg-transparent outline-none border-b border-transparent focus:border-border"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={handleBlurSave}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Edit tagline"
+                      aria-label="Edit tagline"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-left w-full"
+                      onClick={() => startEditing(item)}
+                    >
+                      {item.tagline}
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Swap order: delete first, then star */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onStatusUpdate(item.id, 'disliked')}
+                    className="transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                    aria-label="Delete tagline"
+                    title="Delete tagline"
+                  >
+                    <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => onStatusUpdate(item.id, 'liked')}
+                    className={cn(
+                      'transition-opacity',
+                      item.status === 'liked'
+                        ? 'opacity-100'
+                        : 'md:opacity-0 md:group-hover:opacity-100'
+                    )}
+                    aria-label={item.status === 'liked' ? 'Unstar tagline' : 'Star tagline'}
+                    title={item.status === 'liked' ? 'Unstar tagline' : 'Star tagline'}
                   >
                     <Star
                       className={cn(
@@ -71,13 +144,6 @@ export function TaglinesList({
                           : 'text-muted-foreground'
                       )}
                     />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => onStatusUpdate(item.id, 'disliked')}
-                  >
-                    <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
                   </Button>
                 </div>
               </li>
