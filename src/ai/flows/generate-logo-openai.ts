@@ -13,7 +13,7 @@ const OpenAIGenerateLogoInputSchema = z.object({
   promptName: z.string().optional(),
   size: z.enum(['512x512', '768x768', '1024x1024']).optional(),
   background: z.enum(['transparent', 'white']).optional(),
-  quality: z.enum(['standard', 'high', 'medium']).optional(),
+  quality: z.enum(['standard', 'hd']).optional(),
 });
 export type OpenAIGenerateLogoInput = z.infer<typeof OpenAIGenerateLogoInputSchema>;
 
@@ -36,7 +36,7 @@ export async function generateLogoOpenAI(
     prompt,
     size: '1024x1024',
     background: 'transparent',
-    quality: 'medium',
+    quality: 'standard',
   });
 
   const image_base64 = (result as any).data?.[0]?.b64_json as string | undefined;
