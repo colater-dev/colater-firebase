@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { getGenerateLogoPrompt } from '@/ai/prompts/generate-logo';
+import { getOpenAIClient } from '@/ai/openai';
 
 const OpenAIGenerateLogoInputSchema = z.object({
   name: z.string(),
@@ -11,6 +12,8 @@ const OpenAIGenerateLogoInputSchema = z.object({
   undesirableCues: z.string().optional(),
   promptName: z.string().optional(),
   size: z.enum(['512x512', '768x768', '1024x1024']).optional(),
+  background: z.enum(['transparent', 'white']).optional(),
+  quality: z.enum(['standard', 'high', 'medium']).optional(),
 });
 export type OpenAIGenerateLogoInput = z.infer<typeof OpenAIGenerateLogoInputSchema>;
 
@@ -27,41 +30,21 @@ export async function generateLogoOpenAI(
   const { key, prompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
   console.log(`[generate-logo-openai] Prompt key: ${key}`);
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set');
-  }
-
-  // Use the Images API with gpt-image-1 to generate a PNG and return as data URI
-  const response = await fetch('https://api.openai.com/v1/images', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-image-1',
-      prompt,
-      size: parsed.size ?? '512x512',
-      response_format: 'b64_json',
-    }),
+  const client = getOpenAIClient();
+  const result = await client.images.generate({
+    model: 'gpt-image-1',
+    prompt,
+    size: '512x512',
+    background: 'transparent',
+    quality: 'medium',
+    response_format: 'b64_json',
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error('[generate-logo-openai] OpenAI error:', errText);
-    throw new Error(`OpenAI image generation failed: ${response.status} ${response.statusText}`);
-  }
-
-  const json = (await response.json()) as {
-    data?: Array<{ b64_json?: string }>;
-  };
-
-  const b64 = json?.data?.[0]?.b64_json;
-  if (!b64) {
+  const image_base64 = (result as any).data?.[0]?.b64_json as string | undefined;
+  if (!image_base64) {
     throw new Error('OpenAI did not return image data.');
   }
 
-  const dataUri = `data:image/png;base64,${b64}`;
+  const dataUri = `data:image/png;base64,${image_base64}`;
   return { logoUrl: dataUri };
 }
