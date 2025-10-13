@@ -7,7 +7,7 @@ const baseConfig = {
   "projectId": process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "studio-6830756272-ca1a2",
   "appId": process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:251098089151:web:7dfc5b869ff6e11af6e80a",
   "apiKey": process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCVNej025Wh4yX0SP_Vl0ODl6Bq259CCFY",
-  "storageBucket": process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "studio-6830756272-ca1a2.appspot.com",
+  "storageBucket": process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "studio-6830756272-ca1a2.firebasestorage.app",
   "measurementId": "",
   "messagingSenderId": process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "251098089151"
 };
