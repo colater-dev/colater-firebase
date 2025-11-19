@@ -102,7 +102,7 @@ export function BrandIdentityCard({
         </div>
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant="light"
             onClick={onColorizeLogo}
             disabled={isColorizing || !currentLogo || isGeneratingLogo}
           >

@@ -52,8 +52,8 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                     src="/colater.png"
                     alt="Colater"
                     width={120}
-                    height={28}
-                    className="h-7 w-auto"
+                    height={36}
+                    className="h-8 w-auto"
                     priority
                 />
             </div>

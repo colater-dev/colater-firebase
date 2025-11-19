@@ -10,36 +10,46 @@ import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus } from 'lucide-react';
-import { ContentCard } from '@/components/layout';
 import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import type { Brand } from '@/lib/types';
 
-const BrandListItem = ({ brand }: { brand: Brand }) => (
-    <Link href={`/brands/${brand.id}`} className="block hover:bg-muted/50 rounded-lg transition-colors group">
-        <Card className="h-full flex flex-col">
-            <CardContent className="flex-grow flex flex-col p-6 gap-4">
-                <div className="flex items-center">
-                    <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                        {brand.logoUrl ? (
-                            <Image
-                                src={brand.logoUrl}
-                                alt={`${brand.latestName} logo`}
-                                width={64}
-                                height={64}
-                                className="object-contain rounded-md"
-                                unoptimized={brand.logoUrl.startsWith('data:')}
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-muted rounded-md" />
-                        )}
+import { getBrandFontStyle } from '@/config/brand-fonts';
+
+const BrandListItem = ({ brand }: { brand: Brand }) => {
+    const fontStyle = getBrandFontStyle(brand.id);
+
+    return (
+        <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
+            <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
+                <CardContent className="flex-grow flex flex-col p-6 gap-4">
+                    <div className="flex items-center">
+                        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+                            {brand.logoUrl ? (
+                                <Image
+                                    src={brand.logoUrl}
+                                    alt={`${brand.latestName} logo`}
+                                    width={64}
+                                    height={64}
+                                    className="object-contain rounded-md"
+                                    unoptimized={brand.logoUrl.startsWith('data:')}
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-muted rounded-md" />
+                            )}
+                        </div>
+                        <CardTitle
+                            className="text-xl ml-4"
+                            style={fontStyle}
+                        >
+                            {brand.latestName}
+                        </CardTitle>
                     </div>
-                    <CardTitle className="text-xl font-semibold group-hover:text-primary transition-colors ml-4">{brand.latestName}</CardTitle>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
-            </CardContent>
-        </Card>
-    </Link>
-);
+                    <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
+                </CardContent>
+            </Card>
+        </Link>
+    );
+};
 
 
 export default function Dashboard() {
@@ -63,7 +73,7 @@ export default function Dashboard() {
     }
 
     return (
-        <ContentCard>
+        <div className="min-h-screen pt-[72px] p-8">
             <div className="mb-8 flex justify-between items-center">
                 <h1 className="text-2xl font-bold">My Brands</h1>
                 <Button asChild>
@@ -102,6 +112,6 @@ export default function Dashboard() {
                     </Button>
                 </div>
             )}
-        </ContentCard>
+        </div>
     );
 }
