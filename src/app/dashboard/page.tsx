@@ -85,16 +85,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <CreateProjectCard />
                     {brands.map((brand) => (
-                        <Link
-                            key={brand.id}
-                            href={`/brands/${brand.id}`}
-                            className="block p-6 bg-white rounded-lg border hover:shadow-md transition-shadow"
-                        >
-                            <h2 className="text-xl font-semibold mb-2">{brand.latestName}</h2>
-                            {brand.latestElevatorPitch && (
-                                <p className="text-gray-600 line-clamp-2">{brand.latestElevatorPitch}</p>
-                            )}
-                        </Link>
+                        <BrandListItem key={brand.id} brand={brand} />
                     ))}
                 </div>
             )}
