@@ -24,12 +24,12 @@ import {
 } from '@/app/actions';
 import { uploadDataUriToStorageClient } from '@/lib/client-storage';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createBrandService } from '@/services';
 import { BrandHeader, BrandIdentityCard, TaglinesList } from '@/features/brands/components';
+import { ContentCard } from '@/components/layout';
 import type { Brand, Tagline, Logo } from '@/lib/types';
 
 export default function BrandPage() {
@@ -62,12 +62,12 @@ export default function BrandPage() {
     () =>
       user
         ? query(
-            collection(
-              firestore,
-              `users/${user.uid}/brands/${brandId}/taglineGenerations`
-            ),
-            orderBy('createdAt', 'desc')
-          )
+          collection(
+            firestore,
+            `users/${user.uid}/brands/${brandId}/taglineGenerations`
+          ),
+          orderBy('createdAt', 'desc')
+        )
         : null,
     [user, firestore, brandId]
   );
@@ -79,9 +79,9 @@ export default function BrandPage() {
     () =>
       user
         ? query(
-            collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`),
-            orderBy('createdAt', 'asc')
-          )
+          collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`),
+          orderBy('createdAt', 'asc')
+        )
         : null,
     [user, firestore, brandId]
   );
@@ -416,63 +416,53 @@ export default function BrandPage() {
   const isLoading = isLoadingBrand || (isLoadingTaglines && !allTaglines);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <header className="max-w-4xl mx-auto mb-8">
-        <Button variant="ghost" asChild>
-          <Link href="/dashboard">
-            <ArrowLeft className="mr-2" /> Back to Dashboard
-          </Link>
-        </Button>
-      </header>
+    <ContentCard>
+      {isLoading && (
+        <div className="text-center">
+          <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground mt-2">Loading brand details...</p>
+        </div>
+      )}
 
-      <main className="max-w-4xl mx-auto">
-        {isLoading && (
-          <div className="text-center">
-            <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground mt-2">Loading brand details...</p>
-          </div>
-        )}
+      {!isLoading && !brand && (
+        <div className="text-center p-8">
+          <h2 className="text-xl font-bold">Brand Not Found</h2>
+          <p className="text-muted-foreground mt-2">
+            We couldn't find the brand you're looking for.
+          </p>
+        </div>
+      )}
 
-        {!isLoading && !brand && (
-          <Card className="text-center p-8">
-            <CardTitle>Brand Not Found</CardTitle>
-            <CardDescription className="mt-2">
-              We couldn't find the brand you're looking for.
-            </CardDescription>
-          </Card>
-        )}
+      {brand && (
+        <div className="space-y-8">
+          <BrandHeader brand={brand} />
 
-        {brand && (
-          <div className="space-y-8">
-            <BrandHeader brand={brand} />
+          <BrandIdentityCard
+            brandName={brand.latestName}
+            primaryTagline={primaryTagline}
+            logos={logos}
+            currentLogoIndex={currentLogoIndex}
+            isLoadingLogos={isLoadingLogos}
+            isGeneratingLogo={isGeneratingLogo}
+            isGeneratingLogoOpenAI={isGeneratingLogoOpenAI}
+            isColorizing={isColorizing}
+            isLoadingTaglines={isLoadingTaglines}
+            onGenerateLogo={handleGenerateLogo}
+            onGenerateLogoOpenAI={handleGenerateLogoOpenAI}
+            onColorizeLogo={handleColorizeLogo}
+            onLogoIndexChange={setCurrentLogoIndex}
+          />
 
-            <BrandIdentityCard
-              brandName={brand.latestName}
-              primaryTagline={primaryTagline}
-              logos={logos}
-              currentLogoIndex={currentLogoIndex}
-              isLoadingLogos={isLoadingLogos}
-              isGeneratingLogo={isGeneratingLogo}
-              isGeneratingLogoOpenAI={isGeneratingLogoOpenAI}
-              isColorizing={isColorizing}
-              isLoadingTaglines={isLoadingTaglines}
-              onGenerateLogo={handleGenerateLogo}
-              onGenerateLogoOpenAI={handleGenerateLogoOpenAI}
-              onColorizeLogo={handleColorizeLogo}
-              onLogoIndexChange={setCurrentLogoIndex}
-            />
-
-            <TaglinesList
-              taglines={visibleTaglines}
-              isLoading={isLoadingTaglines}
-              isGenerating={isGeneratingTaglines}
-              onGenerate={handleGenerateTaglines}
-              onStatusUpdate={handleTaglineStatusUpdate}
-              onEdit={handleTaglineEdit}
-            />
-          </div>
-        )}
-      </main>
-    </div>
+          <TaglinesList
+            taglines={visibleTaglines}
+            isLoading={isLoadingTaglines}
+            isGenerating={isGeneratingTaglines}
+            onGenerate={handleGenerateTaglines}
+            onStatusUpdate={handleTaglineStatusUpdate}
+            onEdit={handleTaglineEdit}
+          />
+        </div>
+      )}
+    </ContentCard>
   );
 }
