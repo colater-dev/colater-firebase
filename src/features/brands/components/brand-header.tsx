@@ -75,12 +75,12 @@ export function BrandHeader({ brand }: BrandHeaderProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-none border-0 bg-transparent">
+      <CardHeader className="p-0">
         <CardTitle className="text-2xl md:text-3xl font-bold">{brand.latestName}</CardTitle>
         <CardDescription>{brand.latestElevatorPitch}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-0">
         <div className="space-y-2">
           <label className="text-sm font-semibold">Target Audience</label>
           <PillInput

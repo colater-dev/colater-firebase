@@ -16,7 +16,6 @@ import {
 } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import {
-  getTaglineSuggestions,
   getLogoSuggestion,
   getLogoSuggestionOpenAI,
   getLogoSuggestionFal,
@@ -28,11 +27,10 @@ import { uploadDataUriToStorageClient } from '@/lib/client-storage';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createBrandService } from '@/services';
-import { BrandHeader, BrandIdentityCard, TaglinesList } from '@/features/brands/components';
+import { BrandHeader, BrandIdentityCard } from '@/features/brands/components';
 import { ContentCard } from '@/components/layout';
-import type { Brand, Tagline, Logo } from '@/lib/types';
+import type { Brand, Logo } from '@/lib/types';
 
 export default function BrandPage() {
   const { brandId } = useParams();
@@ -40,7 +38,6 @@ export default function BrandPage() {
   const firestore = useFirestore();
   const { storage } = useFirebase();
   const { toast } = useToast();
-  const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [isGeneratingConcept, setIsGeneratingConcept] = useState(false);
   const [isColorizing, setIsColorizing] = useState(false);
@@ -60,22 +57,6 @@ export default function BrandPage() {
   );
   const { data: brand, isLoading: isLoadingBrand } = useDoc<Brand>(brandRef);
 
-  // Fetch taglines
-  const taglinesQuery = useMemoFirebase(
-    () =>
-      user
-        ? query(
-          collection(
-            firestore,
-            `users/${user.uid}/brands/${brandId}/taglineGenerations`
-          ),
-          orderBy('createdAt', 'desc')
-        )
-        : null,
-    [user, firestore, brandId]
-  );
-  const { data: allTaglines, isLoading: isLoadingTaglines } =
-    useCollection<Tagline>(taglinesQuery);
 
   // Fetch logos
   const logosQuery = useMemoFirebase(
@@ -92,67 +73,6 @@ export default function BrandPage() {
 
   const currentLogo = logos?.[currentLogoIndex];
 
-  // Tagline handlers
-  const handleGenerateTaglines = useCallback(async () => {
-    if (!brand || !user) return;
-    setIsGeneratingTaglines(true);
-
-    try {
-      const suggestionResult = await getTaglineSuggestions(
-        brand.latestName,
-        brand.latestElevatorPitch,
-        brand.latestAudience,
-        brand.latestDesirableCues,
-        brand.latestUndesirableCues
-      );
-
-      if (suggestionResult.success && suggestionResult.data) {
-        const taglinesCollection = collection(
-          firestore,
-          `users/${user.uid}/brands/${brandId}/taglineGenerations`
-        );
-        suggestionResult.data.forEach((tagline) => {
-          addDocumentNonBlocking(taglinesCollection, {
-            brandId,
-            userId: user.uid,
-            tagline,
-            createdAt: serverTimestamp(),
-            status: 'generated',
-          });
-        });
-        toast({
-          title: 'New taglines generated!',
-          description: 'They have been added to your list.',
-        });
-      } else {
-        throw new Error(suggestionResult.error || 'Failed to get tagline suggestions.');
-      }
-    } catch (error) {
-      console.error('Error generating taglines:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Tagline Generation Failed',
-        description:
-          error instanceof Error ? error.message : 'Could not generate new taglines.',
-      });
-    } finally {
-      setIsGeneratingTaglines(false);
-    }
-  }, [brand, user, brandId, firestore, toast]);
-
-  // Auto-generate taglines if there are none
-  useEffect(() => {
-    if (
-      !isLoadingTaglines &&
-      allTaglines &&
-      allTaglines.length === 0 &&
-      brand &&
-      user &&
-      !isGeneratingTaglines
-    ) {
-      handleGenerateTaglines();
-    }
-  }, [isLoadingTaglines, allTaglines, brand, user, handleGenerateTaglines, isGeneratingTaglines]);
 
   // Logo concept handler
   const handleGenerateConcept = useCallback(async () => {
@@ -320,85 +240,8 @@ export default function BrandPage() {
     }
   }, [currentLogo, user, brand, firestore, storage, toast, brandId, brandService]);
 
-  const handleTaglineStatusUpdate = useCallback(
-    async (taglineId: string, status: 'liked' | 'disliked') => {
-      if (!user) return;
-      try {
-        // If liking one, un-like others in a batch to enforce single selection
-        if (status === 'liked') {
-          const taglinesCollection = collection(
-            firestore,
-            `users/${user.uid}/brands/${brandId}/taglineGenerations`
-          );
-          const snapshot = await getDocs(taglinesCollection);
-          const batch = writeBatch(firestore);
-          snapshot.forEach((docSnap) => {
-            const ref = doc(
-              firestore,
-              `users/${user.uid}/brands/${brandId}/taglineGenerations/${docSnap.id}`
-            );
-            if (docSnap.id === taglineId) {
-              batch.update(ref, { status: 'liked' });
-            } else if ((docSnap.data() as any).status === 'liked') {
-              batch.update(ref, { status: 'generated' });
-            }
-          });
-          await batch.commit();
-        } else {
-          const taglineRef = doc(
-            firestore,
-            `users/${user.uid}/brands/${brandId}/taglineGenerations/${taglineId}`
-          );
-          await updateDoc(taglineRef, { status });
-        }
-      } catch (error) {
-        console.error(`Error updating tagline ${taglineId} status:`, error);
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: 'Could not update the tagline status.',
-        });
-      }
-    },
-    [user, brandId, toast, firestore]
-  );
-
-  const handleTaglineEdit = useCallback(
-    async (taglineId: string, text: string) => {
-      if (!user) return;
-      try {
-        const taglineRef = doc(
-          firestore,
-          `users/${user.uid}/brands/${brandId}/taglineGenerations/${taglineId}`
-        );
-        await updateDoc(taglineRef, { tagline: text });
-      } catch (error) {
-        console.error(`Error editing tagline ${taglineId}:`, error);
-        toast({
-          variant: 'destructive',
-          title: 'Save Failed',
-          description: 'Could not save your edits.',
-        });
-      }
-    },
-    [user, brandId, firestore, toast]
-  );
-
-  // Computed values
-  const visibleTaglines = useMemo(() => {
-    return allTaglines?.filter((t) => t.status !== 'disliked') ?? [];
-  }, [allTaglines]);
-
-  const likedTagline = useMemo(() => {
-    return visibleTaglines.find((t) => t.status === 'liked');
-  }, [visibleTaglines]);
-
-  const primaryTagline = useMemo(() => {
-    const liked = likedTagline;
-    if (liked) return liked.tagline;
-    if (visibleTaglines.length > 0) return visibleTaglines[0].tagline;
-    return 'Your tagline will appear here.';
-  }, [visibleTaglines, likedTagline]);
+  // Primary tagline - use brand's primary tagline or fallback
+  const primaryTagline = brand?.primaryTagline || 'Your tagline will appear here.';
 
   // Set index to newest logo when logos change
   useEffect(() => {
@@ -417,7 +260,7 @@ export default function BrandPage() {
     }
   }, [logos, currentLogoIndex, brandRef, brand?.logoUrl, currentLogo]);
 
-  const isLoading = isLoadingBrand || (isLoadingTaglines && !allTaglines);
+  const isLoading = isLoadingBrand;
 
   return (
     <ContentCard>
@@ -450,22 +293,13 @@ export default function BrandPage() {
             isGeneratingLogo={isGeneratingLogo}
             isGeneratingConcept={isGeneratingConcept}
             isColorizing={isColorizing}
-            isLoadingTaglines={isLoadingTaglines}
+            isLoadingTaglines={false}
             logoConcept={logoConcept}
             onGenerateConcept={handleGenerateConcept}
             onConceptChange={handleConceptChange}
             onGenerateLogo={handleGenerateLogo}
             onColorizeLogo={handleColorizeLogo}
             onLogoIndexChange={setCurrentLogoIndex}
-          />
-
-          <TaglinesList
-            taglines={visibleTaglines}
-            isLoading={isLoadingTaglines}
-            isGenerating={isGeneratingTaglines}
-            onGenerate={handleGenerateTaglines}
-            onStatusUpdate={handleTaglineStatusUpdate}
-            onEdit={handleTaglineEdit}
           />
         </div>
       )}

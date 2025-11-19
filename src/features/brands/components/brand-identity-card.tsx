@@ -105,8 +105,8 @@ export function BrandIdentityCard({
     : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-0">
+    <Card className="shadow-none border-0 bg-transparent">
+      <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-0 p-0">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="text-primary" /> AI Generated Brand Identity
@@ -145,7 +145,7 @@ export function BrandIdentityCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center text-center space-y-6">
+      <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
         <div className="flex flex-col md:flex-row items-center justify-center w-full gap-8">
           {isLoadingLogos && !logos ? (
             <div className="flex flex-col items-center justify-center h-80 w-80">
