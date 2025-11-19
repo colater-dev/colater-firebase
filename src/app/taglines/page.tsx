@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   collection,
@@ -26,7 +26,7 @@ import { Loader2 } from 'lucide-react';
 import type { Brand, Tagline } from '@/lib/types';
 import { useRequireAuth } from '@/features/auth/hooks';
 
-export default function TaglinesPage() {
+function TaglinesPageContent() {
   const { user, isLoading: isLoadingAuth } = useRequireAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -254,6 +254,23 @@ export default function TaglinesPage() {
         </div>
       </ContentCard>
     </div>
+  );
+}
+
+export default function TaglinesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen pt-[72px] p-4 md:p-8">
+        <ContentCard>
+          <div className="text-center py-8">
+            <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground mt-2">Loading...</p>
+          </div>
+        </ContentCard>
+      </div>
+    }>
+      <TaglinesPageContent />
+    </Suspense>
   );
 }
 

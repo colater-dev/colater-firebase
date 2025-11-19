@@ -282,8 +282,6 @@ export default function BrandPage() {
 
       {brand && (
         <div className="space-y-8">
-          <BrandHeader brand={brand} />
-
           <BrandIdentityCard
             brandName={brand.latestName}
             primaryTagline={primaryTagline}
@@ -301,6 +299,8 @@ export default function BrandPage() {
             onColorizeLogo={handleColorizeLogo}
             onLogoIndexChange={setCurrentLogoIndex}
           />
+
+          <BrandHeader brand={brand} />
         </div>
       )}
     </ContentCard>
