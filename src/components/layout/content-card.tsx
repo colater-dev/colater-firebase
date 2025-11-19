@@ -16,12 +16,12 @@ export function ContentCard({ children, className }: ContentCardProps) {
         <div
             className={cn(
                 'h-[calc(100vh-60px)] pt-[60px] px-2 pb-2 bg-[#f9f9f9] transition-all duration-300',
-                isOpen ? 'pl-[242px]' : 'pl-2'
+                isOpen ? 'md:pl-[242px]' : 'pl-2'
             )}
         >
             <div
                 className={cn(
-                    'bg-white rounded-xl shadow-[0px_0px_8px_-4px_rgba(0,0,0,0.25),0px_0px_0px_1px_rgba(0,0,0,0.02)] p-8 mx-auto h-full overflow-auto',
+                    'bg-white rounded-xl shadow-[0px_0px_8px_-4px_rgba(0,0,0,0.25),0px_0px_0px_1px_rgba(0,0,0,0.02)] p-4 md:p-8 mx-auto h-full overflow-auto',
                     className
                 )}
             >

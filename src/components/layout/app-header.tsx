@@ -38,7 +38,7 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 h-[60px] flex items-center justify-between px-6">
+        <header className="fixed top-0 left-0 right-0 z-50 h-[60px] flex items-center justify-between px-4 md:px-6">
             {/* Logo with menu icon */}
             <div className="flex items-center gap-3">
                 <button

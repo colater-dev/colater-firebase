@@ -56,7 +56,7 @@ export function TaglinesList({
   );
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-0">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="text-primary" /> AI Generated Taglines

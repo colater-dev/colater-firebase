@@ -97,14 +97,14 @@ export function BrandIdentityCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-0">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="text-primary" /> AI Generated Brand Identity
           </CardTitle>
           <CardDescription>Your brand logo and primary tagline.</CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="light"
             onClick={onColorizeLogo}
@@ -170,7 +170,7 @@ export function BrandIdentityCard({
               <p className="mt-2 text-muted-foreground">Generating your logo...</p>
             </div>
           ) : displayLogoUrl ? (
-            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-80 h-80">
+            <div className="aspect-square rounded-lg flex items-center justify-center p-4 w-full max-w-[320px] h-auto">
               <Image
                 src={displayLogoUrl}
                 alt="Generated brand logo"
@@ -188,7 +188,7 @@ export function BrandIdentityCard({
             </div>
           ) : (
             !isGeneratingLogo && (
-              <div className="text-center flex items-center justify-center h-80 w-80 border-2 border-dashed rounded-lg">
+              <div className="text-center flex items-center justify-center w-full max-w-[320px] aspect-square border-2 border-dashed rounded-lg">
                 <p className="text-muted-foreground">
                   Click the button to generate a logo.
                 </p>

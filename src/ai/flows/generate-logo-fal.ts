@@ -24,30 +24,44 @@ export async function generateLogoFal(
 ): Promise<FalGenerateLogoOutput> {
     const parsed = FalGenerateLogoInputSchema.parse(input);
 
-    const { key, prompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
-    console.log(`[generate-logo-fal] Prompt key: ${key}`);
-
     if (!process.env.FAL_KEY) {
         throw new Error('FAL_KEY environment variable is not set');
     }
 
+    fal.config({
+        credentials: process.env.FAL_KEY.trim(),
+    });
+
+    const stylePrompt = "Black and white smooth geometric icon. Sharp edges blended with smooth curves, flat vector style, no gradients. Symmetric, abstract, tech-forward, with a clean silhouette readable at tiny sizes. Monochrome only. Small margins";
+
+    // Sanitize inputs
+    const cleanName = parsed.name.replace(/[\r\n]+/g, " ").trim();
+    const cleanPitch = parsed.elevatorPitch.replace(/[\r\n]+/g, " ").trim();
+
+    let fullPrompt = `Logo for ${cleanName}. ${cleanPitch}. ${stylePrompt}`;
+
+    // Truncate prompt if too long (Ideogram usually handles long prompts, but safe limit is good)
+    if (fullPrompt.length > 2000) {
+        fullPrompt = fullPrompt.substring(0, 2000);
+    }
+
     try {
-        // Use Recraft V3 which is specifically designed for brand design and vector-style logos
-        const result: any = await fal.subscribe("fal-ai/recraft-v3", {
+        // Use Ideogram V3 as requested
+        const result: any = await fal.subscribe("fal-ai/ideogram/v3", {
             input: {
-                prompt,
-                image_size: { width: 640, height: 640 },
-                style: "vector_illustration",
+                prompt: fullPrompt,
+                image_size: {
+                    width: 720,
+                    height: 720
+                },
             },
             logs: true,
             onQueueUpdate: (update: any) => {
                 if (update.status === "IN_PROGRESS") {
-                    console.log(`[generate-logo-fal] Progress: ${update.logs?.map((log: any) => log.message).join('\n')}`);
+                    update.logs?.map((log: any) => log.message).forEach(console.log);
                 }
             },
         });
-
-        console.log(`[generate-logo-fal] Generation complete`);
 
         // Fal returns image URLs, we need to convert to data URI
         const imageUrl = result.data?.images?.[0]?.url;
@@ -62,12 +76,14 @@ export async function generateLogoFal(
         }
 
         const buffer = await response.arrayBuffer();
+        const contentType = response.headers.get('content-type') || 'image/png';
         const base64 = Buffer.from(buffer).toString('base64');
-        const dataUri = `data:image/png;base64,${base64}`;
+        const dataUri = `data:${contentType};base64,${base64}`;
 
         return { logoUrl: dataUri };
-    } catch (error) {
+    } catch (error: any) {
         console.error('[generate-logo-fal] Error:', error);
-        throw new Error(`Fal image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorDetails = error.body ? JSON.stringify(error.body) : error.message;
+        throw new Error(`Fal image generation failed: ${errorDetails}`);
     }
 }

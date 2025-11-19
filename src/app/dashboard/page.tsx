@@ -14,11 +14,11 @@ import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import type { Brand } from '@/lib/types';
 
 import { getBrandFontStyle } from '@/config/brand-fonts';
-import { getCachedImageUrl } from '@/lib/image-cache';
+
 
 const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontStyle = getBrandFontStyle(brand.id);
-    const cachedLogoUrl = getCachedImageUrl(brand.logoUrl);
+    const displayLogoUrl = brand.logoUrl;
 
     return (
         <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
@@ -26,14 +26,14 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                 <CardContent className="flex-grow flex flex-col p-6 gap-4">
                     <div className="flex items-center">
                         <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                            {cachedLogoUrl ? (
+                            {displayLogoUrl ? (
                                 <Image
-                                    src={cachedLogoUrl}
+                                    src={displayLogoUrl}
                                     alt={`${brand.latestName} logo`}
                                     width={64}
                                     height={64}
                                     className="object-contain rounded-md"
-                                    unoptimized={cachedLogoUrl.startsWith('data:')}
+                                    unoptimized={displayLogoUrl.startsWith('data:')}
                                 />
                             ) : (
                                 <div className="w-full h-full bg-muted rounded-md" />
@@ -75,8 +75,8 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen pt-[72px] p-8">
-            <div className="mb-8 flex justify-between items-center">
+        <div className="min-h-screen pt-[72px] p-4 md:p-8">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                 <h1 className="text-2xl font-bold">My Brands</h1>
                 <Button asChild>
                     <Link href="/brands/new">

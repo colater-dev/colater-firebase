@@ -77,7 +77,7 @@ export function BrandHeader({ brand }: BrandHeaderProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-3xl font-bold">{brand.latestName}</CardTitle>
+        <CardTitle className="text-2xl md:text-3xl font-bold">{brand.latestName}</CardTitle>
         <CardDescription>{brand.latestElevatorPitch}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
