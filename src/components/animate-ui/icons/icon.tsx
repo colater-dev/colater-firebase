@@ -402,12 +402,17 @@ function AnimateIcon({
     },
   );
 
-  // Filter out string refs as they're not compatible with Slot
-  const safeInViewRef = typeof inViewRef === 'string' ? undefined : inViewRef;
+  // Convert RefObject to callback ref for Slot component compatibility
+  // Explicitly type as RefCallback to avoid LegacyRef inference
+  const slotRef: React.RefCallback<HTMLElement> = React.useCallback((node: HTMLElement | null) => {
+    if (inViewRef && typeof inViewRef === 'object' && 'current' in inViewRef) {
+      (inViewRef as React.MutableRefObject<HTMLElement | null>).current = node;
+    }
+  }, [inViewRef]);
 
   const content = asChild ? (
     <Slot
-      ref={safeInViewRef as React.Ref<HTMLElement>}
+      ref={slotRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onPointerDown={handlePointerDown}

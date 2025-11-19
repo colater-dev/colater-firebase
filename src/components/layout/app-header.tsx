@@ -38,7 +38,7 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-[#f9f9f9] h-[72px] flex items-center justify-between px-6">
+        <header className="fixed top-0 left-0 right-0 z-50 h-[56px] flex items-center justify-between px-6">
             {/* Logo with menu icon */}
             <div className="flex items-center gap-3">
                 <button
@@ -52,8 +52,8 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                     src="/colater.png"
                     alt="Colater"
                     width={120}
-                    height={40}
-                    className="h-10 w-auto"
+                    height={28}
+                    className="h-7 w-auto"
                     priority
                 />
             </div>

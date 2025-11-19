@@ -34,7 +34,7 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     return (
         <aside
             className={cn(
-                'fixed left-0 top-[72px] h-[calc(100vh-72px)] w-[240px] bg-[#f9f9f9] z-40 transition-transform duration-300 ease-in-out',
+                'fixed left-0 top-[56px] h-[calc(100vh-56px)] w-[240px] bg-[#f9f9f9] z-40 transition-transform duration-300 ease-in-out',
                 isOpen ? 'translate-x-0' : '-translate-x-full'
             )}
         >
@@ -49,13 +49,13 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
                             href={item.href}
                             onClick={onClose}
                             className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                'flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                                 isActive
                                     ? 'bg-white text-black shadow-[0px_0px_0px_1px_rgba(0,0,0,0.02)]'
                                     : 'hover:bg-gray-50'
                             )}
                         >
-                            <Icon className={cn('h-5 w-5', isActive ? 'opacity-100' : 'opacity-40')} />
+                            <Icon className={cn('h-4 w-4', isActive ? 'opacity-100' : 'opacity-40')} />
                             <span className={cn(isActive ? 'opacity-100 text-black' : 'opacity-60 text-black')}>{item.name}</span>
                         </Link>
                     );

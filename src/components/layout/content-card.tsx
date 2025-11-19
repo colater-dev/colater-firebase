@@ -15,7 +15,7 @@ export function ContentCard({ children, className }: ContentCardProps) {
     return (
         <div
             className={cn(
-                'h-[calc(100vh-72px)] pt-[72px] px-2 pb-2 bg-[#f9f9f9] transition-all duration-300',
+                'h-[calc(100vh-60px)] pt-[60px] px-2 pb-2 bg-[#f9f9f9] transition-all duration-300',
                 isOpen ? 'pl-[242px]' : 'pl-2'
             )}
         >

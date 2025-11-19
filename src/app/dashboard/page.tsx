@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus } from 'lucide-react';
 import { ContentCard } from '@/components/layout';
+import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import type { Brand } from '@/lib/types';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => (
@@ -82,9 +83,18 @@ export default function Dashboard() {
 
             {!isLoadingBrands && brands && brands.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                    {brands.map(brand => (
-                        <BrandListItem key={brand.id} brand={brand} />
+                    <CreateProjectCard />
+                    {brands.map((brand) => (
+                        <Link
+                            key={brand.id}
+                            href={`/brands/${brand.id}`}
+                            className="block p-6 bg-white rounded-lg border hover:shadow-md transition-shadow"
+                        >
+                            <h2 className="text-xl font-semibold mb-2">{brand.latestName}</h2>
+                            {brand.latestElevatorPitch && (
+                                <p className="text-gray-600 line-clamp-2">{brand.latestElevatorPitch}</p>
+                            )}
+                        </Link>
                     ))}
                 </div>
             )}
