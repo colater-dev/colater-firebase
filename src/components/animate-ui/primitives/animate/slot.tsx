@@ -9,7 +9,7 @@ type AnyProps = Record<string, unknown>;
 type DOMMotionProps<T extends HTMLElement = HTMLElement> = Omit<
   HTMLMotionProps<keyof HTMLElementTagNameMap>,
   'ref'
-> & { ref?: React.Ref<T> };
+> & { ref?: Exclude<React.Ref<T>, string> };
 
 type WithAsChild<Base extends object> =
   | (Base & { asChild: true; children: React.ReactElement })
@@ -21,15 +21,16 @@ type SlotProps<T extends HTMLElement = HTMLElement> = {
 } & DOMMotionProps<T>;
 
 function mergeRefs<T>(
-  ...refs: (React.Ref<T> | undefined)[]
+  ...refs: (Exclude<React.Ref<T>, string> | undefined)[]
 ): React.RefCallback<T> {
   return (node) => {
     refs.forEach((ref) => {
       if (!ref) return;
       if (typeof ref === 'function') {
         ref(node);
-      } else {
-        (ref as React.RefObject<T | null>).current = node;
+      } else if (typeof ref === 'object' && ref !== null && 'current' in ref) {
+        // Type assertion needed because we know it's a MutableRefObject at this point
+        (ref as React.MutableRefObject<T | null>).current = node;
       }
     });
   };
@@ -83,7 +84,7 @@ function Slot<T extends HTMLElement = HTMLElement>({
   const mergedProps = mergeProps(childProps, props);
 
   return (
-    <Base {...mergedProps} ref={mergeRefs(childRef as React.Ref<T>, ref)} />
+    <Base {...mergedProps} ref={mergeRefs(childRef as Exclude<React.Ref<T>, string>, ref)} />
   );
 }
 
