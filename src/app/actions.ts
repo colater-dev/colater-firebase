@@ -9,6 +9,7 @@ import { uploadDataUriToStorage } from "@/lib/storage";
 import { generateLogoOpenAI } from "@/ai/flows/generate-logo-openai";
 import { generateLogoFal } from "@/ai/flows/generate-logo-fal";
 import { completeBrandDetails } from "@/ai/flows/complete-brand-details";
+import { generateLogoConcept } from "@/ai/flows/generate-logo-concept";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -48,7 +49,7 @@ export async function getLogoSuggestion(
     }
     console.log("getLogoSuggestion: Brand details are present.");
 
-    const result = await generateLogo({ name, elevatorPitch, audience, desirableCues, undesirableCues });
+    const result = await generateLogoFal({ name, elevatorPitch, audience, desirableCues, undesirableCues });
     console.log("getLogoSuggestion: AI generation complete.");
 
     if (!result || !result.logoUrl) {
@@ -76,7 +77,7 @@ export async function getLogoSuggestionOpenAI(
   audience: string,
   desirableCues: string,
   undesirableCues: string,
-  options?: { size?: '512x512' | '768x768' | '1024x1024' }
+  options?: { size?: '512x512' | '768x768' | '1024x1024'; concept?: string }
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
@@ -89,6 +90,7 @@ export async function getLogoSuggestionOpenAI(
       desirableCues,
       undesirableCues,
       size: options?.size,
+      concept: options?.concept,
     });
     if (!result || !result.logoUrl) {
       throw new Error("OpenAI image generation failed to return a result.");
@@ -107,6 +109,7 @@ export async function getLogoSuggestionFal(
   audience: string,
   desirableCues: string,
   undesirableCues: string,
+  concept?: string,
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
@@ -118,6 +121,7 @@ export async function getLogoSuggestionFal(
       audience,
       desirableCues,
       undesirableCues,
+      concept,
     });
     if (!result || !result.logoUrl) {
       throw new Error("Fal image generation failed to return a result.");
@@ -210,6 +214,29 @@ export async function getColorizedLogo(
     return {
       success: false,
       error: `An unexpected error occurred while colorizing the logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getLogoConcept(
+  name: string,
+  elevatorPitch: string,
+  audience: string,
+  desirableCues: string,
+  undesirableCues: string,
+): Promise<{ success: boolean; data?: { concept: string; stylePrompt: string }; error?: string }> {
+  try {
+    if (!name || !elevatorPitch || !audience) {
+      return { success: false, error: "Brand details are required." };
+    }
+    const result = await generateLogoConcept({ name, elevatorPitch, audience, desirableCues, undesirableCues });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error generating logo concept:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while generating logo concept: ${errorMessage}`,
     };
   }
 }

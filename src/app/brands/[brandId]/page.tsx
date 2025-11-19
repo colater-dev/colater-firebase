@@ -22,6 +22,7 @@ import {
   getLogoSuggestionFal,
   getColorizedLogo,
   convertUrlToDataUri,
+  getLogoConcept,
 } from '@/app/actions';
 import { uploadDataUriToStorageClient } from '@/lib/client-storage';
 import { Button } from '@/components/ui/button';
@@ -41,10 +42,10 @@ export default function BrandPage() {
   const { toast } = useToast();
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
-  const [isGeneratingLogoOpenAI, setIsGeneratingLogoOpenAI] = useState(false);
-  const [isGeneratingLogoFal, setIsGeneratingLogoFal] = useState(false);
+  const [isGeneratingConcept, setIsGeneratingConcept] = useState(false);
   const [isColorizing, setIsColorizing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
+  const [logoConcept, setLogoConcept] = useState<string | null>(null);
 
   // Initialize service
   const brandService = useMemo(() => createBrandService(firestore), [firestore]);
@@ -153,13 +154,12 @@ export default function BrandPage() {
     }
   }, [isLoadingTaglines, allTaglines, brand, user, handleGenerateTaglines, isGeneratingTaglines]);
 
-  // Logo handlers
-  const handleGenerateLogo = useCallback(async () => {
-    if (!brand || !user || !firestore || !storage) return;
-    setIsGeneratingLogo(true);
+  // Logo concept handler
+  const handleGenerateConcept = useCallback(async () => {
+    if (!brand) return;
+    setIsGeneratingConcept(true);
     try {
-      // Get the data URI from the server action
-      const result = await getLogoSuggestion(
+      const result = await getLogoConcept(
         brand.latestName,
         brand.latestElevatorPitch,
         brand.latestAudience,
@@ -167,12 +167,74 @@ export default function BrandPage() {
         brand.latestUndesirableCues
       );
       if (result.success && result.data) {
-        // Upload the data URI to Firebase Storage from client side
+        // Combine concept and stylePrompt for the editable textbox
+        const combinedConcept = `${result.data.concept}\n\nStyle Prompt: ${result.data.stylePrompt}`;
+        setLogoConcept(combinedConcept);
+        toast({
+          title: 'Brand concept generated!',
+          description: 'You can edit the concept before generating the logo.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to generate logo concept.');
+      }
+    } catch (error) {
+      console.error('Error generating logo concept:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Concept Generation Failed',
+        description: error instanceof Error ? error.message : 'Could not generate logo concept.',
+      });
+    } finally {
+      setIsGeneratingConcept(false);
+    }
+  }, [brand, toast]);
+
+  const handleConceptChange = useCallback((concept: string) => {
+    setLogoConcept(concept);
+  }, []);
+
+  // Logo generation handler
+  const handleGenerateLogo = useCallback(async (provider: 'gemini' | 'openai' | 'ideogram') => {
+    if (!brand || !user || !firestore || !storage || !logoConcept) return;
+    setIsGeneratingLogo(true);
+    try {
+      let result;
+      
+      if (provider === 'gemini') {
+        result = await getLogoSuggestion(
+          brand.latestName,
+          brand.latestElevatorPitch,
+          brand.latestAudience,
+          brand.latestDesirableCues,
+          brand.latestUndesirableCues
+        );
+      } else if (provider === 'openai') {
+        result = await getLogoSuggestionOpenAI(
+          brand.latestName,
+          brand.latestElevatorPitch,
+          brand.latestAudience,
+          brand.latestDesirableCues,
+          brand.latestUndesirableCues,
+          { size: '512x512', concept: logoConcept }
+        );
+      } else if (provider === 'ideogram') {
+        result = await getLogoSuggestionFal(
+          brand.latestName,
+          brand.latestElevatorPitch,
+          brand.latestAudience,
+          brand.latestDesirableCues,
+          brand.latestUndesirableCues,
+          logoConcept
+        );
+      } else {
+        throw new Error('Invalid provider');
+      }
+
+      if (result.success && result.data) {
         console.log('Uploading logo to Firebase Storage...');
         const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
         console.log('Logo uploaded successfully:', logoUrl);
 
-        // Save the public URL to Firestore
         const logoData = {
           brandId,
           userId: user.uid,
@@ -187,7 +249,7 @@ export default function BrandPage() {
 
         toast({
           title: 'New logo generated!',
-          description: 'Your new brand logo has been saved.',
+          description: `Your new brand logo has been saved (${provider}).`,
         });
       } else {
         throw new Error(result.error || 'Failed to generate and save logo.');
@@ -202,119 +264,9 @@ export default function BrandPage() {
     } finally {
       setIsGeneratingLogo(false);
     }
-  }, [brand, user, brandId, firestore, storage, toast]);
+  }, [brand, user, brandId, firestore, storage, toast, logoConcept]);
 
-  const handleGenerateLogoOpenAI = useCallback(async () => {
-    if (!brand || !user || !firestore || !storage) return;
-    setIsGeneratingLogoOpenAI(true);
-    try {
-      const result = await getLogoSuggestionOpenAI(
-        brand.latestName,
-        brand.latestElevatorPitch,
-        brand.latestAudience,
-        brand.latestDesirableCues,
-        brand.latestUndesirableCues,
-        { size: '512x512' }
-      );
-      if (result.success && result.data) {
-        console.log('Uploading OpenAI logo to Firebase Storage...');
-        const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
-        console.log('OpenAI logo uploaded successfully:', logoUrl);
-
-        const logoData = {
-          brandId,
-          userId: user.uid,
-          logoUrl: logoUrl,
-          createdAt: serverTimestamp(),
-        };
-        const logosCollection = collection(
-          firestore,
-          `users/${user.uid}/brands/${brandId}/logoGenerations`
-        );
-        await addDoc(logosCollection, logoData);
-
-        toast({
-          title: 'New logo generated (OpenAI)!',
-          description: 'Your new brand logo has been saved.',
-        });
-      } else {
-        throw new Error(result.error || 'Failed to generate and save logo (OpenAI).');
-      }
-    } catch (error) {
-      console.error('Error generating OpenAI logo:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Logo Generation Failed',
-        description: error instanceof Error ? error.message : 'Could not generate a new logo.',
-      });
-    } finally {
-      setIsGeneratingLogoOpenAI(false);
-    }
-  }, [brand, user, brandId, firestore, storage, toast]);
-
-  const handleGenerateLogoFal = useCallback(async () => {
-    if (!brand || !user) return;
-    setIsGeneratingLogoFal(true);
-    try {
-      const result = await getLogoSuggestionFal(
-        brand.latestName,
-        brand.latestElevatorPitch,
-        brand.latestAudience,
-        brand.latestDesirableCues,
-        brand.latestUndesirableCues
-      );
-
-      if (result.success && result.data) {
-        // Upload the logo to Firebase Storage from client side
-        console.log('Uploading logo to Firebase Storage...');
-        const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
-        console.log('Logo uploaded successfully:', logoUrl);
-
-        // Save the public URL to Firestore
-        const logoData = {
-          brandId,
-          userId: user.uid,
-          logoUrl: logoUrl,
-          createdAt: serverTimestamp(),
-        };
-        const logosCollection = collection(
-          firestore,
-          `users/${user.uid}/brands/${brandId}/logoGenerations`
-        );
-        await addDoc(logosCollection, logoData);
-
-        toast({
-          title: 'New logo generated!',
-          description: 'Your new brand logo has been saved (Fal).',
-        });
-      } else {
-        throw new Error(result.error || 'Failed to generate logo.');
-      }
-    } catch (error) {
-      console.error('Error generating logo (Fal):', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Could not generate the logo.',
-      });
-    } finally {
-      setIsGeneratingLogoFal(false);
-    }
-  }, [brand, user, storage, firestore, brandId, toast]);
-
-  // Auto-generate logo if there are none
-  useEffect(() => {
-    if (
-      !isLoadingLogos &&
-      logos &&
-      logos.length === 0 &&
-      brand &&
-      user &&
-      !isGeneratingLogo
-    ) {
-      handleGenerateLogo();
-    }
-  }, [isLoadingLogos, logos, brand, user, handleGenerateLogo, isGeneratingLogo]);
+  // Note: Removed auto-generate logo - user must generate concept first
 
   const handleColorizeLogo = useCallback(async () => {
     if (!currentLogo || !user || !firestore || !brand || !storage) return;
@@ -496,13 +448,13 @@ export default function BrandPage() {
             currentLogoIndex={currentLogoIndex}
             isLoadingLogos={isLoadingLogos}
             isGeneratingLogo={isGeneratingLogo}
-            isGeneratingLogoOpenAI={isGeneratingLogoOpenAI}
-            isGeneratingLogoFal={isGeneratingLogoFal}
+            isGeneratingConcept={isGeneratingConcept}
             isColorizing={isColorizing}
             isLoadingTaglines={isLoadingTaglines}
+            logoConcept={logoConcept}
+            onGenerateConcept={handleGenerateConcept}
+            onConceptChange={handleConceptChange}
             onGenerateLogo={handleGenerateLogo}
-            onGenerateLogoOpenAI={handleGenerateLogoOpenAI}
-            onGenerateLogoFal={handleGenerateLogoFal}
             onColorizeLogo={handleColorizeLogo}
             onLogoIndexChange={setCurrentLogoIndex}
           />

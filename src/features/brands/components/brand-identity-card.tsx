@@ -14,6 +14,14 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Loader2,
   Wand2,
@@ -31,13 +39,13 @@ interface BrandIdentityCardProps {
   currentLogoIndex: number;
   isLoadingLogos: boolean;
   isGeneratingLogo: boolean;
-  isGeneratingLogoOpenAI?: boolean;
-  isGeneratingLogoFal?: boolean;
+  isGeneratingConcept: boolean;
   isColorizing: boolean;
   isLoadingTaglines: boolean;
-  onGenerateLogo: () => void;
-  onGenerateLogoOpenAI?: () => void;
-  onGenerateLogoFal?: () => void;
+  logoConcept: string | null;
+  onGenerateConcept: () => void;
+  onConceptChange: (concept: string) => void;
+  onGenerateLogo: (provider: 'gemini' | 'openai' | 'ideogram') => void;
   onColorizeLogo: () => void;
   onLogoIndexChange: (index: number) => void;
 }
@@ -49,13 +57,13 @@ export function BrandIdentityCard({
   currentLogoIndex,
   isLoadingLogos,
   isGeneratingLogo,
-  isGeneratingLogoOpenAI,
-  isGeneratingLogoFal,
+  isGeneratingConcept,
   isColorizing,
   isLoadingTaglines,
+  logoConcept,
+  onGenerateConcept,
+  onConceptChange,
   onGenerateLogo,
-  onGenerateLogoOpenAI,
-  onGenerateLogoFal,
   onColorizeLogo,
   onLogoIndexChange,
 }: BrandIdentityCardProps) {
@@ -65,6 +73,7 @@ export function BrandIdentityCard({
     undefined
   );
   const [contrast, setContrast] = useState(100);
+  const [selectedProvider, setSelectedProvider] = useState<'gemini' | 'openai' | 'ideogram'>('ideogram');
 
   const currentLogo = logos?.[currentLogoIndex];
 
@@ -121,40 +130,19 @@ export function BrandIdentityCard({
               </>
             )}
           </Button>
-          <Button onClick={onGenerateLogo} disabled={isGeneratingLogo}>
-            {isGeneratingLogo ? (
+          <Button
+            onClick={onGenerateConcept}
+            disabled={isGeneratingConcept}
+          >
+            {isGeneratingConcept ? (
               <>
                 <Loader2 className="mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
-              'Logo (Gem)'
+              'Generate Brand Concept'
             )}
           </Button>
-          {onGenerateLogoOpenAI && (
-            <Button onClick={onGenerateLogoOpenAI} disabled={!!isGeneratingLogoOpenAI}>
-              {isGeneratingLogoOpenAI ? (
-                <>
-                  <Loader2 className="mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                'Logo (OAI)'
-              )}
-            </Button>
-          )}
-          {onGenerateLogoFal && (
-            <Button onClick={onGenerateLogoFal} disabled={!!isGeneratingLogoFal}>
-              {isGeneratingLogoFal ? (
-                <>
-                  <Loader2 className="mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                'Logo (Fal)'
-              )}
-            </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6">
@@ -207,6 +195,47 @@ export function BrandIdentityCard({
         </div>
 
         <div className="w-full space-y-4 pt-6 flex flex-col items-center">
+          {/* Logo Concept Section */}
+          <div className="w-full max-w-2xl space-y-4">
+            {logoConcept && (
+              <div className="space-y-3">
+                <Label htmlFor="logo-concept">Logo Concept (Editable)</Label>
+                <Textarea
+                  id="logo-concept"
+                  value={logoConcept}
+                  onChange={(e) => onConceptChange(e.target.value)}
+                  placeholder="Logo concept will appear here..."
+                  className="min-h-[120px]"
+                />
+                <div className="flex items-center gap-3">
+                  <Select value={selectedProvider} onValueChange={(value: 'gemini' | 'openai' | 'ideogram') => setSelectedProvider(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini">Gemini</SelectItem>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="ideogram">Ideogram</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => onGenerateLogo(selectedProvider)}
+                    disabled={isGeneratingLogo || !logoConcept}
+                  >
+                    {isGeneratingLogo ? (
+                      <>
+                        <Loader2 className="mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Logo'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {currentLogo?.colorLogoUrl && (
             <div className="flex flex-col gap-4 items-center w-full max-w-sm">
               <div className="flex items-center space-x-2">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -48,14 +49,16 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                 >
                     <Menu animate={isSidebarOpen} className="h-5 w-5 text-black" />
                 </button>
-                <Image
-                    src="/colater.png"
-                    alt="Colater"
-                    width={120}
-                    height={36}
-                    className="h-8 w-auto"
-                    priority
-                />
+                <Link href="/dashboard" className="cursor-pointer">
+                    <Image
+                        src="/colater.png"
+                        alt="Colater"
+                        width={120}
+                        height={36}
+                        className="h-8 w-auto"
+                        priority
+                    />
+                </Link>
             </div>
 
             {/* User info on the right */}
