@@ -35,29 +35,29 @@ export async function generateLogoOpenAI(
     credentials: process.env.FAL_KEY.trim(),
   });
 
-  // Use concept if provided, otherwise generate prompt using getGenerateLogoPrompt
-  let prompt: string;
-  if (parsed.concept) {
-    console.log('[generate-logo-openai] Using provided concept');
-    // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
-    const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*(.+)/s);
-    if (stylePromptMatch) {
-      const stylePrompt = stylePromptMatch[1].trim();
-      // Combine with brand name and pitch for the full prompt
-      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${stylePrompt}`;
-      console.log('[generate-logo-openai] Extracted style prompt from concept');
+    // Use concept if provided, otherwise generate prompt using getGenerateLogoPrompt
+    let prompt: string;
+    if (parsed.concept) {
+      console.log('[generate-logo-openai] Using provided concept');
+      // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
+      const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
+      if (stylePromptMatch) {
+        const stylePrompt = stylePromptMatch[1].trim();
+        // Combine with brand name and pitch for the full prompt
+        prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${stylePrompt}`;
+        console.log('[generate-logo-openai] Extracted style prompt from concept');
+      } else {
+        // If no "Style Prompt:" marker, use the entire concept
+        prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${parsed.concept.trim()}`;
+        console.log('[generate-logo-openai] Using entire concept as prompt');
+      }
+      console.log(`[generate-logo-openai] Generated prompt:`, prompt);
     } else {
-      // If no "Style Prompt:" marker, use the entire concept
-      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${parsed.concept.trim()}`;
-      console.log('[generate-logo-openai] Using entire concept as prompt');
+      const { key, prompt: generatedPrompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
+      console.log(`[generate-logo-openai] Prompt key: ${key}`);
+      prompt = generatedPrompt;
+      console.log(`[generate-logo-openai] Generated prompt:`, prompt);
     }
-    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
-  } else {
-    const { key, prompt: generatedPrompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
-    console.log(`[generate-logo-openai] Prompt key: ${key}`);
-    prompt = generatedPrompt;
-    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
-  }
 
   // Map size to fal image dimensions
   const sizeMap: Record<string, { width: number; height: number }> = {

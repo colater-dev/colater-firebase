@@ -58,7 +58,7 @@ export async function generateLogoFal(
     if (parsed.concept) {
         console.log('[generate-logo-fal] Using provided concept');
         // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
-        const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*(.+)/s);
+        const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
         if (stylePromptMatch) {
             aiStylePrompt = stylePromptMatch[1].trim();
             console.log('[generate-logo-fal] Extracted style prompt from concept:', aiStylePrompt);
