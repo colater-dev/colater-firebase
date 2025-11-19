@@ -15,3 +15,5 @@ env:
     secret: gemini-key
   - variable: OPENAI_API_KEY
     secret: openai-key
+  - variable: FAL_KEY
+    secret: fal-key

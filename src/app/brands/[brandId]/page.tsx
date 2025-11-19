@@ -19,6 +19,7 @@ import {
   getTaglineSuggestions,
   getLogoSuggestion,
   getLogoSuggestionOpenAI,
+  getLogoSuggestionFal,
   getColorizedLogo,
   convertUrlToDataUri,
 } from '@/app/actions';
@@ -41,6 +42,7 @@ export default function BrandPage() {
   const [isGeneratingTaglines, setIsGeneratingTaglines] = useState(false);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [isGeneratingLogoOpenAI, setIsGeneratingLogoOpenAI] = useState(false);
+  const [isGeneratingLogoFal, setIsGeneratingLogoFal] = useState(false);
   const [isColorizing, setIsColorizing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
 
@@ -250,6 +252,56 @@ export default function BrandPage() {
     }
   }, [brand, user, brandId, firestore, storage, toast]);
 
+  const handleGenerateLogoFal = useCallback(async () => {
+    if (!brand || !user) return;
+    setIsGeneratingLogoFal(true);
+    try {
+      const result = await getLogoSuggestionFal(
+        brand.latestName,
+        brand.latestElevatorPitch,
+        brand.latestAudience,
+        brand.latestDesirableCues,
+        brand.latestUndesirableCues
+      );
+
+      if (result.success && result.data) {
+        // Upload the logo to Firebase Storage from client side
+        console.log('Uploading logo to Firebase Storage...');
+        const logoUrl = await uploadDataUriToStorageClient(result.data, user.uid, storage);
+        console.log('Logo uploaded successfully:', logoUrl);
+
+        // Save the public URL to Firestore
+        const logoData = {
+          brandId,
+          userId: user.uid,
+          logoUrl: logoUrl,
+          createdAt: serverTimestamp(),
+        };
+        const logosCollection = collection(
+          firestore,
+          `users/${user.uid}/brands/${brandId}/logoGenerations`
+        );
+        await addDoc(logosCollection, logoData);
+
+        toast({
+          title: 'New logo generated!',
+          description: 'Your new brand logo has been saved (Fal).',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to generate logo.');
+      }
+    } catch (error) {
+      console.error('Error generating logo (Fal):', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Could not generate the logo.',
+      });
+    } finally {
+      setIsGeneratingLogoFal(false);
+    }
+  }, [brand, user, storage, firestore, brandId, toast]);
+
   // Auto-generate logo if there are none
   useEffect(() => {
     if (
@@ -445,10 +497,12 @@ export default function BrandPage() {
             isLoadingLogos={isLoadingLogos}
             isGeneratingLogo={isGeneratingLogo}
             isGeneratingLogoOpenAI={isGeneratingLogoOpenAI}
+            isGeneratingLogoFal={isGeneratingLogoFal}
             isColorizing={isColorizing}
             isLoadingTaglines={isLoadingTaglines}
             onGenerateLogo={handleGenerateLogo}
             onGenerateLogoOpenAI={handleGenerateLogoOpenAI}
+            onGenerateLogoFal={handleGenerateLogoFal}
             onColorizeLogo={handleColorizeLogo}
             onLogoIndexChange={setCurrentLogoIndex}
           />

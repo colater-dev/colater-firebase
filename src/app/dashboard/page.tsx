@@ -14,9 +14,11 @@ import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import type { Brand } from '@/lib/types';
 
 import { getBrandFontStyle } from '@/config/brand-fonts';
+import { getCachedImageUrl } from '@/lib/image-cache';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontStyle = getBrandFontStyle(brand.id);
+    const cachedLogoUrl = getCachedImageUrl(brand.logoUrl);
 
     return (
         <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
@@ -24,14 +26,14 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                 <CardContent className="flex-grow flex flex-col p-6 gap-4">
                     <div className="flex items-center">
                         <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                            {brand.logoUrl ? (
+                            {cachedLogoUrl ? (
                                 <Image
-                                    src={brand.logoUrl}
+                                    src={cachedLogoUrl}
                                     alt={`${brand.latestName} logo`}
                                     width={64}
                                     height={64}
                                     className="object-contain rounded-md"
-                                    unoptimized={brand.logoUrl.startsWith('data:')}
+                                    unoptimized={cachedLogoUrl.startsWith('data:')}
                                 />
                             ) : (
                                 <div className="w-full h-full bg-muted rounded-md" />

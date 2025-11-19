@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles } from 'lucide-react';
-import { getBrandSuggestions } from '@/app/actions';
+import { getBrandSuggestions, getBrandCompletion } from '@/app/actions';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { ContentCard } from '@/components/layout';
@@ -88,6 +88,45 @@ export default function NewBrandPage() {
     }
   }
 
+  const handleFillEverythingElse = async () => {
+    const name = form.getValues('name');
+    const elevatorPitch = form.getValues('elevatorPitch');
+
+    if (!name || !elevatorPitch || name.length < 2 || elevatorPitch.length < 10) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please fill in the Brand Name and Elevator Pitch first.',
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await getBrandCompletion(name, elevatorPitch);
+      if (result.success && result.data) {
+        form.setValue('audience', result.data.audience);
+        form.setValue('desirableCues', result.data.desirableCues);
+        form.setValue('undesirableCues', result.data.undesirableCues);
+        toast({
+          title: 'Details Generated!',
+          description: 'Audience and visual cues have been filled.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to complete brand details.');
+      }
+    } catch (error) {
+      console.error('Error completing details:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: (error instanceof Error) ? error.message : 'Could not generate details.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
     if (!user) {
       toast({
@@ -140,126 +179,138 @@ export default function NewBrandPage() {
 
   return (
     <ContentCard>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Create a New Brand</h1>
-        <p className="text-muted-foreground">Fill out the details below to get started, or let AI fill it for you.</p>
-      </div>
-
-      <div className="space-y-4 mb-6">
-        <Label htmlFor="topic-input">Topic</Label>
-        <div className="flex gap-2">
-          <Input
-            id="topic-input"
-            placeholder="e.g., 'A coffee shop for developers'"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-          />
-          <Button onClick={handleFillForMe} disabled={isGenerating}>
-            {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            <span className="ml-2 hidden sm:inline">Fill for me</span>
-          </Button>
+      <div className="max-w-[640px] mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold">Create a New Brand</h1>
+          <p className="text-muted-foreground">Fill out the details below to get started, or let AI fill it for you.</p>
         </div>
-      </div>
 
-      <Separator className="mb-6" />
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Brand Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., 'Acmecorp'" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="elevatorPitch"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Elevator Pitch</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Describe your brand in a few sentences."
-                    rows={4}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="audience"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Target Audience</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="e.g., 'Tech-savvy millennials who value design...'"
-                    rows={3}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="desirableCues"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Desirable visual cues</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="e.g., 'minimalist, elegant, bird, blue'"
-                    rows={3}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="undesirableCues"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Undesirable visual cues</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="e.g., 'complex, childish, gradients, red'"
-                    rows={3}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Brand & Generate Assets'
-              )}
+        <div className="space-y-4 mb-6">
+          <Label htmlFor="topic-input">Start from an Idea</Label>
+          <div className="flex gap-2">
+            <Input
+              id="topic-input"
+              placeholder="A coffee shop for developers"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+            />
+            <Button onClick={handleFillForMe} disabled={isGenerating}>
+              {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              <span className="ml-2 hidden sm:inline">Brainstorm</span>
             </Button>
           </div>
-        </form>
-      </Form>
+        </div>
+
+        <Separator className="mb-6" />
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Brand Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Acmecorp" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="elevatorPitch"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Elevator Pitch</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe your brand in a few sentences."
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="button"
+              variant="light"
+              className="w-full"
+              onClick={handleFillEverythingElse}
+              disabled={isGenerating}
+            >
+              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Fill everything else for me
+            </Button>
+            <FormField
+              control={form.control}
+              name="audience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target Audience</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="e.g., 'Tech-savvy millennials who value design...'"
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="desirableCues"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Desirable visual cues</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="e.g., 'minimalist, elegant, bird, blue'"
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="undesirableCues"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Undesirable visual cues</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="e.g., 'complex, childish, gradients, red'"
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Brand & Generate Assets'
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
     </ContentCard>
   );
 }

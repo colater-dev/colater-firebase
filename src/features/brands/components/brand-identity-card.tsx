@@ -32,10 +32,12 @@ interface BrandIdentityCardProps {
   isLoadingLogos: boolean;
   isGeneratingLogo: boolean;
   isGeneratingLogoOpenAI?: boolean;
+  isGeneratingLogoFal?: boolean;
   isColorizing: boolean;
   isLoadingTaglines: boolean;
   onGenerateLogo: () => void;
   onGenerateLogoOpenAI?: () => void;
+  onGenerateLogoFal?: () => void;
   onColorizeLogo: () => void;
   onLogoIndexChange: (index: number) => void;
 }
@@ -48,10 +50,12 @@ export function BrandIdentityCard({
   isLoadingLogos,
   isGeneratingLogo,
   isGeneratingLogoOpenAI,
+  isGeneratingLogoFal,
   isColorizing,
   isLoadingTaglines,
   onGenerateLogo,
   onGenerateLogoOpenAI,
+  onGenerateLogoFal,
   onColorizeLogo,
   onLogoIndexChange,
 }: BrandIdentityCardProps) {
@@ -108,12 +112,12 @@ export function BrandIdentityCard({
           >
             {isColorizing ? (
               <>
-                <Loader2 className="mr-2 animate-spin" />
+                <Loader2 className="mr-4 animate-spin" />
                 Colorizing...
               </>
             ) : (
               <>
-                <Palette className="mr-2" /> Colorise
+                <Palette className="mr-1" /> Colorise
               </>
             )}
           </Button>
@@ -136,6 +140,18 @@ export function BrandIdentityCard({
                 </>
               ) : (
                 'Logo (OAI)'
+              )}
+            </Button>
+          )}
+          {onGenerateLogoFal && (
+            <Button onClick={onGenerateLogoFal} disabled={!!isGeneratingLogoFal}>
+              {isGeneratingLogoFal ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Logo (Fal)'
               )}
             </Button>
           )}
@@ -248,7 +264,7 @@ export function BrandIdentityCard({
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center justify-center w-full gap-4">
                 <Button
-                  variant="outline"
+                  variant="light"
                   size="icon"
                   onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
                   disabled={currentLogoIndex === 0}
@@ -256,7 +272,7 @@ export function BrandIdentityCard({
                   <ChevronLeft />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="light"
                   size="icon"
                   onClick={() =>
                     onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))

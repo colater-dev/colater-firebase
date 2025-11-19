@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-[#333333] text-white hover:bg-[#222222] rounded-lg shadow-[0px_2px_8px_-2px_rgba(32,32,32,0.6),0px_0px_0px_1px_rgba(32,32,32,0.9),inset_0px_1px_1px_rgba(255,255,255,0.25)]",
-        light: "bg-[#E8E8E8] text-black hover:bg-[#D8D8D8] rounded-lg shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05),inset_0px_1px_1px_rgba(255,255,255,0.8)]",
+        light: "bg-[#F2F2F2] text-black hover:bg-[#F8F8F8] rounded-lg shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05),inset_0px_1px_1px_rgba(255,255,255,0.8)]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md",
         outline:
