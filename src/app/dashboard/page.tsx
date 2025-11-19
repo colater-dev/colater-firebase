@@ -75,7 +75,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen pt-[72px] p-4 md:p-8">
+        <div className="min-h-screen pt-[72px] p-4 md:p-8 mt-[60px]">
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                 <h1 className="text-2xl font-bold">My Brands</h1>
                 <Button asChild>
