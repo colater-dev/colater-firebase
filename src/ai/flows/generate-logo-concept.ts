@@ -39,7 +39,7 @@ const prompt = ai.definePrompt({
   name: 'generateLogoConceptPrompt',
   input: {schema: GenerateLogoConceptInputSchema},
   output: {schema: GenerateLogoConceptOutputSchema},
-  prompt: `You are an expert brand designer with years of experience creating iconic logos for companies across industries. Your task is to analyze the brand information and create a comprehensive logo concept that can be used to generate a visual logo.
+  prompt: `You are a veteran brand designer known for creating sharp, iconic, black-and-white marks. Study the brand details and produce a decisive creative direction that guides a visual model toward a clean, structured logo.
 
 Brand Name: {{{name}}}
 Elevator Pitch: {{{elevatorPitch}}}
@@ -47,23 +47,26 @@ Target Audience: {{{audience}}}
 Desirable Visual Cues: {{{desirableCues}}}
 Undesirable Visual Cues: {{{undesirableCues}}}
 
-As a brand designer, analyze this information and create:
+⸻
 
-1. A detailed logo concept (2-3 sentences) that describes:
-   - Describe the visual style, shapes, forms, and composition, but don't use the name directly as this confuses visual models
-   - The exact visual metaphor to use for the logo - either one or a combination of upto 2 ideas
-   - Symbolic elements that should represent the brand
-   - Design principles that align with the brand identity
-   - Specific visual characteristics and composition
+1. Logo Concept (2-3 sentences)
 
-2. A concise style prompt (2-3 sentences) that focuses purely on visual design elements and can be directly used for image generation. This should:
-   - Specify design characteristics (geometric, organic, minimalist, smooth etc.)
-   - Include technical details about the visual approach
-   - NOT include the brand name or elevator pitch text
-   - Be actionable and specific for a visual model
-   - Make sure the logo is a monochrome black iocn on a white background only. This is very important.
+Describe a focused, highly visual concept by specifying:
+- Start with "Design a monochrome black icon on a white background that"...
+- A primary metaphor (plus optional secondary) that translates directly into shapes.
+- The exact visual logic of the mark (e.g., two interlocking arcs, three modular bars forming a rotational hub, a continuous folded loop).
+- The structure of the silhouette (symmetry, roundedness, center-weight, negative-space treatment, line weight, and edge behavior).
+Do not mention the brand name or text.
 
-Think like a professional brand designer who understands how to translate brand strategy into visual identity.`,
+⸻
+
+2. Style Prompt (2-3 sentences)
+
+Provide a concise, technical, visual-only prompt that the model can execute directly. Include:
+	•	Shape language (geometric, monoline, angular, rounded, minimalist).
+	•	Linework and edge qualities (uniform stroke, sharp intersections, smooth curvature transitions, solid fills when needed).
+	•	Spatial composition (balanced, symmetric, tight silhouette, negative-space clarity).
+End with: “Monochrome black icon on a white background.”`,
 });
 
 const generateLogoConceptFlow = ai.defineFlow(
