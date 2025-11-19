@@ -17,3 +17,5 @@ env:
     secret: openai-key
   - variable: FAL_KEY
     secret: fal-key
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: studio-6830756272-ca1a2.firebasestorage.app
