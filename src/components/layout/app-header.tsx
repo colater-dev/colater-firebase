@@ -91,7 +91,7 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                         priority
                     />
                 </Link>
-                {user && brands && brands.length > 0 && (
+                {user && (brands && brands.length > 0 || currentBrandId === 'new') && (
                     <div className="ml-2">
                         {isLoadingBrands ? (
                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -101,10 +101,13 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                                 onValueChange={handleBrandChange}
                             >
                                 <SelectTrigger className="w-[180px] h-9">
-                                    <SelectValue placeholder="Select brand" />
+                                    <SelectValue
+                                        placeholder={currentBrandId === 'new' ? 'New Brand' : 'Select brand'}
+                                        className={currentBrandId === 'new' ? 'opacity-50' : ''}
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {brands.map((brand) => (
+                                    {brands?.map((brand) => (
                                         <SelectItem key={brand.id} value={brand.id}>
                                             {brand.latestName}
                                         </SelectItem>
@@ -121,7 +124,7 @@ export function AppHeader({ onMenuClick, isSidebarOpen }: AppHeaderProps) {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button className="flex items-center gap-4 hover:opacity-80 transition-opacity focus:outline-none">
-                            <span className="text-sm font-semibold text-black">
+                            <span className="hidden md:block text-sm font-semibold text-black">
                                 {user.displayName || 'User'}
                             </span>
                             <Avatar className="h-8 w-8 cursor-pointer">

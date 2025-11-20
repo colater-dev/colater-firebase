@@ -10,6 +10,7 @@ import { generateLogoOpenAI } from "@/ai/flows/generate-logo-openai";
 import { generateLogoFal } from "@/ai/flows/generate-logo-fal";
 import { completeBrandDetails } from "@/ai/flows/complete-brand-details";
 import { generateLogoConcept } from "@/ai/flows/generate-logo-concept";
+import { critiqueLogo, CritiqueLogoInput, Critique } from "@/ai/flows/critique-logo";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -41,7 +42,7 @@ export async function getLogoSuggestion(
   desirableCues: string,
   undesirableCues: string,
   concept?: string,
-): Promise<{ success: boolean; data?: string; error?: string }> {
+): Promise<{ success: boolean; data?: { logoUrl: string; prompt: string }; error?: string }> {
   console.log("getLogoSuggestion: Starting...");
   try {
     if (!name || !elevatorPitch || !audience) {
@@ -61,7 +62,7 @@ export async function getLogoSuggestion(
     console.log("getLogoSuggestion: Received data URI from AI:", result.logoUrl.substring(0, 100));
 
     // Return the data URI directly - upload will happen on client side
-    return { success: true, data: result.logoUrl };
+    return { success: true, data: { logoUrl: result.logoUrl, prompt: result.prompt } };
   } catch (error) {
     console.error("Error in getLogoSuggestion action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -79,7 +80,7 @@ export async function getLogoSuggestionOpenAI(
   desirableCues: string,
   undesirableCues: string,
   options?: { size?: '512x512' | '768x768' | '1024x1024'; concept?: string }
-): Promise<{ success: boolean; data?: string; error?: string }> {
+): Promise<{ success: boolean; data?: { logoUrl: string; prompt: string }; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
@@ -96,7 +97,7 @@ export async function getLogoSuggestionOpenAI(
     if (!result || !result.logoUrl) {
       throw new Error("OpenAI image generation failed to return a result.");
     }
-    return { success: true, data: result.logoUrl };
+    return { success: true, data: { logoUrl: result.logoUrl, prompt: result.prompt } };
   } catch (error) {
     console.error("Error in getLogoSuggestionOpenAI action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -111,7 +112,7 @@ export async function getLogoSuggestionFal(
   desirableCues: string,
   undesirableCues: string,
   concept?: string,
-): Promise<{ success: boolean; data?: string; error?: string }> {
+): Promise<{ success: boolean; data?: { logoUrl: string; prompt: string }; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
       return { success: false, error: "Brand details are required." };
@@ -127,7 +128,7 @@ export async function getLogoSuggestionFal(
     if (!result || !result.logoUrl) {
       throw new Error("Fal image generation failed to return a result.");
     }
-    return { success: true, data: result.logoUrl };
+    return { success: true, data: { logoUrl: result.logoUrl, prompt: result.prompt } };
   } catch (error) {
     console.error("Error in getLogoSuggestionFal action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -235,9 +236,29 @@ export async function getLogoConcept(
   } catch (error) {
     console.error("Error generating logo concept:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+
     return {
       success: false,
       error: `An unexpected error occurred while generating logo concept: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getLogoCritique(
+  input: CritiqueLogoInput
+): Promise<{ success: boolean; data?: Critique; error?: string }> {
+  try {
+    if (!input.logoUrl || !input.brandName) {
+      return { success: false, error: "Logo URL and brand name are required." };
+    }
+    const result = await critiqueLogo(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error critiquing logo:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while critiquing the logo: ${errorMessage}`,
     };
   }
 }

@@ -19,12 +19,17 @@ export type OpenAIGenerateLogoInput = z.infer<typeof OpenAIGenerateLogoInputSche
 
 const OpenAIGenerateLogoOutputSchema = z.object({
   logoUrl: z.string(), // data URI
+  prompt: z.string(), // The full prompt used for generation
 });
 export type OpenAIGenerateLogoOutput = z.infer<typeof OpenAIGenerateLogoOutputSchema>;
 
 export async function generateLogoOpenAI(
   input: OpenAIGenerateLogoInput
 ): Promise<OpenAIGenerateLogoOutput> {
+  // ... (existing code) ...
+
+  console.log('[generate-logo-openai] Image converted to data URI, size:', buffer.byteLength, 'bytes');
+  return { logoUrl: dataUri, prompt: prompt };
   const parsed = OpenAIGenerateLogoInputSchema.parse(input);
 
   if (!process.env.FAL_KEY) {
@@ -35,29 +40,29 @@ export async function generateLogoOpenAI(
     credentials: process.env.FAL_KEY.trim(),
   });
 
-    // Use concept if provided, otherwise generate prompt using getGenerateLogoPrompt
-    let prompt: string;
-    if (parsed.concept) {
-      console.log('[generate-logo-openai] Using provided concept');
-      // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
-      const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
-      if (stylePromptMatch) {
-        const stylePrompt = stylePromptMatch[1].trim();
-        // Combine with brand name and pitch for the full prompt
-        prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${stylePrompt}`;
-        console.log('[generate-logo-openai] Extracted style prompt from concept');
-      } else {
-        // If no "Style Prompt:" marker, use the entire concept
-        prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${parsed.concept.trim()}`;
-        console.log('[generate-logo-openai] Using entire concept as prompt');
-      }
-      console.log(`[generate-logo-openai] Generated prompt:`, prompt);
+  // Use concept if provided, otherwise generate prompt using getGenerateLogoPrompt
+  let prompt: string;
+  if (parsed.concept) {
+    console.log('[generate-logo-openai] Using provided concept');
+    // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
+    const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
+    if (stylePromptMatch) {
+      const stylePrompt = stylePromptMatch[1].trim();
+      // Combine with brand name and pitch for the full prompt
+      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${stylePrompt}`;
+      console.log('[generate-logo-openai] Extracted style prompt from concept');
     } else {
-      const { key, prompt: generatedPrompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
-      console.log(`[generate-logo-openai] Prompt key: ${key}`);
-      prompt = generatedPrompt;
-      console.log(`[generate-logo-openai] Generated prompt:`, prompt);
+      // If no "Style Prompt:" marker, use the entire concept
+      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${parsed.concept.trim()}`;
+      console.log('[generate-logo-openai] Using entire concept as prompt');
     }
+    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
+  } else {
+    const { key, prompt: generatedPrompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
+    console.log(`[generate-logo-openai] Prompt key: ${key}`);
+    prompt = generatedPrompt;
+    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
+  }
 
   // Map size to fal image dimensions
   const sizeMap: Record<string, { width: number; height: number }> = {
@@ -65,8 +70,8 @@ export async function generateLogoOpenAI(
     '768x768': { width: 768, height: 768 },
     '1024x1024': { width: 1024, height: 1024 },
   };
-  const imageSize = parsed.size 
-    ? sizeMap[parsed.size] 
+  const imageSize = parsed.size
+    ? sizeMap[parsed.size]
     : { width: 1024, height: 1024 };
 
   console.log(`[generate-logo-openai] Using image size: ${imageSize.width}x${imageSize.height}`);
@@ -109,7 +114,7 @@ export async function generateLogoOpenAI(
     const dataUri = `data:${contentType};base64,${base64}`;
 
     console.log('[generate-logo-openai] Image converted to data URI, size:', buffer.byteLength, 'bytes');
-    return { logoUrl: dataUri };
+    return { logoUrl: dataUri, prompt: prompt };
   } catch (error: any) {
     console.error('[generate-logo-openai] Error:', error);
     const errorDetails = error.body ? JSON.stringify(error.body) : error.message;

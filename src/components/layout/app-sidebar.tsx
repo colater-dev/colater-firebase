@@ -7,17 +7,12 @@ import { cn } from '@/lib/utils';
 
 const navigationItems = [
     {
-        name: 'Brands',
+        name: 'Logo',
         href: '/dashboard',
         icon: Folder,
     },
     {
-        name: 'Logo Generator',
-        href: '/brands/new',
-        icon: PlusCircle,
-    },
-    {
-        name: 'Taglines',
+        name: 'Tagline',
         href: '/taglines',
         icon: Sparkles,
     },
@@ -25,6 +20,11 @@ const navigationItems = [
         name: 'Styleguide',
         href: '/styleguide',
         icon: Users,
+    },
+    {
+        name: 'Moodboard',
+        href: '/moodboard',
+        icon: Palette,
     }
 ];
 

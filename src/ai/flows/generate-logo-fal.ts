@@ -17,12 +17,17 @@ export type FalGenerateLogoInput = z.infer<typeof FalGenerateLogoInputSchema>;
 
 const FalGenerateLogoOutputSchema = z.object({
     logoUrl: z.string(), // data URI
+    prompt: z.string(), // The full prompt used for generation
 });
 export type FalGenerateLogoOutput = z.infer<typeof FalGenerateLogoOutputSchema>;
 
 export async function generateLogoFal(
     input: FalGenerateLogoInput
 ): Promise<FalGenerateLogoOutput> {
+    // ... (existing code) ...
+
+    console.log('[generate-logo-fal] Image converted to data URI, size:', buffer.byteLength, 'bytes');
+    return { logoUrl: dataUri, prompt: fullPrompt };
     const parsed = FalGenerateLogoInputSchema.parse(input);
 
     if (!process.env.FAL_KEY) {
@@ -103,7 +108,7 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
     }
 
     // Combine AI-generated style prompt with base style requirements
-    const combinedStylePrompt = aiStylePrompt 
+    const combinedStylePrompt = aiStylePrompt
         ? `${aiStylePrompt}. ${baseStylePrompt}`
         : baseStylePrompt;
 
@@ -161,7 +166,7 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
         const dataUri = `data:${contentType};base64,${base64}`;
 
         console.log('[generate-logo-fal] Image converted to data URI, size:', buffer.byteLength, 'bytes');
-        return { logoUrl: dataUri };
+        return { logoUrl: dataUri, prompt: fullPrompt };
     } catch (error: any) {
         console.error('[generate-logo-fal] Error:', error);
         const errorDetails = error.body ? JSON.stringify(error.body) : error.message;

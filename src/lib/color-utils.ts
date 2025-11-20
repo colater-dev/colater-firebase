@@ -78,10 +78,10 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    }
     : null;
 }
 
@@ -107,5 +107,59 @@ export function shiftHue(hex: string, degrees: number): string {
   }
 
   const [newR, newG, newB] = hslToRgb(newHue, s, l);
+  return rgbToHex(newR, newG, newB);
+}
+
+/**
+ * Darkens a hex color by reducing its lightness
+ * @param hex - The hex color to darken
+ * @param amount - Amount to darken (0-1), default 0.2
+ */
+export function darkenColor(hex: string, amount: number = 0.2): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const [h, s, l] = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  // Reduce lightness
+  const newL = Math.max(0, l - amount);
+
+  const [newR, newG, newB] = hslToRgb(h, s, newL);
+  return rgbToHex(newR, newG, newB);
+}
+
+/**
+ * Determines if a color is light or dark based on perceived luminance
+ * @param hex - The hex color to check
+ * @returns true if the color is light, false if dark
+ */
+export function isLightColor(hex: string): boolean {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return true; // Default to light if parsing fails
+
+  // Calculate perceived luminance using the formula:
+  // L = 0.299*R + 0.587*G + 0.114*B
+  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+
+  // Threshold set to 0.75 (heavily skewed towards white logos)
+  // This means most colors will be considered "dark" and get white logos
+  return luminance > 0.75;
+}
+
+/**
+ * Lightens a hex color by increasing its lightness
+ * @param hex - The hex color to lighten
+ * @param amount - Amount to lighten (0-1), default 0.2
+ */
+export function lightenColor(hex: string, amount: number = 0.2): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const [h, s, l] = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  // Increase lightness
+  const newL = Math.min(1, l + amount);
+
+  const [newR, newG, newB] = hslToRgb(h, s, newL);
   return rgbToHex(newR, newG, newB);
 }
