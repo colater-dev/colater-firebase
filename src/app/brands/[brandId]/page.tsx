@@ -119,14 +119,15 @@ export default function BrandPage() {
     setIsGeneratingLogo(true);
     try {
       let result;
-      
+
       if (provider === 'gemini') {
         result = await getLogoSuggestion(
           brand.latestName,
           brand.latestElevatorPitch,
           brand.latestAudience,
           brand.latestDesirableCues,
-          brand.latestUndesirableCues
+          brand.latestUndesirableCues,
+          logoConcept
         );
       } else if (provider === 'openai') {
         result = await getLogoSuggestionOpenAI(

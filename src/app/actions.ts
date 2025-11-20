@@ -40,6 +40,7 @@ export async function getLogoSuggestion(
   audience: string,
   desirableCues: string,
   undesirableCues: string,
+  concept?: string,
 ): Promise<{ success: boolean; data?: string; error?: string }> {
   console.log("getLogoSuggestion: Starting...");
   try {
@@ -49,7 +50,7 @@ export async function getLogoSuggestion(
     }
     console.log("getLogoSuggestion: Brand details are present.");
 
-    const result = await generateLogoFal({ name, elevatorPitch, audience, desirableCues, undesirableCues });
+    const result = await generateLogoFal({ name, elevatorPitch, audience, desirableCues, undesirableCues, concept });
     console.log("getLogoSuggestion: AI generation complete.");
 
     if (!result || !result.logoUrl) {

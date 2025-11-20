@@ -7,8 +7,8 @@
  * - ColorizeLogoOutput - The return type for the colorizeLogo function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const ColorizeLogoInputSchema = z.object({
   logoUrl: z
@@ -55,7 +55,7 @@ const colorizeLogoFlow = ai.defineFlow(
     outputSchema: ColorizeLogoOutputSchema,
   },
   async input => {
-    const {media, text} = await ai.generate({
+    const { media, text } = await ai.generate({
       model: 'googleai/gemini-2.5-flash-image-preview',
       prompt: [
         {
@@ -76,7 +76,7 @@ const colorizeLogoFlow = ai.defineFlow(
           Instructions:
 1. Introduce up to 3 modern, complementary brand-appropriate colors. The palette should feel premium, intentional, and visually cohesive.
 2. Preserve the logo's shape, silhouette, spacing, and internal structure exactly. Do not alter, distort, add, or remove any shapes.
-3. You *may* use gradients, soft shadows, subtle lighting, faux-3D depth, gloss, or dimensional effects—only if they enhance clarity and do not change the structure of the mark.
+3. You *may* use gradients, soft shadows, subtle lighting effects—only if they enhance clarity and do not change the structure of the mark. It should feel like a brand from 2030.
 4. The output must be a 160x160 pixel image.
 5. Place the colored logo on a clean white background with no extra elements, textures, patterns, or framing.
 6. Do not add any text to the image.
