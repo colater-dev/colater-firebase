@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { fal } from "@fal-ai/client";
 import { getGenerateLogoPrompt } from '@/ai/prompts/generate-logo';
 
+import { Buffer } from 'buffer';
+
 const OpenAIGenerateLogoInputSchema = z.object({
   name: z.string(),
   elevatorPitch: z.string(),
@@ -28,8 +30,6 @@ export async function generateLogoOpenAI(
 ): Promise<OpenAIGenerateLogoOutput> {
   // ... (existing code) ...
 
-  console.log('[generate-logo-openai] Image converted to data URI, size:', buffer.byteLength, 'bytes');
-  return { logoUrl: dataUri, prompt: prompt };
   const parsed = OpenAIGenerateLogoInputSchema.parse(input);
 
   if (!process.env.FAL_KEY) {
@@ -70,7 +70,7 @@ export async function generateLogoOpenAI(
     '768x768': { width: 768, height: 768 },
     '1024x1024': { width: 1024, height: 1024 },
   };
-  const imageSize = parsed.size
+  const imageSize = parsed.size && sizeMap[parsed.size]
     ? sizeMap[parsed.size]
     : { width: 1024, height: 1024 };
 
