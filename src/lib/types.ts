@@ -30,8 +30,9 @@ export interface Logo {
     createdAt: any; // Firestore Timestamp
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
-    colorLogoUrls?: string[]; // Array of color logo URLs
-    palettes?: string[][]; // Array of palettes, each palette is an array of hex colors
+    colorVersions?: Array<{ colorLogoUrl: string; palette: string[] }>; // Array of color versions with their palettes
+    colorLogoUrls?: string[]; // Deprecated: caused nested arrays issue
+    palettes?: string[][]; // Deprecated: caused nested arrays issue
     critique?: Critique;
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
 }

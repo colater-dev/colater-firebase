@@ -319,29 +319,37 @@ export default function BrandPage() {
         const colorLogoUrl = await uploadDataUriToStorageClient(result.data.colorLogoUrl, user.uid, storage);
         console.log('Colorized logo uploaded successfully:', colorLogoUrl);
 
-        // Get existing arrays or create new ones from legacy fields
-        const existingColorLogoUrls = currentLogo.colorLogoUrls || (currentLogo.colorLogoUrl ? [currentLogo.colorLogoUrl] : []);
-        const existingPalettes = currentLogo.palettes || (currentLogo.palette ? [currentLogo.palette] : []);
+        // Get existing color versions array or create new one from legacy fields
+        const existingColorVersions = currentLogo.colorVersions || [];
 
-        // Append new color version to arrays
-        const updatedColorLogoUrls = [...existingColorLogoUrls, colorLogoUrl];
-        const updatedPalettes = [...existingPalettes, result.data.palette];
+        // If we have legacy fields but no colorVersions array yet, migrate them
+        if (existingColorVersions.length === 0 && currentLogo.colorLogoUrl) {
+          existingColorVersions.push({
+            colorLogoUrl: currentLogo.colorLogoUrl,
+            palette: currentLogo.palette || []
+          });
+        }
 
-        // Update the current logo document with the new arrays
+        // Append new color version
+        const updatedColorVersions = [...existingColorVersions, {
+          colorLogoUrl: colorLogoUrl,
+          palette: result.data.palette
+        }];
+
+        // Update the current logo document with the new array of objects (no nesting!)
         const currentLogoDocRef = doc(
           firestore,
           `users/${user.uid}/brands/${brandId}/logoGenerations/${currentLogo.id}`
         );
         await updateDoc(currentLogoDocRef, {
-          colorLogoUrls: updatedColorLogoUrls,
-          palettes: updatedPalettes,
+          colorVersions: updatedColorVersions,
           // Keep legacy fields for backward compatibility (set to latest)
           colorLogoUrl: colorLogoUrl,
           palette: result.data.palette,
         });
         toast({
           title: 'Logo colorized!',
-          description: `Color version ${updatedColorLogoUrls.length} has been generated.`,
+          description: `Color version ${updatedColorVersions.length} has been generated.`,
         });
       } else {
         throw new Error(result.error || 'Failed to colorize logo.');

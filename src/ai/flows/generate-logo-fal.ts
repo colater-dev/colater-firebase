@@ -3,6 +3,7 @@
 import { fal } from "@fal-ai/client";
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
+import { Buffer } from 'buffer';
 
 const FalGenerateLogoInputSchema = z.object({
     name: z.string(),
@@ -24,10 +25,6 @@ export type FalGenerateLogoOutput = z.infer<typeof FalGenerateLogoOutputSchema>;
 export async function generateLogoFal(
     input: FalGenerateLogoInput
 ): Promise<FalGenerateLogoOutput> {
-    // ... (existing code) ...
-
-    console.log('[generate-logo-fal] Image converted to data URI, size:', buffer.byteLength, 'bytes');
-    return { logoUrl: dataUri, prompt: fullPrompt };
     const parsed = FalGenerateLogoInputSchema.parse(input);
 
     if (!process.env.FAL_KEY) {
@@ -39,7 +36,7 @@ export async function generateLogoFal(
     });
 
     // Base style requirements for all icon logos
-    const baseStylePrompt = "Black and white smooth geometric icon. Sharp edges blended with smooth curves, flat vector style, no gradients. Symmetric, abstract, tech-forward, with a clean silhouette readable at tiny sizes. Monochrome only.";
+    const baseStylePrompt = "Flat black & white logo mark, minimal, negative-space, suitable at small sizes, no gradients, no texture, vector-style. Sharp edges blended with smooth curves, flat vector style, no gradients. Symmetric, abstract, tech-forward, with a clean silhouette readable at tiny sizes. Monochrome only.";
 
     // Sanitize inputs
     const cleanName = parsed.name.replace(/[\r\n]+/g, " ").trim();
@@ -107,15 +104,13 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
         }
     }
 
-    // Combine AI-generated style prompt with base style requirements
-    const combinedStylePrompt = aiStylePrompt
-        ? `${aiStylePrompt}. ${baseStylePrompt}`
-        : baseStylePrompt;
+    // Use AI-generated style prompt if available, otherwise fallback to base style requirements
+    const combinedStylePrompt = aiStylePrompt || baseStylePrompt;
 
     console.log('[generate-logo-fal] Base style prompt:', baseStylePrompt);
     console.log('[generate-logo-fal] Combined style prompt:', combinedStylePrompt);
 
-    let fullPrompt = `Logo for ${cleanName}. ${cleanPitch}. ${combinedStylePrompt}`;
+    let fullPrompt = `${cleanPitch}. ${combinedStylePrompt}`;
 
     // Truncate prompt if too long (Ideogram usually handles long prompts, but safe limit is good)
     const originalPromptLength = fullPrompt.length;

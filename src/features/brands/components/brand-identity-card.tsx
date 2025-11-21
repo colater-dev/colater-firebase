@@ -129,33 +129,51 @@ export function BrandIdentityCard({
   const [showCritique, setShowCritique] = useState(false);
   const [selectedFont, setSelectedFont] = useState<'brand' | 'tagline' | null>(null);
   const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
-  const [hueShift, setHueShift] = useState(0);
+  const [hueShifts, setHueShifts] = useState<Record<number, number>>({});
   const [displayedPalette, setDisplayedPalette] = useState<string[] | undefined>(
     undefined
   );
   const [contrast, setContrast] = useState(100);
   const [selectedProvider, setSelectedProvider] = useState<'gemini' | 'openai' | 'ideogram'>('ideogram');
-  const [currentColorVersionIndex, setCurrentColorVersionIndex] = useState(0);
+  const [cardModes, setCardModes] = useState<Record<string, number>>({});
+
+  const getCardMode = (key: string, defaultInvert: boolean) => {
+    if (cardModes[key] !== undefined) return cardModes[key];
+    return defaultInvert ? 2 : 0;
+  };
+
+  const cycleCardMode = (key: string, defaultInvert: boolean) => {
+    const current = getCardMode(key, defaultInvert);
+    setCardModes(prev => ({ ...prev, [key]: (current + 1) % 4 }));
+  };
+
+  const getModeStyles = (mode: number) => {
+    switch (mode) {
+      case 0: return { mixBlendMode: 'darken' as const, filter: 'none' };
+      case 1: return { mixBlendMode: 'lighten' as const, filter: 'none' };
+      case 2: return { mixBlendMode: 'lighten' as const, filter: 'invert(1)' };
+      case 3: return { mixBlendMode: 'darken' as const, filter: 'invert(1)' };
+      default: return { mixBlendMode: 'darken' as const, filter: 'none' };
+    }
+  };
 
   const currentLogo = logos?.[currentLogoIndex];
 
-  // Reset hue shift and color version index when logo changes
+  // Reset hue shifts when logo changes
   useEffect(() => {
-    // Support both old (single palette) and new (multiple palettes) structure
-    const palettes = currentLogo?.palettes || (currentLogo?.palette ? [currentLogo.palette] : undefined);
-    const currentPalette = palettes?.[currentColorVersionIndex];
+    setHueShifts({});
+    setContrast(100);
 
-    if (currentPalette) {
-      setHueShift(0);
-      setContrast(100);
-      setDisplayedPalette(currentPalette);
+    // Set displayed palette from first color version if available
+    const colorVersions = currentLogo?.colorVersions || [];
+    if (colorVersions.length === 0 && currentLogo?.palette) {
+      setDisplayedPalette(currentLogo.palette);
+    } else if (colorVersions.length > 0) {
+      setDisplayedPalette(colorVersions[0]?.palette);
     } else {
       setDisplayedPalette(undefined);
     }
-
-    // Reset to first color version when logo changes
-    setCurrentColorVersionIndex(0);
-  }, [currentLogo, currentLogo?.palette, currentLogo?.palettes]);
+  }, [currentLogo, currentLogo?.palette, currentLogo?.colorVersions]);
 
   // Close expanded point when clicking outside
   useEffect(() => {
@@ -168,15 +186,6 @@ export function BrandIdentityCard({
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [expandedPointId]);
-
-  const handleHueChange = (value: number[]) => {
-    const newHue = value[0];
-    setHueShift(newHue);
-    if (currentLogo?.palette) {
-      const newPalette = currentLogo.palette.map((color) => shiftHue(color, newHue));
-      setDisplayedPalette(newPalette);
-    }
-  };
 
   const displayLogoUrl = currentLogo
     ? showColorLogo && currentLogo.colorLogoUrl
@@ -293,31 +302,6 @@ export function BrandIdentityCard({
                   />
                 </div>
               )}
-              {showColorLogo && displayedPalette && displayedPalette.length > 0 && (
-                <>
-                  <Slider
-                    defaultValue={[0]}
-                    max={360}
-                    step={1}
-                    className="w-full"
-                    onValueChange={handleHueChange}
-                    value={[hueShift]}
-                  />
-                  <div className="flex items-center gap-4 flex-wrap justify-center">
-                    {displayedPalette.map((color, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 shrink-0 rounded-full border border-gray-300"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-sm font-mono text-muted-foreground">
-                          {color}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
           )}
 
@@ -409,40 +393,74 @@ export function BrandIdentityCard({
                   <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Inverted on Black</p>
                 </div>
 
-                {/* On Brand Color (Darkened) - Multiple cards for each palette color when color logo exists */}
+                {/* On Brand Color (Darkened) - Show all palette colors from all color versions with hue shift */}
                 {(() => {
-                  // Support both old and new structure
-                  const colorLogoUrls = currentLogo.colorLogoUrls || (currentLogo.colorLogoUrl ? [currentLogo.colorLogoUrl] : []);
-                  const palettes = currentLogo.palettes || (currentLogo.palette ? [currentLogo.palette] : []);
-                  const hasColorVersions = colorLogoUrls.length > 0;
-                  const currentPalette = palettes[currentColorVersionIndex];
+                  // Support new colorVersions structure and legacy fields
+                  const colorVersions = currentLogo.colorVersions || [];
 
-                  if (hasColorVersions && currentPalette && currentPalette.length > 0) {
-                    return currentPalette.map((color, index) => {
-                      const darkenedColor = darkenColor(color, 0.2);
+                  // Migrate legacy fields if needed
+                  if (colorVersions.length === 0 && currentLogo.colorLogoUrl) {
+                    colorVersions.push({ colorLogoUrl: currentLogo.colorLogoUrl, palette: currentLogo.palette || [] });
+                  }
+
+                  // Flatten all colors from all versions with their hue shifts
+                  const allBrandColors: Array<{ color: string; versionIndex: number; colorIndex: number; palette: string[] }> = [];
+                  colorVersions.forEach((colorVersion, versionIndex) => {
+                    const currentHueShift = hueShifts[versionIndex] || 0;
+                    const shiftedPalette = colorVersion.palette.map(color => shiftHue(color, currentHueShift));
+
+                    shiftedPalette.forEach((color, colorIndex) => {
+                      allBrandColors.push({
+                        color,
+                        versionIndex,
+                        colorIndex,
+                        palette: shiftedPalette
+                      });
+                    });
+                  });
+
+                  if (allBrandColors.length > 0) {
+                    return allBrandColors.map((brandColor, index) => {
+                      const darkenedColor = darkenColor(brandColor.color, 0.2);
                       const shouldInvert = isLightColor(darkenedColor);
+                      const cardKey = `brand-color-v${brandColor.versionIndex}-c${brandColor.colorIndex}`;
+                      const mode = getCardMode(cardKey, shouldInvert);
+                      const styles = getModeStyles(mode);
 
                       return (
                         <div
-                          key={`brand-color-${index}`}
-                          className="relative aspect-square flex items-center justify-center"
+                          key={cardKey}
+                          className="relative aspect-square flex items-center justify-center group"
                           style={{ backgroundColor: darkenedColor }}
                         >
                           {/* Small palette display at top */}
-                          <div className="absolute top-2 left-2 flex gap-1">
-                            {currentPalette.map((paletteColor, paletteIndex) => (
+                          <div className="absolute top-2 left-2 flex gap-1 z-10">
+                            {brandColor.palette.map((paletteColor, paletteIndex) => (
                               <div
                                 key={`palette-dot-${paletteIndex}`}
                                 className="w-3 h-3 rounded-full border"
                                 style={{
                                   backgroundColor: paletteColor,
-                                  borderColor: paletteIndex === index ? 'white' : 'transparent',
-                                  borderWidth: paletteIndex === index ? '2px' : '1px'
+                                  borderColor: paletteIndex === brandColor.colorIndex ? 'white' : 'transparent',
+                                  borderWidth: paletteIndex === brandColor.colorIndex ? '2px' : '1px'
                                 }}
                                 title={paletteColor}
                               />
                             ))}
                           </div>
+
+                          {/* Toggle Button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cycleCardMode(cardKey, shouldInvert);
+                            }}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
 
                           <Image
                             src={currentLogo.logoUrl}
@@ -451,25 +469,39 @@ export function BrandIdentityCard({
                             height={200}
                             className="object-contain w-full h-full"
                             unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                            style={{
-                              filter: shouldInvert ? 'invert(1)' : 'none',
-                              mixBlendMode: shouldInvert ? 'lighten' : 'darken'
-                            }}
+                            style={styles}
                           />
                           <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">
-                            On Brand Color {currentPalette.length > 1 ? index + 1 : ''}
+                            On Brand Color
                           </p>
                         </div>
                       );
                     });
                   } else {
+                    const cardKey = 'brand-color-fallback';
+                    const mode = getCardMode(cardKey, false); // Default to darken/none
+                    const styles = getModeStyles(mode);
+
                     return (
                       <div
-                        className="relative aspect-square flex items-center justify-center"
+                        className="relative aspect-square flex items-center justify-center group"
                         style={{
                           backgroundColor: displayedPalette?.[0] ? darkenColor(displayedPalette[0], 0.2) : '#2563eb'
                         }}
                       >
+                        {/* Toggle Button */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cycleCardMode(cardKey, false);
+                          }}
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+
                         <Image
                           src={currentLogo.logoUrl}
                           alt="Logo on brand color"
@@ -477,7 +509,7 @@ export function BrandIdentityCard({
                           height={200}
                           className="object-contain w-full h-full"
                           unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                          style={{ mixBlendMode: 'darken' }}
+                          style={styles}
                         />
                         <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">On Brand Color</p>
                       </div>
@@ -485,64 +517,74 @@ export function BrandIdentityCard({
                   }
                 })()}
 
-                {/* Color Logo (if exists) or Generate Button */}
+                {/* Color Logo Versions - Show all versions with individual hue sliders */}
                 {(() => {
-                  // Support both old and new structure
-                  const colorLogoUrls = currentLogo.colorLogoUrls || (currentLogo.colorLogoUrl ? [currentLogo.colorLogoUrl] : []);
-                  const hasColorVersions = colorLogoUrls.length > 0;
-                  const currentColorUrl = colorLogoUrls[currentColorVersionIndex];
+                  // Support new colorVersions structure and legacy fields
+                  const colorVersions = currentLogo.colorVersions || [];
 
-                  if (hasColorVersions && currentColorUrl) {
-                    return (
-                      <div className="relative aspect-square bg-white border border-gray-200 flex items-center justify-center">
-                        <Image
-                          src={currentColorUrl}
-                          alt="Color logo"
-                          width={200}
-                          height={200}
-                          className="object-contain w-full h-full"
-                          unoptimized={currentColorUrl.startsWith('data:')}
-                        />
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          {colorLogoUrls.length > 1 && (
-                            <>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="h-8 w-8 bg-gray-100"
-                                onClick={() => setCurrentColorVersionIndex((currentColorVersionIndex - 1 + colorLogoUrls.length) % colorLogoUrls.length)}
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="h-8 w-8 bg-gray-100"
-                                onClick={() => setCurrentColorVersionIndex((currentColorVersionIndex + 1) % colorLogoUrls.length)}
-                              >
-                                <ChevronRight className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8 bg-gray-100"
-                            onClick={onColorizeLogo}
-                            disabled={isColorizing || isGeneratingLogo}
-                          >
-                            {isColorizing ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4" />
-                            )}
-                          </Button>
+                  // Migrate legacy fields if needed
+                  if (colorVersions.length === 0 && currentLogo.colorLogoUrl) {
+                    colorVersions.push({ colorLogoUrl: currentLogo.colorLogoUrl, palette: currentLogo.palette || [] });
+                  }
+
+                  if (colorVersions.length > 0) {
+                    return colorVersions.map((colorVersion, versionIndex) => {
+                      const currentHueShift = hueShifts[versionIndex] || 0;
+                      const shiftedPalette = colorVersion.palette.map(color => shiftHue(color, currentHueShift));
+
+                      return (
+                        <div key={`color-version-${versionIndex}`} className="relative aspect-square bg-white border border-gray-200 flex flex-col items-center justify-center">
+                          {/* Color logo with hue shift */}
+                          <div className="flex-1 w-full flex items-center justify-center relative">
+                            <Image
+                              src={colorVersion.colorLogoUrl}
+                              alt={`Color logo version ${versionIndex + 1}`}
+                              width={200}
+                              height={200}
+                              className="object-contain w-full h-full"
+                              unoptimized={colorVersion.colorLogoUrl.startsWith('data:')}
+                              style={{
+                                filter: `hue-rotate(${currentHueShift}deg)`
+                              }}
+                            />
+
+                            {/* Small palette display at top */}
+                            <div className="absolute top-2 left-2 flex gap-1">
+                              {shiftedPalette.map((paletteColor, paletteIndex) => (
+                                <div
+                                  key={`palette-dot-${paletteIndex}`}
+                                  className="w-3 h-3 rounded-full border"
+                                  style={{
+                                    backgroundColor: paletteColor,
+                                    borderColor: 'white',
+                                    borderWidth: '1px'
+                                  }}
+                                  title={paletteColor}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Hue slider at bottom */}
+                          <div className="w-full px-3 pb-3 pt-1">
+                            <Slider
+                              defaultValue={[0]}
+                              max={360}
+                              step={1}
+                              className="w-full"
+                              value={[currentHueShift]}
+                              onValueChange={(value) => {
+                                setHueShifts(prev => ({ ...prev, [versionIndex]: value[0] }));
+                              }}
+                            />
+                          </div>
+
+                          <p className="absolute bottom-12 left-0 right-0 text-xs text-center text-gray-400">
+                            Color Version {colorVersions.length > 1 ? versionIndex + 1 : ''}
+                          </p>
                         </div>
-                        <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">
-                          Color Version {colorLogoUrls.length > 1 ? `${currentColorVersionIndex + 1}/${colorLogoUrls.length}` : ''}
-                        </p>
-                      </div>
-                    );
+                      );
+                    });
                   } else {
                     return (
                       <div className="relative aspect-square bg-gray-100 border border-gray-200 flex items-center justify-center">
@@ -567,48 +609,78 @@ export function BrandIdentityCard({
                     );
                   }
                 })()}
+
+                {/* Retry button card - always show when color versions exist */}
+                {currentLogo.colorVersions && currentLogo.colorVersions.length > 0 && (
+                  <div className="relative aspect-square bg-gray-100 border border-gray-200 flex items-center justify-center">
+                    <Button
+                      onClick={onColorizeLogo}
+                      disabled={isColorizing || isGeneratingLogo}
+                      variant="outline"
+                    >
+                      {isColorizing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Generate Another
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              {/* Brand Palette Section */}
+              {/* Brand Palette Section - Show all color version palettes with hue shifts */}
               {(() => {
-                // Support both old and new structure
-                const colorLogoUrls = currentLogo.colorLogoUrls || (currentLogo.colorLogoUrl ? [currentLogo.colorLogoUrl] : []);
-                const palettes = currentLogo.palettes || (currentLogo.palette ? [currentLogo.palette] : []);
-                const hasColorVersions = colorLogoUrls.length > 0;
-                const currentPalette = palettes[currentColorVersionIndex];
+                // Support new colorVersions structure and legacy fields
+                const colorVersions = currentLogo.colorVersions || [];
 
-                if (hasColorVersions && currentPalette && currentPalette.length > 0) {
+                // Migrate legacy fields if needed
+                if (colorVersions.length === 0 && currentLogo.colorLogoUrl) {
+                  colorVersions.push({ colorLogoUrl: currentLogo.colorLogoUrl, palette: currentLogo.palette || [] });
+                }
+
+                if (colorVersions.length > 0) {
                   return (
                     <div className="mt-8">
                       <div className="space-y-0">
-                        {currentPalette.map((color, colorIndex) => {
-                          const darker1 = darkenColor(color, 0.15);
-                          const darker2 = darkenColor(color, 0.3);
-                          const lighter1 = lightenColor(color, 0.15);
-                          const lighter2 = lightenColor(color, 0.3);
+                        {colorVersions.map((colorVersion, versionIndex) => {
+                          const currentHueShift = hueShifts[versionIndex] || 0;
+                          const shiftedPalette = colorVersion.palette.map(color => shiftHue(color, currentHueShift));
 
-                          const shades = [darker2, darker1, color, lighter1, lighter2];
+                          return shiftedPalette.map((color, colorIndex) => {
+                            const darker1 = darkenColor(color, 0.15);
+                            const darker2 = darkenColor(color, 0.3);
+                            const lighter1 = lightenColor(color, 0.15);
+                            const lighter2 = lightenColor(color, 0.3);
 
-                          return (
-                            <div key={`palette-${colorIndex}`}>
-                              <div className="grid grid-cols-5 gap-0">
-                                {shades.map((shade, shadeIndex) => {
-                                  const isLight = isLightColor(shade);
-                                  const textColor = isLight ? 'text-gray-900' : 'text-white';
+                            const shades = [darker2, darker1, color, lighter1, lighter2];
 
-                                  return (
-                                    <div
-                                      key={`shade-${shadeIndex}`}
-                                      className={`aspect-square flex items-center justify-center ${textColor}`}
-                                      style={{ backgroundColor: shade }}
-                                    >
-                                      <p className="text-xs font-mono">{shade.toUpperCase()}</p>
-                                    </div>
-                                  );
-                                })}
+                            return (
+                              <div key={`palette-v${versionIndex}-c${colorIndex}`}>
+                                <div className="grid grid-cols-5 gap-0">
+                                  {shades.map((shade, shadeIndex) => {
+                                    const isLight = isLightColor(shade);
+                                    const textColor = isLight ? 'text-gray-900' : 'text-white';
+
+                                    return (
+                                      <div
+                                        key={`shade-${shadeIndex}`}
+                                        className={`aspect-square flex items-center justify-center ${textColor}`}
+                                        style={{ backgroundColor: shade }}
+                                      >
+                                        <p className="text-xs font-mono">{shade.toUpperCase()}</p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          );
+                            );
+                          });
                         })}
                       </div>
                     </div>
