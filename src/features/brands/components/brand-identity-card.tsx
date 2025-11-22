@@ -388,6 +388,8 @@ export function BrandIdentityCard({
                   fontVariable={BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'}
                   palette={colorVersions.length > 0 ? colorVersions[0].palette : currentLogo.palette || []}
                   logoScale={logoScale}
+                  contrast={logoContrast / 100}
+                  invert={invertLogo}
                 />
               </div>
             );

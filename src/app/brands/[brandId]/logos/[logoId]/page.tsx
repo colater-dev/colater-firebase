@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Share2, Check } from 'lucide-react';
+import { ContentCard } from '@/components/layout/content-card';
 import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Logo, Brand } from '@/lib/types';
@@ -143,62 +144,41 @@ export default function LogoPage() {
     return (
         <div className="min-h-screen bg-background p-8">
             <div className="container mx-auto max-w-7xl">
-                {/* Header with back button and share */}
-                <div className="mb-8 flex items-center justify-between">
-                    <Link href="/dashboard">
-                        <Button variant="ghost" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back
-                        </Button>
-                    </Link>
-                    <Button onClick={handleShare} variant="outline">
-                        {copied ? (
-                            <>
-                                <Check className="mr-2 h-4 w-4" />
-                                Copied!
-                            </>
-                        ) : (
-                            <>
-                                <Share2 className="mr-2 h-4 w-4" />
-                                Share
-                            </>
-                        )}
-                    </Button>
-                </div>
-
-                {/* Use BrandIdentityCard in read-only mode */}
-                <BrandIdentityCard
-                    brandName={brand.latestName}
-                    primaryTagline=""
-                    logos={[logo]}
-                    currentLogoIndex={0}
-                    isLoadingLogos={false}
-                    isGeneratingLogo={false}
-                    isGeneratingConcept={false}
-                    isColorizing={false}
-                    isLoadingTaglines={false}
-                    logoConcept={null}
-                    onGenerateConcept={() => { }}
-                    onConceptChange={() => { }}
-                    onGenerateLogo={() => { }}
-                    onColorizeLogo={() => { }}
-                    onLogoIndexChange={() => { }}
-                    onCritiqueLogo={() => { }}
-                    isCritiquing={false}
-                    selectedBrandFont={brand.font || 'Inter'}
-                    onFontChange={() => { }}
-                    readOnly={true}
-                    selectedProvider="ideogram"
-                    setSelectedProvider={() => { }}
-                />
-
-                {/* Feedback Section */}
-                <div className="mt-12">
-                    <LogoFeedbackForm
-                        creatorName={brand.latestName}
-                        onSubmit={handleFeedbackSubmit}
+                <ContentCard>
+                    {/* Use BrandIdentityCard in read-only mode */}
+                    <BrandIdentityCard
+                        brandName={brand.latestName}
+                        primaryTagline=""
+                        logos={[logo]}
+                        currentLogoIndex={0}
+                        isLoadingLogos={false}
+                        isGeneratingLogo={false}
+                        isGeneratingConcept={false}
+                        isColorizing={false}
+                        isLoadingTaglines={false}
+                        logoConcept={null}
+                        onGenerateConcept={() => { }}
+                        onConceptChange={() => { }}
+                        onGenerateLogo={() => { }}
+                        onColorizeLogo={() => { }}
+                        onLogoIndexChange={() => { }}
+                        onCritiqueLogo={() => { }}
+                        isCritiquing={false}
+                        selectedBrandFont={brand.font || 'Inter'}
+                        onFontChange={() => { }}
+                        readOnly={true}
+                        selectedProvider="ideogram"
+                        setSelectedProvider={() => { }}
                     />
-                </div>
+
+                    {/* Feedback Section */}
+                    <div className="mt-12">
+                        <LogoFeedbackForm
+                            creatorName={brand.latestName}
+                            onSubmit={handleFeedbackSubmit}
+                        />
+                    </div>
+                </ContentCard>
             </div>
         </div>
     );

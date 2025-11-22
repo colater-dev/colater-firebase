@@ -10,6 +10,8 @@ interface BrandApplicationsProps {
     fontVariable?: string;
     palette?: string[];
     logoScale?: number;
+    contrast?: number;
+    invert?: boolean;
 }
 
 export function BrandApplications({
@@ -20,6 +22,8 @@ export function BrandApplications({
     fontVariable = 'sans-serif',
     palette = [],
     logoScale = 1,
+    contrast = 1.2,
+    invert = false,
 }: BrandApplicationsProps) {
 
     // Determine background style (gradient or solid)
@@ -42,61 +46,65 @@ export function BrandApplications({
 
     return (
         <div className="w-full max-w-4xl mt-12 mb-12">
-            <h3 className="text-lg font-semibold mb-6 text-left">Brand Applications</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+            <h3 className="text-lg font-semibold mb-6 text-left px-4">Brand Applications</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 w-full">
 
                 {/* 1. Business Card Front */}
-                <div className="flex flex-col gap-3">
-                    <div className="relative w-full aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-col justify-between">
-                        <div className="w-16 h-16 relative">
-                            <Image
-                                src={logoUrl}
-                                alt="Logo"
-                                fill
-                                className="object-contain object-left"
-                                style={{
-                                    transform: `scale(${logoScale})`,
-                                    filter: 'contrast(1.2)',
-                                    transition: 'transform 0.2s ease-out'
-                                }}
-                                unoptimized={logoUrl.startsWith('data:')}
-                            />
-                        </div>
-                        <div>
-                            <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: `var(${fontVariable})` }}>John Doe</p>
-                            <p className="text-xs text-gray-500 mt-0.5">Founder</p>
-                            <p className="text-xs text-gray-400 mt-4">john@{brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com</p>
+                <div className="flex flex-col">
+                    <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center p-0 border border-gray-100">
+                        <div className="relative w-full aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-col justify-between">
+                            <div className="w-16 h-16 relative">
+                                <Image
+                                    src={logoUrl}
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain object-left"
+                                    style={{
+                                        transform: `scale(${logoScale})`,
+                                        filter: `contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
+                                        transition: 'transform 0.2s ease-out'
+                                    }}
+                                    unoptimized={logoUrl.startsWith('data:')}
+                                />
+                            </div>
+                            <div>
+                                <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: `var(${fontVariable})` }}>John Doe</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Founder</p>
+                                <p className="text-xs text-gray-400 mt-4">john@{brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com</p>
+                            </div>
                         </div>
                     </div>
-                    <p className="text-xs text-center text-muted-foreground">Business Card (Front)</p>
+                    <p className="text-xs text-center text-muted-foreground mt-2">Business Card (Front)</p>
                 </div>
 
                 {/* 2. Business Card Back */}
-                <div className="flex flex-col gap-3">
-                    <div
-                        className="relative w-full aspect-[3.5/2] shadow-xl flex items-center justify-center p-6"
-                        style={backgroundStyle}
-                    >
-                        <div className="w-24 h-24 relative">
-                            <Image
-                                src={logoUrl}
-                                alt="Logo"
-                                fill
-                                className="object-contain"
-                                style={{
-                                    ...logoStyle,
-                                    filter: `${logoStyle.filter} contrast(1.2)`
-                                }}
-                                unoptimized={logoUrl.startsWith('data:')}
-                            />
+                <div className="flex flex-col">
+                    <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center p-0 border border-gray-100">
+                        <div
+                            className="relative w-full aspect-[3.5/2] shadow-xl flex items-center justify-center p-6"
+                            style={backgroundStyle}
+                        >
+                            <div className="w-24 h-24 relative">
+                                <Image
+                                    src={logoUrl}
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain"
+                                    style={{
+                                        ...logoStyle,
+                                        filter: `${logoStyle.filter} contrast(${contrast})`
+                                    }}
+                                    unoptimized={logoUrl.startsWith('data:')}
+                                />
+                            </div>
                         </div>
                     </div>
-                    <p className="text-xs text-center text-muted-foreground">Business Card (Back)</p>
+                    <p className="text-xs text-center text-muted-foreground mt-2">Business Card (Back)</p>
                 </div>
 
-                {/* 2. App Icon (Digital/Small Scale) */}
-                <div className="flex flex-col gap-3">
-                    <div className="relative w-full aspect-square bg-gray-100/50 rounded-3xl flex items-center justify-center overflow-hidden backdrop-blur-sm">
+                {/* 3. App Icon (Digital/Small Scale) */}
+                <div className="flex flex-col">
+                    <div className="relative w-full aspect-square bg-gray-100/50 flex items-center justify-center overflow-hidden backdrop-blur-sm border border-gray-100">
                         {/* Phone Wallpaper Effect */}
                         <div
                             className="absolute inset-0 opacity-20"
@@ -107,7 +115,7 @@ export function BrandApplications({
 
                         {/* App Icon */}
                         <div
-                            className="w-1/2 aspect-square rounded-[22%] shadow-2xl relative overflow-hidden flex items-center justify-center"
+                            className="w-1/2 aspect-square shadow-2xl relative overflow-hidden flex items-center justify-center"
                             style={backgroundStyle}
                         >
                             <div className="w-full h-full relative p-4">
@@ -123,12 +131,12 @@ export function BrandApplications({
                             </div>
                         </div>
                     </div>
-                    <p className="text-xs text-center text-muted-foreground">App Icon</p>
+                    <p className="text-xs text-center text-muted-foreground mt-2">App Icon</p>
                 </div>
 
-                {/* 3. Social Profile (Brand Voice) */}
-                <div className="flex flex-col gap-3">
-                    <div className="relative w-full aspect-[3/4] md:aspect-square bg-white rounded-xl overflow-hidden shadow-sm flex flex-col">
+                {/* 4. Social Profile (Brand Voice) */}
+                <div className="flex flex-col">
+                    <div className="relative w-full aspect-[3/4] md:aspect-square bg-white overflow-hidden shadow-sm flex flex-col max-h-full">
                         {/* Status Bar */}
                         <div className="h-6 bg-white border-b border-gray-50 flex items-center justify-between px-3">
                             <span className="text-[10px] font-medium text-gray-900">9:41</span>

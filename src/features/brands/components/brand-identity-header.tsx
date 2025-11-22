@@ -72,9 +72,9 @@ export function BrandIdentityHeader({
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="nano-banana">Nano Banana Pro</SelectItem>
                 <SelectItem value="ideogram">Ideogram v3</SelectItem>
                 <SelectItem value="reve">Reve</SelectItem>
-                <SelectItem value="nano-banana">Nano Banana Pro</SelectItem>
                 <SelectItem value="gemini">Gemini</SelectItem>
                 <SelectItem value="openai">OpenAI</SelectItem>
               </SelectContent>

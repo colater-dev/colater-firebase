@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor } from '@/lib/color-utils';
@@ -108,7 +108,14 @@ export function LogoShowcase({
         <div className="w-full max-w-4xl mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
                 {/* Original on White - Spans full width */}
-                <div className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px]`}>
+                <div
+                    className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px] ${readOnly ? 'cursor-pointer' : ''}`}
+                    onClick={() => {
+                        if (readOnly) {
+                            triggerAnimation('scale');
+                        }
+                    }}
+                >
                     {!readOnly && (
                         <LogoControls
                             logoLayout={logoLayout}
@@ -219,27 +226,43 @@ export function LogoShowcase({
                 </div>
 
                 {/* External Media Section - Spans full width */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 p-8 flex flex-col items-center justify-center gap-4">
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 flex flex-col items-center justify-center">
                     {externalMediaUrl && (
-                        <div className="w-full max-w-3xl rounded-lg overflow-hidden border bg-black/5 shadow-sm">
+                        <div className="w-full overflow-hidden bg-black/5 relative group">
+                            {!readOnly && onExternalMediaChange && (
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => {
+                                        onExternalMediaChange('');
+                                        if (onExternalMediaBlur) {
+                                            // Trigger save immediately after clearing
+                                            setTimeout(onExternalMediaBlur, 0);
+                                        }
+                                    }}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            )}
                             {externalMediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
                                 <video
                                     src={externalMediaUrl}
                                     controls
-                                    className="w-full h-auto max-h-[600px] object-contain"
+                                    className="w-full h-auto"
                                 />
                             ) : (
                                 <img
                                     src={externalMediaUrl}
                                     alt="External media"
-                                    className="w-full h-auto max-h-[600px] object-contain"
+                                    className="w-full h-auto"
                                 />
                             )}
                         </div>
                     )}
 
                     {!readOnly && onExternalMediaChange && (
-                        <div className="w-full max-w-xl space-y-2">
+                        <div className="w-full max-w-xl space-y-2 p-8">
                             <div className="flex gap-2">
                                 <input
                                     type="url"
