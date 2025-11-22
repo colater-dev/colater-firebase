@@ -10,7 +10,7 @@ import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-u
 import { ShaderLoader } from '@/components/ui/shader-loader';
 import type { Logo } from '@/lib/types';
 import { BrandApplications } from './brand-applications';
-import { BrandHeader } from './brand-header';
+import { BrandIdentityHeader } from './brand-identity-header';
 import { LogoShowcase } from './logo-showcase';
 
 interface BrandIdentityCardProps {
@@ -133,7 +133,7 @@ export function BrandIdentityCard({
 
   return (
     <Card className="shadow-none border-0 bg-transparent">
-      <BrandHeader
+      <BrandIdentityHeader
         isGeneratingConcept={isGeneratingConcept}
         onGenerateConcept={onGenerateConcept}
         logoConcept={logoConcept}
