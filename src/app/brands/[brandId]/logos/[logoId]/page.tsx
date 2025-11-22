@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Share2, Check } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Logo, Brand } from '@/lib/types';
 import { BrandIdentityCard } from '@/features/brands/components';
@@ -23,28 +23,38 @@ export default function LogoPage() {
     // Get current user
     const { user } = useUser();
 
-    // Try public path first for shareable URLs
-    const publicLogoRef = doc(firestore, `brands/${brandId}/logos/${logoId}`);
+    // Memoize document references to prevent recreation on every render
+    const publicLogoRef = useMemo(
+        () => doc(firestore, `brands/${brandId}/logos/${logoId}`),
+        [firestore, brandId, logoId]
+    );
     const { data: publicLogo, isLoading: publicLoading } = useDoc<Logo>(publicLogoRef);
 
-    // Fallback to user path if not found publicly and user is authenticated
-    const userLogoRef = user && !publicLogo && !publicLoading
-        ? doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`)
-        : null;
+    const userLogoRef = useMemo(
+        () => user && !publicLogo && !publicLoading
+            ? doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`)
+            : null,
+        [user, publicLogo, publicLoading, firestore, brandId, logoId]
+    );
     const { data: userLogo, isLoading: userLoading } = useDoc<Logo>(userLogoRef);
 
     // Use whichever logo was found
     const logo = publicLogo || userLogo;
     const logoLoading = publicLoading || userLoading;
 
-    // Fetch brand info - try public first
-    const publicBrandRef = doc(firestore, `brands/${brandId}`);
+    // Memoize brand document references
+    const publicBrandRef = useMemo(
+        () => doc(firestore, `brands/${brandId}`),
+        [firestore, brandId]
+    );
     const { data: publicBrand, isLoading: publicBrandLoading } = useDoc<Brand>(publicBrandRef);
 
-    // Fallback to user path
-    const userBrandRef = user && !publicBrand && !publicBrandLoading
-        ? doc(firestore, `users/${user.uid}/brands/${brandId}`)
-        : null;
+    const userBrandRef = useMemo(
+        () => user && !publicBrand && !publicBrandLoading
+            ? doc(firestore, `users/${user.uid}/brands/${brandId}`)
+            : null,
+        [user, publicBrand, publicBrandLoading, firestore, brandId]
+    );
     const { data: userBrand, isLoading: userBrandLoading } = useDoc<Brand>(userBrandRef);
 
     const brand = publicBrand || userBrand;
