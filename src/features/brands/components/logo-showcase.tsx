@@ -222,7 +222,7 @@ export function LogoShowcase({
                             ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">On White</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">► Tap to Animate</p>
                 </div>
 
                 {/* External Media Section - Spans full width */}

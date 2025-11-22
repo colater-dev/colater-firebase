@@ -24,11 +24,11 @@ export default function Home() {
     // Check if we're coming back from a redirect (look for auth-related URL parameters)
     const urlParams = new URLSearchParams(window.location.search);
     const hasAuthParams = urlParams.has('apiKey') || urlParams.has('authType') || urlParams.has('eventId');
-    
+
     console.log('Page loaded. URL:', window.location.href);
     console.log('Has auth params:', hasAuthParams);
     console.log('URL parameters:', Object.fromEntries(urlParams));
-    
+
     // Display all debug info from sessionStorage
     const debugKeys = ['auth-debug-start', 'auth-debug-redirect', 'auth-debug-success', 'auth-debug-no-result', 'auth-debug-error'];
     console.log('=== AUTH DEBUG INFO ===');
@@ -45,7 +45,7 @@ export default function Home() {
       }
     });
     console.log('=== END AUTH DEBUG INFO ===');
-    
+
     // Check if there might be a redirect result to process.
     // This is a simple check; more sophisticated checks might be needed
     // depending on the complexity of your app's entry points.
@@ -84,7 +84,7 @@ export default function Home() {
 
   useEffect(() => {
     console.log('Auth state changed:', { user: !!user, isUserLoading, isProcessingRedirect });
-    
+
     // Only redirect if we are not in the middle of loading the user
     // or processing a sign-in redirect.
     if (!isUserLoading && !isProcessingRedirect && user) {
@@ -120,9 +120,9 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
       <div className="text-center max-w-md mx-auto px-4">
-        <h1 className="text-5xl font-bold mb-4 tracking-tight">Brand Canvas</h1>
+        <h1 className="text-5xl font-bold mb-4 tracking-tight">Colater Demo</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          Craft your brand identity. Effortlessly.
+          Beta 0.2.1
         </p>
 
         {authError && (
