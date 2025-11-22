@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -34,6 +34,8 @@ interface BrandIdentityCardProps {
   isCritiquing: boolean;
   selectedBrandFont: string;
   onFontChange: (font: string) => void;
+  onSaveDisplaySettings?: (logoId: string, settings: Logo['displaySettings']) => void;
+  onMakeLogoPublic?: (logoId: string) => Promise<void>;
 }
 
 export function BrandIdentityCard({
@@ -56,6 +58,8 @@ export function BrandIdentityCard({
   isCritiquing,
   selectedBrandFont,
   onFontChange,
+  onSaveDisplaySettings,
+  onMakeLogoPublic,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
 
@@ -108,15 +112,77 @@ export function BrandIdentityCard({
 
   const currentLogo = logos?.[currentLogoIndex];
 
-  const handleShareLogo = () => {
+  const handleShareLogo = async () => {
     if (!currentLogo) return;
+
+    // Check if logo is already public, if not make it public first
+    if (!currentLogo.isPublic && onMakeLogoPublic) {
+      try {
+        await onMakeLogoPublic(currentLogo.id);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to share',
+          description: 'Could not make logo public. Please try again.',
+        });
+        return;
+      }
+    }
+
     const url = `${window.location.origin}/brands/${currentLogo.brandId}/logos/${currentLogo.id}`;
     navigator.clipboard.writeText(url);
     toast({
       title: 'Link copied!',
-      description: 'Share this link to show this logo.',
+      description: 'Anyone with this link can now view this logo.',
     });
   };
+
+  // Load display settings from current logo
+  useEffect(() => {
+    if (currentLogo?.displaySettings) {
+      setLogoLayout(currentLogo.displaySettings.layout);
+      setTextTransform(currentLogo.displaySettings.textTransform);
+      setShowBrandName(currentLogo.displaySettings.showBrandName);
+      setInvertLogo(currentLogo.displaySettings.invertLogo);
+      setLogoTextGap(currentLogo.displaySettings.logoTextGap);
+      setLogoTextBalance(currentLogo.displaySettings.logoTextBalance);
+      setLogoBrightness(currentLogo.displaySettings.logoBrightness);
+      setLogoContrast(currentLogo.displaySettings.logoContrast);
+    }
+  }, [currentLogo?.id]);
+
+  // Debounced save of display settings
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  useEffect(() => {
+    if (!currentLogo || !onSaveDisplaySettings) return;
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce save by 500ms
+    saveTimeoutRef.current = setTimeout(() => {
+      const settings = {
+        layout: logoLayout,
+        textTransform,
+        showBrandName,
+        invertLogo,
+        logoTextGap,
+        logoTextBalance,
+        logoBrightness,
+        logoContrast,
+      };
+      onSaveDisplaySettings(currentLogo.id, settings);
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [currentLogo?.id, logoLayout, textTransform, showBrandName, invertLogo, logoTextGap, logoTextBalance, logoBrightness, logoContrast, onSaveDisplaySettings]);
+
 
   // Reset hue shifts when logo changes
   useEffect(() => {

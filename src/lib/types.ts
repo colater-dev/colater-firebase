@@ -30,6 +30,16 @@ export interface Logo {
     logoUrl: string;
     createdAt: any; // Firestore Timestamp
     isPublic?: boolean; // Whether the logo can be publicly shared
+    displaySettings?: {
+        layout: 'horizontal' | 'vertical';
+        textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
+        showBrandName: boolean;
+        invertLogo: boolean;
+        logoTextGap: number;
+        logoTextBalance: number;
+        logoBrightness: number;
+        logoContrast: number;
+    };
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
     colorVersions?: Array<{ colorLogoUrl: string; palette: string[] }>; // Array of color versions with their palettes

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,13 +18,35 @@ export default function LogoPage() {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
 
-    // Fetch logo - try public path first, then user path
-    const logoDocRef = doc(firestore, `brands/${brandId}/logos/${logoId}`);
-    const { data: logo, isLoading: logoLoading } = useDoc<Logo>(logoDocRef);
+    // Get current user
+    const { user } = useUser();
 
-    // Fetch brand info
-    const brandDocRef = doc(firestore, `brands/${brandId}`);
-    const { data: brand, isLoading: brandLoading } = useDoc<Brand>(brandDocRef);
+    // Try public path first for shareable URLs
+    const publicLogoRef = doc(firestore, `brands/${brandId}/logos/${logoId}`);
+    const { data: publicLogo, isLoading: publicLoading } = useDoc<Logo>(publicLogoRef);
+
+    // Fallback to user path if not found publicly and user is authenticated
+    const userLogoRef = user && !publicLogo && !publicLoading
+        ? doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`)
+        : null;
+    const { data: userLogo, isLoading: userLoading } = useDoc<Logo>(userLogoRef);
+
+    // Use whichever logo was found
+    const logo = publicLogo || userLogo;
+    const logoLoading = publicLoading || userLoading;
+
+    // Fetch brand info - try public first
+    const publicBrandRef = doc(firestore, `brands/${brandId}`);
+    const { data: publicBrand, isLoading: publicBrandLoading } = useDoc<Brand>(publicBrandRef);
+
+    // Fallback to user path
+    const userBrandRef = user && !publicBrand && !publicBrandLoading
+        ? doc(firestore, `users/${user.uid}/brands/${brandId}`)
+        : null;
+    const { data: userBrand, isLoading: userBrandLoading } = useDoc<Brand>(userBrandRef);
+
+    const brand = publicBrand || userBrand;
+    const brandLoading = publicBrandLoading || userBrandLoading;
 
     const handleShare = async () => {
         const url = window.location.href;
@@ -45,6 +67,7 @@ export default function LogoPage() {
         }
     };
 
+
     if (logoLoading || brandLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -61,7 +84,7 @@ export default function LogoPage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold mb-2">Logo not found</h1>
-                    <p className="text-muted-foreground mb-4">This logo may have been deleted or made private.</p>
+                    <p className="text-muted-foreground mb-4">This logo may have been deleted or you don't have access to it.</p>
                     <Link href="/dashboard">
                         <Button>Go to Dashboard</Button>
                     </Link>

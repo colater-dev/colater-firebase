@@ -209,12 +209,18 @@ export default function BrandPage() {
           userId: user.uid,
           logoUrl: logoUrl,
           createdAt: serverTimestamp(),
+          isPublic: false, // Private by default
         };
+
+        // Save to user's private collection only
         const logosCollection = collection(
           firestore,
           `users/${user.uid}/brands/${brandId}/logoGenerations`
         );
-        await addDoc(logosCollection, logoData);
+        const logoDocRef = await addDoc(logosCollection, logoData);
+
+        // Update with ID
+        await updateDoc(logoDocRef, { id: logoDocRef.id });
 
         toast({
           title: 'New logo generated!',
@@ -234,6 +240,66 @@ export default function BrandPage() {
       setIsGeneratingLogo(false);
     }
   }, [brand, user, brandId, firestore, storage, toast, logoConcept]);
+
+  const handleSaveDisplaySettings = useCallback(async (logoId: string, settings: Logo['displaySettings']) => {
+    if (!user) return;
+
+    try {
+      const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`);
+      await updateDoc(logoRef, {
+        displaySettings: settings
+      });
+    } catch (error) {
+      console.error('Error saving display settings:', error);
+    }
+  }, [user, brandId, firestore]);
+
+  const handleMakeLogoPublic = useCallback(async (logoId: string) => {
+    if (!user) return;
+
+    try {
+      // Get the logo data from user's private collection
+      const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`);
+      const { getDoc, setDoc } = await import('firebase/firestore');
+      const logoSnap = await getDoc(logoRef);
+
+      if (!logoSnap.exists()) {
+        throw new Error('Logo not found');
+      }
+
+      const logoData = logoSnap.data();
+
+      // Copy to public path
+      const publicLogoRef = doc(firestore, `brands/${brandId}/logos/${logoId}`);
+      await setDoc(publicLogoRef, {
+        ...logoData,
+        isPublic: true,
+      });
+
+      // Mark as public in user's collection
+      await updateDoc(logoRef, {
+        isPublic: true,
+      });
+
+      // Also copy brand info to public path if not already there
+      const publicBrandRef = doc(firestore, `brands/${brandId}`);
+      const publicBrandSnap = await getDoc(publicBrandRef);
+
+      if (!publicBrandSnap.exists()) {
+        const brandRef = doc(firestore, `users/${user.uid}/brands/${brandId}`);
+        const brandSnap = await getDoc(brandRef);
+
+        if (brandSnap.exists()) {
+          await setDoc(publicBrandRef, brandSnap.data());
+        }
+      }
+    } catch (error) {
+      console.error('Error making logo public:', error);
+      throw error;
+    }
+  }, [user, brandId, firestore]);
+
+
 
   // Background concept generation for alternating logic
   const generateConceptBackground = useCallback(async () => {
@@ -503,6 +569,8 @@ export default function BrandPage() {
             isCritiquing={isCritiquing}
             selectedBrandFont={selectedBrandFont}
             onFontChange={handleFontChange}
+            onSaveDisplaySettings={handleSaveDisplaySettings}
+            onMakeLogoPublic={handleMakeLogoPublic}
           />
 
           <BrandHeader brand={brand} />
