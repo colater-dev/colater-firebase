@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
 import { ShaderLoader } from '@/components/ui/shader-loader';
@@ -12,6 +12,7 @@ import type { Logo } from '@/lib/types';
 import { BrandApplications } from './brand-applications';
 import { BrandIdentityHeader } from './brand-identity-header';
 import { LogoShowcase } from './logo-showcase';
+import { useToast } from '@/hooks/use-toast';
 
 interface BrandIdentityCardProps {
   brandName: string;
@@ -56,6 +57,7 @@ export function BrandIdentityCard({
   selectedBrandFont,
   onFontChange,
 }: BrandIdentityCardProps) {
+  const { toast } = useToast();
 
   const [showCritique, setShowCritique] = useState(false);
   const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
@@ -288,31 +290,52 @@ export function BrandIdentityCard({
           })()}
         </div>
 
-        {logos && logos.length > 1 && (
+        {logos && logos.length > 0 && currentLogo && (
           <div className="flex flex-col items-center gap-4 w-full">
             <div className="flex items-center justify-center w-full gap-4">
+              {logos.length > 1 && (
+                <>
+                  <Button
+                    variant="light"
+                    size="icon"
+                    onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
+                    disabled={currentLogoIndex === 0}
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  <Button
+                    variant="light"
+                    size="icon"
+                    onClick={() =>
+                      onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))
+                    }
+                    disabled={currentLogoIndex === logos.length - 1}
+                  >
+                    <ChevronRight />
+                  </Button>
+                </>
+              )}
               <Button
-                variant="light"
-                size="icon"
-                onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
-                disabled={currentLogoIndex === 0}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = `${window.location.origin}/brands/${currentLogo.brandId}/logos/${currentLogo.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast({
+                    title: 'Link copied!',
+                    description: 'Share this link to show this logo.',
+                  });
+                }}
               >
-                <ChevronLeft />
-              </Button>
-              <Button
-                variant="light"
-                size="icon"
-                onClick={() =>
-                  onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))
-                }
-                disabled={currentLogoIndex === logos.length - 1}
-              >
-                <ChevronRight />
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Logo
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Logo {currentLogoIndex + 1} of {logos.length}
-            </p>
+            {logos.length > 1 && (
+              <p className="text-sm text-muted-foreground">
+                Logo {currentLogoIndex + 1} of {logos.length}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

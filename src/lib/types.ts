@@ -29,6 +29,7 @@ export interface Logo {
     userId: string;
     logoUrl: string;
     createdAt: any; // Firestore Timestamp
+    isPublic?: boolean; // Whether the logo can be publicly shared
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
     colorVersions?: Array<{ colorLogoUrl: string; palette: string[] }>; // Array of color versions with their palettes

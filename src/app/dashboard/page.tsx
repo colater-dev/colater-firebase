@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus } from 'lucide-react';
 import { CreateProjectCard } from '@/components/dashboard/create-project-card';
+import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
 import type { Brand } from '@/lib/types';
 
 import { getBrandFontStyle } from '@/config/brand-fonts';
@@ -96,6 +97,7 @@ export default function Dashboard() {
             {!isLoadingBrands && brands && brands.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <CreateProjectCard />
+                    <UploadLogoCard />
                     {brands.map((brand) => (
                         <BrandListItem key={brand.id} brand={brand} />
                     ))}
