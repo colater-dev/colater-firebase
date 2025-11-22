@@ -36,6 +36,7 @@ interface BrandIdentityCardProps {
   onFontChange: (font: string) => void;
   onSaveDisplaySettings?: (logoId: string, settings: Logo['displaySettings']) => void;
   onMakeLogoPublic?: (logoId: string) => Promise<void>;
+  readOnly?: boolean;
 }
 
 export function BrandIdentityCard({
@@ -60,6 +61,7 @@ export function BrandIdentityCard({
   onFontChange,
   onSaveDisplaySettings,
   onMakeLogoPublic,
+  readOnly = false,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
 
@@ -212,25 +214,27 @@ export function BrandIdentityCard({
   }, [expandedPointId]);
 
   return (
-    <Card className="shadow-none border-0 bg-transparent">
-      <BrandIdentityHeader
-        isGeneratingConcept={isGeneratingConcept}
-        onGenerateConcept={onGenerateConcept}
-        logoConcept={logoConcept}
-        onConceptChange={onConceptChange}
-        selectedProvider={selectedProvider}
-        setSelectedProvider={setSelectedProvider}
-        isGeneratingLogo={isGeneratingLogo}
-        onGenerateLogo={onGenerateLogo}
-        showCritique={showCritique}
-        setShowCritique={setShowCritique}
-        isCritiquing={isCritiquing}
-        onCritiqueLogo={onCritiqueLogo}
-        currentLogo={currentLogo}
-        selectedBrandFont={selectedBrandFont}
-        onFontChange={onFontChange}
-        onShareLogo={handleShareLogo}
-      />
+    <Card className="w-full">
+      {!readOnly && (
+        <BrandIdentityHeader
+          isGeneratingConcept={isGeneratingConcept}
+          onGenerateConcept={onGenerateConcept}
+          logoConcept={logoConcept}
+          onConceptChange={onConceptChange}
+          selectedProvider={selectedProvider}
+          setSelectedProvider={setSelectedProvider}
+          isGeneratingLogo={isGeneratingLogo}
+          onGenerateLogo={onGenerateLogo}
+          showCritique={showCritique}
+          setShowCritique={setShowCritique}
+          isCritiquing={isCritiquing}
+          onCritiqueLogo={onCritiqueLogo}
+          currentLogo={currentLogo}
+          selectedBrandFont={selectedBrandFont}
+          onFontChange={onFontChange}
+          onShareLogo={handleShareLogo}
+        />
+      )}
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
         <div className="w-full space-y-4 pt-6 flex flex-col items-center">
           {/* Logo Applications Showcase */}
@@ -270,6 +274,7 @@ export function BrandIdentityCard({
               setLogoBrightness={setLogoBrightness}
               logoContrast={logoContrast}
               setLogoContrast={setLogoContrast}
+              readOnly={readOnly}
             />
           )}
 

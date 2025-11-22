@@ -46,6 +46,7 @@ interface LogoShowcaseProps {
     setLogoBrightness: (brightness: number) => void;
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
+    readOnly?: boolean;
 }
 
 export function LogoShowcase({
@@ -83,6 +84,7 @@ export function LogoShowcase({
     setLogoBrightness,
     logoContrast,
     setLogoContrast,
+    readOnly = false,
 }: LogoShowcaseProps) {
     const animationVariants = {
         fade: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
@@ -96,26 +98,28 @@ export function LogoShowcase({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
                 {/* Original on White - Spans full width */}
                 <div className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px]`}>
-                    <LogoControls
-                        logoLayout={logoLayout}
-                        setLogoLayout={setLogoLayout}
-                        textTransform={textTransform}
-                        setTextTransform={setTextTransform}
-                        animationType={animationType}
-                        triggerAnimation={triggerAnimation}
-                        showBrandName={showBrandName}
-                        setShowBrandName={setShowBrandName}
-                        invertLogo={invertLogo}
-                        setInvertLogo={setInvertLogo}
-                        logoTextGap={logoTextGap}
-                        setLogoTextGap={setLogoTextGap}
-                        logoTextBalance={logoTextBalance}
-                        setLogoTextBalance={setLogoTextBalance}
-                        logoBrightness={logoBrightness}
-                        setLogoBrightness={setLogoBrightness}
-                        logoContrast={logoContrast}
-                        setLogoContrast={setLogoContrast}
-                    />
+                    {!readOnly && (
+                        <LogoControls
+                            logoLayout={logoLayout}
+                            setLogoLayout={setLogoLayout}
+                            textTransform={textTransform}
+                            setTextTransform={setTextTransform}
+                            animationType={animationType}
+                            triggerAnimation={triggerAnimation}
+                            showBrandName={showBrandName}
+                            setShowBrandName={setShowBrandName}
+                            invertLogo={invertLogo}
+                            setInvertLogo={setInvertLogo}
+                            logoTextGap={logoTextGap}
+                            setLogoTextGap={setLogoTextGap}
+                            logoTextBalance={logoTextBalance}
+                            setLogoTextBalance={setLogoTextBalance}
+                            logoBrightness={logoBrightness}
+                            setLogoBrightness={setLogoBrightness}
+                            logoContrast={logoContrast}
+                            setLogoContrast={setLogoContrast}
+                        />
+                    )}
 
                     <motion.div
                         key={`logo-${animationKey}`}

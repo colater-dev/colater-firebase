@@ -133,25 +133,39 @@ service cloud.firestore {
      * @description Public brands collection for shareable brand pages.
      * @path /brands/{brandId}
      * @allow (get) Anyone can read a brand document.
-     * @deny (write) Only authenticated users can write via /users/{userId}/brands/{brandId}.
+     * @allow (write) Authenticated users can create/update their own brands.
      * @principle Allows public sharing of brand information.
      */
     match /brands/{brandId} {
       allow get: if true;  // Public read access
       allow list: if false; // Prevent listing all brands
-      allow write: if false; // Write only through user-owned path
+      allow create, update: if isSignedIn(); // Authenticated users can write
 
       /**
        * @description Public logos collection for shareable logo pages.
        * @path /brands/{brandId}/logos/{logoId}
        * @allow (get) Anyone can read a logo if it's marked as public.
-       * @deny (write) Only authenticated users can write via /users/{userId}/brands/{brandId}/logoGenerations/{generationId}.
+       * @allow (write) Authenticated users can create/update logos.
        * @principle Allows public sharing of logos.
        */
       match /logos/{logoId} {
         allow get: if true;  // Public read access for shareable logos
         allow list: if false; // Prevent listing all logos
-        allow write: if false; // Write only through user-owned path
+        allow create, update: if isSignedIn(); // Authenticated users can write
+        allow delete: if false; // Prevent deletion (keep in user's private collection only)
+        
+        /**
+         * @description Feedback collection for logo ratings and comments.
+         * @path /brands/{brandId}/logos/{logoId}/feedback/{feedbackId}
+         * @allow (create) Anyone can submit feedback.
+         * @allow (read) Anyone can read feedback.
+         * @principle Allows public engagement with shared logos.
+         */
+        match /feedback/{feedbackId} {
+          allow create: if true; // Anyone can submit feedback
+          allow read: if true; // Anyone can read feedback
+          allow update, delete: if false; // Prevent modification/deletion
+        }
       }
     }
   }

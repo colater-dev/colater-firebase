@@ -11,6 +11,8 @@ import { ArrowLeft, Share2, Check } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Logo, Brand } from '@/lib/types';
+import { BrandIdentityCard } from '@/features/brands/components';
+import { LogoFeedbackForm } from '@/features/brands/components/logo-feedback-form';
 
 export default function LogoPage() {
     const { brandId, logoId } = useParams();
@@ -67,6 +69,41 @@ export default function LogoPage() {
         }
     };
 
+    const handleFeedbackSubmit = async (rating: number, comment: string, isAnonymous: boolean) => {
+        if (!logo || !brand) return;
+
+        try {
+            const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+
+            const feedbackData = {
+                logoId: logoId as string,
+                brandId: brandId as string,
+                rating,
+                comment,
+                isAnonymous,
+                authorName: !isAnonymous && user?.displayName ? user.displayName : undefined,
+                authorId: !isAnonymous && user?.uid ? user.uid : undefined,
+                createdAt: serverTimestamp(),
+            };
+
+            // Save to public feedback collection
+            const feedbackRef = collection(firestore, `brands/${brandId}/logos/${logoId}/feedback`);
+            await addDoc(feedbackRef, feedbackData);
+
+            toast({
+                title: 'Feedback submitted!',
+                description: 'Thank you for sharing your thoughts!',
+            });
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Failed to submit',
+                description: 'Please try again later.',
+            });
+        }
+    };
+
 
     if (logoLoading || brandLoading) {
         return (
@@ -94,14 +131,14 @@ export default function LogoPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href={`/brands/${brandId}`}>
+        <div className="min-h-screen bg-background p-8">
+            <div className="container mx-auto max-w-7xl">
+                {/* Header with back button and share */}
+                <div className="mb-8 flex items-center justify-between">
+                    <Link href="/dashboard">
                         <Button variant="ghost" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Brand
+                            Back
                         </Button>
                     </Link>
                     <Button onClick={handleShare} variant="outline">
@@ -118,87 +155,39 @@ export default function LogoPage() {
                         )}
                     </Button>
                 </div>
-            </header>
 
-            {/* Main Content */}
-            <main className="container mx-auto px-4 py-12">
-                <div className="max-w-4xl mx-auto">
-                    {/* Brand Info */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold mb-2">{brand.latestName}</h1>
-                        {brand.latestElevatorPitch && (
-                            <p className="text-muted-foreground">{brand.latestElevatorPitch}</p>
-                        )}
-                    </div>
+                {/* Use BrandIdentityCard in read-only mode */}
+                <BrandIdentityCard
+                    brandName={brand.latestName}
+                    primaryTagline=""
+                    logos={[logo]}
+                    currentLogoIndex={0}
+                    isLoadingLogos={false}
+                    isGeneratingLogo={false}
+                    isGeneratingConcept={false}
+                    isColorizing={false}
+                    isLoadingTaglines={false}
+                    logoConcept={null}
+                    onGenerateConcept={() => { }}
+                    onConceptChange={() => { }}
+                    onGenerateLogo={() => { }}
+                    onColorizeLogo={() => { }}
+                    onLogoIndexChange={() => { }}
+                    onCritiqueLogo={() => { }}
+                    isCritiquing={false}
+                    selectedBrandFont={brand.font || 'Inter'}
+                    onFontChange={() => { }}
+                    readOnly={true}
+                />
 
-                    {/* Logo Display */}
-                    <Card className="p-12 mb-8">
-                        <div className="relative w-full aspect-square max-w-2xl mx-auto">
-                            <Image
-                                src={logo.logoUrl}
-                                alt={`${brand.latestName} logo`}
-                                fill
-                                className="object-contain"
-                                unoptimized={logo.logoUrl.startsWith('data:')}
-                                priority
-                            />
-                        </div>
-                    </Card>
-
-                    {/* Color Versions */}
-                    {logo.colorVersions && logo.colorVersions.length > 0 && (
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Color Versions</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {logo.colorVersions.map((version, index) => (
-                                    <Card key={index} className="p-8">
-                                        <div className="relative w-full aspect-square mb-4">
-                                            <Image
-                                                src={version.colorLogoUrl}
-                                                alt={`${brand.latestName} color logo ${index + 1}`}
-                                                fill
-                                                className="object-contain"
-                                                unoptimized={version.colorLogoUrl.startsWith('data:')}
-                                            />
-                                        </div>
-                                        <div className="flex gap-2 justify-center">
-                                            {version.palette.map((color, colorIndex) => (
-                                                <div
-                                                    key={colorIndex}
-                                                    className="w-8 h-8 rounded-full border-2 border-border"
-                                                    style={{ backgroundColor: color }}
-                                                    title={color}
-                                                />
-                                            ))}
-                                        </div>
-                                    </Card>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Critique */}
-                    {logo.critique && (
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Design Critique</h2>
-                            <Card className="p-6">
-                                <p className="text-muted-foreground mb-4">{logo.critique.overallSummary}</p>
-                                <div className="space-y-2">
-                                    {logo.critique.points.map((point, index) => (
-                                        <div
-                                            key={index}
-                                            className={`p-3 rounded-lg ${point.sentiment === 'positive' ? 'bg-green-50' : 'bg-red-50'
-                                                }`}
-                                        >
-                                            <p className="text-sm">{point.comment}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
-                    )}
+                {/* Feedback Section */}
+                <div className="mt-12">
+                    <LogoFeedbackForm
+                        creatorName={brand.latestName}
+                        onSubmit={handleFeedbackSubmit}
+                    />
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

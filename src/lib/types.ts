@@ -61,3 +61,15 @@ export interface Critique {
     overallSummary: string;
     points: CritiquePoint[];
 }
+
+export interface LogoFeedback {
+    id: string;
+    logoId: string;
+    brandId: string;
+    rating: number; // 1-5 stars
+    comment: string;
+    authorName?: string; // Present if user was logged in
+    authorId?: string; // Present if user was logged in
+    isAnonymous: boolean;
+    createdAt: any; // Firestore Timestamp
+}
