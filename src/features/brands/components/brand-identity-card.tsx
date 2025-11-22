@@ -290,6 +290,62 @@ export function BrandIdentityCard({
               logoContrast={logoContrast}
               setLogoContrast={setLogoContrast}
               readOnly={readOnly}
+              // External Media Props
+              externalMediaUrl={externalMediaUrl}
+              onExternalMediaChange={setExternalMediaUrl}
+              isSavingMedia={isSavingMedia}
+              onExternalMediaBlur={() => {
+                if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl && onSaveExternalMedia) {
+                  setIsSavingMedia(true);
+                  onSaveExternalMedia(currentLogo.id, externalMediaUrl);
+                  setTimeout(() => setIsSavingMedia(false), 1000);
+                }
+              }}
+              onFileUpload={async (file) => {
+                if (!file || !onSaveExternalMedia) return;
+
+                try {
+                  setIsSavingMedia(true);
+                  const { getPresignedUploadUrl } = await import('@/app/actions/upload-media');
+
+                  // 1. Get presigned URL
+                  const result = await getPresignedUploadUrl(file.type, file.name);
+                  if (!result.success || !result.url || !result.publicUrl) {
+                    throw new Error(result.error || 'Failed to get upload URL');
+                  }
+
+                  // 2. Upload file
+                  const uploadResponse = await fetch(result.url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                      'Content-Type': file.type,
+                    },
+                  });
+
+                  if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload file');
+                  }
+
+                  // 3. Save URL
+                  setExternalMediaUrl(result.publicUrl);
+                  onSaveExternalMedia(currentLogo.id, result.publicUrl);
+
+                  toast({
+                    title: 'Upload Successful',
+                    description: 'File uploaded and saved.',
+                  });
+                } catch (error) {
+                  console.error('Upload error:', error);
+                  toast({
+                    variant: 'destructive',
+                    title: 'Upload Failed',
+                    description: 'Could not upload file. Please check your R2 credentials.',
+                  });
+                } finally {
+                  setIsSavingMedia(false);
+                }
+              }}
             />
           )}
 
@@ -421,109 +477,7 @@ export function BrandIdentityCard({
           </div>
         )}
 
-        {/* External Media Section */}
-        <div className="w-full max-w-4xl px-8 pb-8 space-y-4">
-          {externalMediaUrl && (
-            <div className="w-full rounded-lg overflow-hidden border bg-black/5">
-              {externalMediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-                <video
-                  src={externalMediaUrl}
-                  controls
-                  className="w-full h-auto max-h-[600px] object-contain"
-                />
-              ) : (
-                <img
-                  src={externalMediaUrl}
-                  alt="External media"
-                  className="w-full h-auto max-h-[600px] object-contain"
-                />
-              )}
-            </div>
-          )}
 
-          {!readOnly && onSaveExternalMedia && currentLogo && (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="Paste an image or video URL (mp4, webm, ogg)..."
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={externalMediaUrl}
-                  onChange={(e) => setExternalMediaUrl(e.target.value)}
-                  onBlur={() => {
-                    if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl) {
-                      setIsSavingMedia(true);
-                      onSaveExternalMedia(currentLogo.id, externalMediaUrl);
-                      setTimeout(() => setIsSavingMedia(false), 1000);
-                    }
-                  }}
-                />
-                {isSavingMedia && (
-                  <div className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
-                    Saving...
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">Or upload a file:</p>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    try {
-                      setIsSavingMedia(true);
-                      const { getPresignedUploadUrl } = await import('@/app/actions/upload-media');
-
-                      // 1. Get presigned URL
-                      const result = await getPresignedUploadUrl(file.type, file.name);
-                      if (!result.success || !result.url || !result.publicUrl) {
-                        throw new Error(result.error || 'Failed to get upload URL');
-                      }
-
-                      // 2. Upload file
-                      const uploadResponse = await fetch(result.url, {
-                        method: 'PUT',
-                        body: file,
-                        headers: {
-                          'Content-Type': file.type,
-                        },
-                      });
-
-                      if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload file');
-                      }
-
-                      // 3. Save URL
-                      setExternalMediaUrl(result.publicUrl);
-                      onSaveExternalMedia(currentLogo.id, result.publicUrl);
-
-                      toast({
-                        title: 'Upload Successful',
-                        description: 'File uploaded and saved.',
-                      });
-                    } catch (error) {
-                      console.error('Upload error:', error);
-                      toast({
-                        variant: 'destructive',
-                        title: 'Upload Failed',
-                        description: 'Could not upload file. Please check your R2 credentials.',
-                      });
-                    } finally {
-                      setIsSavingMedia(false);
-                      // Reset input
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
       </CardContent>
     </Card>
   );

@@ -47,6 +47,12 @@ interface LogoShowcaseProps {
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
     readOnly?: boolean;
+    // External Media Props
+    externalMediaUrl?: string;
+    onExternalMediaChange?: (url: string) => void;
+    isSavingMedia?: boolean;
+    onExternalMediaBlur?: () => void;
+    onFileUpload?: (file: File) => void;
 }
 
 export function LogoShowcase({
@@ -85,6 +91,11 @@ export function LogoShowcase({
     logoContrast,
     setLogoContrast,
     readOnly = false,
+    externalMediaUrl,
+    onExternalMediaChange,
+    isSavingMedia,
+    onExternalMediaBlur,
+    onFileUpload,
 }: LogoShowcaseProps) {
     const animationVariants = {
         fade: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
@@ -205,6 +216,63 @@ export function LogoShowcase({
                         </div>
                     )}
                     <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">On White</p>
+                </div>
+
+                {/* External Media Section - Spans full width */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 p-8 flex flex-col items-center justify-center gap-4">
+                    {externalMediaUrl && (
+                        <div className="w-full max-w-3xl rounded-lg overflow-hidden border bg-black/5 shadow-sm">
+                            {externalMediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                                <video
+                                    src={externalMediaUrl}
+                                    controls
+                                    className="w-full h-auto max-h-[600px] object-contain"
+                                />
+                            ) : (
+                                <img
+                                    src={externalMediaUrl}
+                                    alt="External media"
+                                    className="w-full h-auto max-h-[600px] object-contain"
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    {!readOnly && onExternalMediaChange && (
+                        <div className="w-full max-w-xl space-y-2">
+                            <div className="flex gap-2">
+                                <input
+                                    type="url"
+                                    placeholder="Paste an image or video URL (mp4, webm, ogg)..."
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={externalMediaUrl || ''}
+                                    onChange={(e) => onExternalMediaChange(e.target.value)}
+                                    onBlur={onExternalMediaBlur}
+                                />
+                                {isSavingMedia && (
+                                    <div className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
+                                        Saving...
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2 justify-center">
+                                <p className="text-xs text-muted-foreground">Or upload a file:</p>
+                                <input
+                                    type="file"
+                                    accept="image/*,video/*"
+                                    className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file && onFileUpload) {
+                                            onFileUpload(file);
+                                            e.target.value = ''; // Reset input
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* On Gray (Darker, 50% opacity) - MOVED TO 2ND POSITION */}
