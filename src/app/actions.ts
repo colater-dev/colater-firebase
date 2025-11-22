@@ -112,6 +112,7 @@ export async function getLogoSuggestionFal(
   desirableCues: string,
   undesirableCues: string,
   concept?: string,
+  model?: string,
 ): Promise<{ success: boolean; data?: { logoUrl: string; prompt: string }; error?: string }> {
   try {
     if (!name || !elevatorPitch || !audience) {
@@ -124,6 +125,7 @@ export async function getLogoSuggestionFal(
       desirableCues,
       undesirableCues,
       concept,
+      model,
     });
     if (!result || !result.logoUrl) {
       throw new Error("Fal image generation failed to return a result.");

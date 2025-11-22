@@ -2,8 +2,7 @@
 
 import { z } from 'zod';
 import { fal } from "@fal-ai/client";
-import { getGenerateLogoPrompt } from '@/ai/prompts/generate-logo';
-
+import { ai } from '@/ai/genkit';
 import { Buffer } from 'buffer';
 
 const OpenAIGenerateLogoInputSchema = z.object({
@@ -28,8 +27,6 @@ export type OpenAIGenerateLogoOutput = z.infer<typeof OpenAIGenerateLogoOutputSc
 export async function generateLogoOpenAI(
   input: OpenAIGenerateLogoInput
 ): Promise<OpenAIGenerateLogoOutput> {
-  // ... (existing code) ...
-
   const parsed = OpenAIGenerateLogoInputSchema.parse(input);
 
   if (!process.env.FAL_KEY) {
@@ -40,29 +37,94 @@ export async function generateLogoOpenAI(
     credentials: process.env.FAL_KEY.trim(),
   });
 
-  // Use concept if provided, otherwise generate prompt using getGenerateLogoPrompt
-  let prompt: string;
+  // Base style requirements for all icon logos
+  const baseStylePrompt = "Flat black & white logo mark, minimal, negative-space, suitable at small sizes, no gradients, no texture, vector-style. Sharp edges blended with smooth curves, flat vector style, no gradients. Symmetric, abstract, tech-forward, with a clean silhouette readable at tiny sizes. Monochrome only.";
+
+  // Sanitize inputs
+  const cleanName = parsed.name.replace(/[\r\n]+/g, " ").trim();
+  const cleanPitch = parsed.elevatorPitch.replace(/[\r\n]+/g, " ").trim();
+  const cleanAudience = parsed.audience.replace(/[\r\n]+/g, " ").trim();
+  const cleanDesirableCues = parsed.desirableCues?.replace(/[\r\n]+/g, " ").trim() || "";
+  const cleanUndesirableCues = parsed.undesirableCues?.replace(/[\r\n]+/g, " ").trim() || "";
+
+  console.log('[generate-logo-openai] Input details:', {
+    name: cleanName,
+    elevatorPitch: cleanPitch,
+    audience: cleanAudience,
+    desirableCues: cleanDesirableCues || '(none)',
+    undesirableCues: cleanUndesirableCues || '(none)',
+    hasConcept: !!parsed.concept,
+    size: parsed.size,
+    quality: parsed.quality,
+  });
+
+  let aiStylePrompt = "";
+
+  // If concept is provided, extract the style prompt from it
   if (parsed.concept) {
     console.log('[generate-logo-openai] Using provided concept');
     // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
     const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
     if (stylePromptMatch) {
-      const stylePrompt = stylePromptMatch[1].trim();
-      // Combine with brand name and pitch for the full prompt
-      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${stylePrompt}`;
-      console.log('[generate-logo-openai] Extracted style prompt from concept');
+      aiStylePrompt = stylePromptMatch[1].trim();
+      console.log('[generate-logo-openai] Extracted style prompt from concept:', aiStylePrompt);
     } else {
       // If no "Style Prompt:" marker, use the entire concept
-      prompt = `Logo for ${parsed.name}. ${parsed.elevatorPitch}. ${parsed.concept.trim()}`;
-      console.log('[generate-logo-openai] Using entire concept as prompt');
+      aiStylePrompt = parsed.concept.trim();
+      console.log('[generate-logo-openai] Using entire concept as style prompt');
     }
-    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
   } else {
-    const { key, prompt: generatedPrompt } = getGenerateLogoPrompt(parsed.promptName, parsed);
-    console.log(`[generate-logo-openai] Prompt key: ${key}`);
-    prompt = generatedPrompt;
-    console.log(`[generate-logo-openai] Generated prompt:`, prompt);
+    // Generate brand-specific style prompt using genkit (fallback)
+    console.log('[generate-logo-openai] Generating style prompt using genkit');
+    const stylePromptPrompt = `You are an expert brand designer. Based on the following brand information, describe the logo concept and create a detailed stylePrompt that can be used for ideogram image generation.
+
+Brand Name: ${cleanName}
+Elevator Pitch: ${cleanPitch}
+Target Audience: ${cleanAudience}
+${cleanDesirableCues ? `Desirable Visual Cues: ${cleanDesirableCues}` : ''}
+${cleanUndesirableCues ? `Undesirable Visual Cues: ${cleanUndesirableCues}` : ''}
+
+Describe the logo concept as a brand designer would, focusing on:
+- Visual style and aesthetic
+- Symbolic elements that represent the brand
+- Design principles that align with the brand identity
+- Specific visual characteristics
+
+Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly used for ideogram image generation. The stylePrompt should be specific, actionable, and focused on visual design elements. Do not include the brand name or pitch in the stylePrompt - focus purely on the visual style and design characteristics.`;
+
+    console.log('[generate-logo-openai] Genkit style prompt request:', stylePromptPrompt);
+
+    try {
+      const genkitResponse = await ai.generate({
+        model: 'googleai/gemini-2.5-flash',
+        prompt: stylePromptPrompt,
+      });
+      aiStylePrompt = genkitResponse.text || "";
+      console.log('[generate-logo-openai] AI-generated style prompt:', aiStylePrompt);
+    } catch (error: any) {
+      console.error('[generate-logo-openai] Error generating style prompt:', error);
+      // Fallback to empty string if genkit call fails
+      aiStylePrompt = "";
+    }
   }
+
+  // Use AI-generated style prompt if available, otherwise fallback to base style requirements
+  const combinedStylePrompt = aiStylePrompt || baseStylePrompt;
+
+  console.log('[generate-logo-openai] Base style prompt:', baseStylePrompt);
+  console.log('[generate-logo-openai] Combined style prompt:', combinedStylePrompt);
+
+  let fullPrompt = `${cleanPitch}. ${combinedStylePrompt}`;
+
+  // Truncate prompt if too long (Ideogram usually handles long prompts, but safe limit is good)
+  const originalPromptLength = fullPrompt.length;
+  if (fullPrompt.length > 2000) {
+    fullPrompt = fullPrompt.substring(0, 2000);
+    console.warn(`[generate-logo-openai] Prompt truncated from ${originalPromptLength} to ${fullPrompt.length} characters`);
+  }
+
+  console.log('[generate-logo-openai] Full prompt for Ideogram:', fullPrompt);
+  console.log('[generate-logo-openai] Full prompt length:', fullPrompt.length);
 
   // Map size to fal image dimensions
   const sizeMap: Record<string, { width: number; height: number }> = {
@@ -77,10 +139,11 @@ export async function generateLogoOpenAI(
   console.log(`[generate-logo-openai] Using image size: ${imageSize.width}x${imageSize.height}`);
 
   try {
-    // Use Ideogram V3 via fal
+    console.log('[generate-logo-openai] Calling Ideogram V3 with image size:', imageSize);
+    // Use Ideogram V3 as requested
     const result: any = await fal.subscribe("fal-ai/ideogram/v3", {
       input: {
-        prompt: prompt,
+        prompt: fullPrompt,
         image_size: {
           width: imageSize.width,
           height: imageSize.height
@@ -114,7 +177,7 @@ export async function generateLogoOpenAI(
     const dataUri = `data:${contentType};base64,${base64}`;
 
     console.log('[generate-logo-openai] Image converted to data URI, size:', buffer.byteLength, 'bytes');
-    return { logoUrl: dataUri, prompt: prompt };
+    return { logoUrl: dataUri, prompt: fullPrompt };
   } catch (error: any) {
     console.error('[generate-logo-openai] Error:', error);
     const errorDetails = error.body ? JSON.stringify(error.body) : error.message;

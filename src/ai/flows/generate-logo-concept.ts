@@ -7,8 +7,8 @@
  * - GenerateLogoConceptOutput - The return type for the generateLogoConcept function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const GenerateLogoConceptInputSchema = z.object({
   name: z.string().describe('The name of the brand.'),
@@ -37,8 +37,8 @@ export async function generateLogoConcept(
 
 const prompt = ai.definePrompt({
   name: 'generateLogoConceptPrompt',
-  input: {schema: GenerateLogoConceptInputSchema},
-  output: {schema: GenerateLogoConceptOutputSchema},
+  input: { schema: GenerateLogoConceptInputSchema },
+  output: { schema: GenerateLogoConceptOutputSchema },
   prompt: `You are a veteran brand designer known for creating sharp, iconic, black-and-white marks. Study the brand details and produce a decisive creative direction that guides a visual model toward a clean, structured logo.
 
 Brand Name: {{{name}}}
@@ -52,7 +52,7 @@ Undesirable Visual Cues: {{{undesirableCues}}}
 1. Logo Concept (2-3 sentences)
 
 Describe a focused, highly visual concept by specifying:
-- Start with "Design a monochrome black icon on a white background that"...
+- Start with "Design a plain white icon on a black background"...
 - A primary metaphor (plus optional secondary) that translates directly into shapes.
 - The exact visual logic of the mark (e.g., two interlocking arcs, three modular bars forming a rotational hub, a continuous folded loop).
 - The structure of the silhouette (symmetry, roundedness, center-weight, negative-space treatment, line weight, and edge behavior).
@@ -76,7 +76,7 @@ const generateLogoConceptFlow = ai.defineFlow(
     outputSchema: GenerateLogoConceptOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );

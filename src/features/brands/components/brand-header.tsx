@@ -1,113 +1,149 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { PillInput } from '@/components/ui/pill-input';
-import { useFirestore, useUser } from '@/firebase';
-import { useToast } from '@/hooks/use-toast';
-import type { Brand } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { CardHeader } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, MessageSquare, Type } from 'lucide-react';
+import { BRAND_FONTS } from '@/config/brand-fonts';
+import type { Logo } from '@/lib/types';
 
 interface BrandHeaderProps {
-  brand: Brand;
+  isGeneratingConcept: boolean;
+  onGenerateConcept: () => void;
+  logoConcept: string | null;
+  onConceptChange: (concept: string) => void;
+  selectedProvider: 'gemini' | 'openai' | 'ideogram';
+  setSelectedProvider: (provider: 'gemini' | 'openai' | 'ideogram') => void;
+  isGeneratingLogo: boolean;
+  onGenerateLogo: (provider: 'gemini' | 'openai' | 'ideogram') => void;
+  showCritique: boolean;
+  setShowCritique: (show: boolean) => void;
+  isCritiquing: boolean;
+  onCritiqueLogo: () => void;
+  currentLogo: Logo | undefined;
+  selectedBrandFont: string;
+  onFontChange: (font: string) => void;
 }
 
-// Helper function to parse comma-separated string into array
-const parseToArray = (value: string): string[] => {
-  if (!value || value.trim() === '') return [];
-  return value.split(',').map(item => item.trim()).filter(item => item !== '');
-};
-
-// Helper function to convert array back to comma-separated string
-const arrayToString = (arr: string[]): string => {
-  return arr.join(', ');
-};
-
-export function BrandHeader({ brand }: BrandHeaderProps) {
-  const firestore = useFirestore();
-  const { user } = useUser();
-  const { toast } = useToast();
-
-  // Local state for pill values
-  const [audience, setAudience] = useState<string[]>([]);
-  const [desirableCues, setDesirableCues] = useState<string[]>([]);
-  const [undesirableCues, setUndesirableCues] = useState<string[]>([]);
-
-  // Initialize state from brand data
-  useEffect(() => {
-    setAudience(parseToArray(brand.latestAudience));
-    setDesirableCues(parseToArray(brand.latestDesirableCues));
-    setUndesirableCues(parseToArray(brand.latestUndesirableCues));
-  }, [brand.latestAudience, brand.latestDesirableCues, brand.latestUndesirableCues]);
-
-  // Update Firestore when values change
-  const updateBrandField = async (field: string, value: string[]) => {
-    if (!user) return;
-
-    try {
-      const brandRef = doc(firestore, `users/${user.uid}/brands/${brand.id}`);
-      await updateDoc(brandRef, {
-        [field]: arrayToString(value)
-      });
-    } catch (error) {
-      console.error(`Error updating ${field}:`, error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: `Could not update ${field.replace('latest', '').replace(/([A-Z])/g, ' $1').trim()}.`,
-      });
-    }
-  };
-
-  const handleAudienceChange = (value: string[]) => {
-    setAudience(value);
-    updateBrandField('latestAudience', value);
-  };
-
-  const handleDesirableCuesChange = (value: string[]) => {
-    setDesirableCues(value);
-    updateBrandField('latestDesirableCues', value);
-  };
-
-  const handleUndesirableCuesChange = (value: string[]) => {
-    setUndesirableCues(value);
-    updateBrandField('latestUndesirableCues', value);
-  };
-
+export function BrandHeader({
+  isGeneratingConcept,
+  onGenerateConcept,
+  logoConcept,
+  onConceptChange,
+  selectedProvider,
+  setSelectedProvider,
+  isGeneratingLogo,
+  onGenerateLogo,
+  showCritique,
+  setShowCritique,
+  isCritiquing,
+  onCritiqueLogo,
+  currentLogo,
+  selectedBrandFont,
+  onFontChange,
+}: BrandHeaderProps) {
   return (
-    <Card className="shadow-none border-0 bg-transparent">
-      <CardHeader className="p-0">
-        <CardTitle className="text-2xl md:text-3xl font-bold">{brand.latestName}</CardTitle>
-        <CardDescription>{brand.latestElevatorPitch}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 p-0">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold">Target Audience</label>
-          <PillInput
-            value={audience}
-            onChange={handleAudienceChange}
-            placeholder="Add target audience (e.g., Enterprise clients)..."
-          />
-        </div>
+    <CardHeader className="flex flex-col lg:flex-row items-start justify-between gap-4 p-0">
+      <div className="flex flex-wrap gap-2 items-center">
+        <Button
+          onClick={onGenerateConcept}
+          disabled={isGeneratingConcept}
+        >
+          {isGeneratingConcept ? (
+            <>
+              <Loader2 className="mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            'Generate Brand Concept'
+          )}
+        </Button>
+        {logoConcept && (
+          <>
+            <Select value={selectedProvider} onValueChange={(value: 'gemini' | 'openai' | 'ideogram') => setSelectedProvider(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gemini">Gemini</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="ideogram">Ideogram</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => onGenerateLogo(selectedProvider)}
+              disabled={isGeneratingLogo || !logoConcept}
+            >
+              {isGeneratingLogo ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Generate Logo'
+              )}
+            </Button>
+            <Button
+              variant={showCritique ? "default" : "outline"}
+              onClick={() => {
+                if (currentLogo?.critique) {
+                  setShowCritique(!showCritique);
+                } else {
+                  onCritiqueLogo();
+                  setShowCritique(true);
+                }
+              }}
+              disabled={isCritiquing || !currentLogo}
+            >
+              {isCritiquing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Critiquing...
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  {currentLogo?.critique ? (showCritique ? 'Hide Critique' : 'Show Critique') : 'Critique'}
+                </>
+              )}
+            </Button>
+          </>
+        )}
+      </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold">Desirable Cues</label>
-          <PillInput
-            value={desirableCues}
-            onChange={handleDesirableCuesChange}
-            placeholder="Add desirable cues (e.g., Minimalist, Futuristic)..."
-          />
-        </div>
+      {/* Font Selector */}
+      <div className="flex items-center gap-2">
+        <Select value={selectedBrandFont} onValueChange={onFontChange}>
+          <SelectTrigger className="w-[180px]">
+            <Type className="w-4 h-4 mr-2" />
+            <SelectValue placeholder="Select Font" />
+          </SelectTrigger>
+          <SelectContent>
+            {BRAND_FONTS.map((font) => (
+              <SelectItem key={font.name} value={font.name} style={{ fontFamily: `var(${font.variable})` }}>
+                {font.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold">Undesirable Cues</label>
-          <PillInput
-            value={undesirableCues}
-            onChange={handleUndesirableCuesChange}
-            placeholder="Add undesirable cues (e.g., Complex, Childish)..."
+      {logoConcept && (
+        <div className="w-full lg:w-auto lg:max-w-md flex-1">
+          <Textarea
+            id="logo-concept"
+            value={logoConcept}
+            onChange={(e) => onConceptChange(e.target.value)}
+            placeholder="Logo concept will appear here..."
+            className="min-h-[120px] resize-none"
           />
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </CardHeader>
   );
 }

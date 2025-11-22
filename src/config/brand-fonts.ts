@@ -3,57 +3,104 @@
  * Each font includes multiple weights for variety
  */
 
+import { Variable } from "lucide-react";
+
 export const BRAND_FONTS = [
     {
-        name: 'Inter',
-        weights: [400, 500, 600, 700, 800],
-        variable: '--font-inter',
+        name: 'Momo Trust',
+        weights: [400],
+        variable: '--font-momo-trust',
     },
     {
-        name: 'Poppins',
-        weights: [400, 500, 600, 700, 800],
-        variable: '--font-poppins',
+        name: 'Boldonse',
+        weights: [400],
+        variable: '--font-boldonse',
     },
     {
-        name: 'Montserrat',
-        weights: [400, 500, 600, 700, 800],
-        variable: '--font-montserrat',
-    },
-    {
-        name: 'Roboto',
-        weights: [400, 500, 700, 900],
-        variable: '--font-roboto',
-    },
-    {
-        name: 'Open Sans',
-        weights: [400, 600, 700, 800],
-        variable: '--font-open-sans',
-    },
-    {
-        name: 'Lato',
-        weights: [400, 700, 900],
-        variable: '--font-lato',
-    },
-    {
-        name: 'Raleway',
-        weights: [400, 500, 600, 700, 800],
-        variable: '--font-raleway',
-    },
-    {
-        name: 'Playfair Display',
+        name: 'Gabarito',
         weights: [400, 500, 600, 700, 800, 900],
-        variable: '--font-playfair',
+        variable: '--font-gabarito',
     },
     {
-        name: 'Merriweather',
-        weights: [400, 700, 900],
-        variable: '--font-merriweather',
+        name: 'Corben',
+        weights: [400, 700],
+        variable: '--font-corben',
     },
     {
-        name: 'Nunito',
-        weights: [400, 600, 700, 800, 900],
-        variable: '--font-nunito',
+        name: 'Tilt Warp',
+        weights: [400],
+        variable: '--font-tilt-warp',
     },
+    {
+        name: 'Aboreto',
+        weights: [400],
+        variable: '--font-aboreto',
+    },
+    {
+        name: 'Caparasimo',
+        weights: [400],
+        variable: '--font-caparasimo',
+    },
+    {
+        name: 'Jomhuria',
+        weights: [400],
+        variable: '--font-jomhuria',
+    },
+    {
+        name: 'Freeman',
+        weights: [400],
+        variable: '--font-freeman',
+    },
+    {
+        name: 'Nixie One',
+        weights: [400],
+        variable: '--font-nixie-one',
+    },
+    {
+        name: 'Tektur',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-tektur',
+    },
+    {
+        name: 'Faculty Glyphic',
+        weights: [400],
+        variable: '--font-faculty-glyphic',
+    },
+    {
+        name: 'BioRhyme Expanded',
+        weights: [400, 700, 800],
+        variable: '--font-biorhyme-expanded',
+    },
+    {
+        name: 'Rowdies',
+        weights: [300, 400, 700],
+        variable: '--font-rowdies',
+    },
+    {
+        name: 'Instrument Serif',
+        weights: [400],
+        variable: '--font-instrument-serif',
+    },
+    {
+        name: 'Instrument Sans',
+        weights: [400, 500, 600, 700],
+        variable: '--font-instrument-sans',
+    },
+    {
+        name: 'TASA Orbiter',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-tasa-orbiter',
+    },
+    {
+        name: 'Fraunces',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-fraunces',
+    },
+    {
+        name: 'Commissioner',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-commissioner',
+    }
 ] as const;
 
 export type BrandFont = typeof BRAND_FONTS[number];
@@ -88,11 +135,13 @@ export function getBrandFontStyle(brandId: string): {
  * Generate Google Fonts URL for all configured fonts
  */
 export function getGoogleFontsUrl(): string {
-    const fontParams = BRAND_FONTS.map(font => {
-        const weightsStr = font.weights.join(';');
-        const fontName = font.name.replace(/ /g, '+');
-        return `family=${fontName}:wght@${weightsStr}`;
-    }).join('&');
+    const fontParams = BRAND_FONTS
+        .filter(font => font.name !== 'Momo Trust' && font.name !== 'Boldonse') // Filter out custom fonts
+        .map(font => {
+            const weightsStr = font.weights.join(';');
+            const fontName = font.name.replace(/ /g, '+');
+            return `family=${fontName}:wght@${weightsStr}`;
+        }).join('&');
 
     return `https://fonts.googleapis.com/css2?${fontParams}&display=swap`;
 }

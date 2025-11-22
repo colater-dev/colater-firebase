@@ -1,3 +1,4 @@
-export { BrandHeader } from './brand-header';
-export { BrandIdentityCard } from './brand-identity-card';
-export { TaglinesList } from './taglines-list';
+export * from './brand-header';
+export * from './brand-identity-card';
+export * from './taglines-list';
+export * from './brand-applications';

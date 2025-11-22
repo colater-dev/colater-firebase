@@ -8,6 +8,8 @@ import { FirebaseClientProvider } from "@/firebase";
 import { AppHeader, AppSidebar } from "@/components/layout";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
 
+import { getGoogleFontsUrl } from "@/config/brand-fonts";
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -31,7 +33,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;900&family=Open+Sans:wght@400;600;700;800&family=Lato:wght@400;700;900&family=Raleway:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&family=Nunito:wght@400;600;700;800;900&display=swap"
+          href={getGoogleFontsUrl()}
           rel="stylesheet"
         />
       </head>

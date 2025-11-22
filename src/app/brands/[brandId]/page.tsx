@@ -68,6 +68,23 @@ export default function BrandPage() {
     }
   }, [brand?.latestConcept]);
 
+  // Font state
+  const [selectedBrandFont, setSelectedBrandFont] = useState<string>('Inter');
+
+  // Initialize font from brand data
+  useEffect(() => {
+    if (brand?.font) {
+      setSelectedBrandFont(brand.font);
+    }
+  }, [brand?.font]);
+
+  const handleFontChange = useCallback(async (font: string) => {
+    setSelectedBrandFont(font);
+    if (brandRef) {
+      await updateDoc(brandRef, { font });
+    }
+  }, [brandRef]);
+
 
   // Fetch logos
   const logosQuery = useMemoFirebase(
@@ -139,7 +156,8 @@ export default function BrandPage() {
   }, []);
 
   // Logo generation handler
-  const handleGenerateLogo = useCallback(async (provider: 'gemini' | 'openai' | 'ideogram') => {
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana'>('gemini');
+  const handleGenerateLogo = useCallback(async () => {
     if (!brand || !user || !firestore || !storage || !logoConcept) return;
     setIsGeneratingLogo(true);
     try {
@@ -163,14 +181,19 @@ export default function BrandPage() {
           brand.latestUndesirableCues,
           { size: '512x512', concept: logoConcept }
         );
-      } else if (provider === 'ideogram') {
+      } else if (provider === 'ideogram' || provider === 'reve' || provider === 'nano-banana') {
+        let modelId = 'fal-ai/ideogram/v3';
+        if (provider === 'reve') modelId = 'fal-ai/reve/text-to-image';
+        if (provider === 'nano-banana') modelId = 'fal-ai/nano-banana-pro';
+
         result = await getLogoSuggestionFal(
           brand.latestName,
           brand.latestElevatorPitch,
           brand.latestAudience,
           brand.latestDesirableCues,
           brand.latestUndesirableCues,
-          logoConcept
+          logoConcept,
+          modelId
         );
       } else {
         throw new Error('Invalid provider');
@@ -478,6 +501,8 @@ export default function BrandPage() {
             onLogoIndexChange={setCurrentLogoIndex}
             onCritiqueLogo={handleCritiqueLogo}
             isCritiquing={isCritiquing}
+            selectedBrandFont={selectedBrandFont}
+            onFontChange={handleFontChange}
           />
 
           <BrandHeader brand={brand} />

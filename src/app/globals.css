@@ -41,6 +41,20 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand Fonts */
+    --font-momo-trust: 'Momo Trust', sans-serif;
+    --font-boldonse: 'Boldonse', sans-serif;
+    --font-gabarito: 'Gabarito', sans-serif;
+    --font-corben: 'Corben', cursive;
+    --font-tilt-warp: 'Tilt Warp', display;
+    --font-aboreto: 'Aboreto', display;
+    --font-caparasimo: 'Caparasimo', display;
+    --font-jomhuria: 'Jomhuria', display;
+    --font-freeman: 'Freeman', display;
+    --font-nixie-one: 'Nixie One', display;
+    --font-tektur: 'Tektur', display;
+    --font-faculty-glyphic: 'Faculty Glyphic', display;
   }
 
   .dark {
@@ -83,6 +97,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }

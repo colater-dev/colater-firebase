@@ -13,6 +13,7 @@ const FalGenerateLogoInputSchema = z.object({
     undesirableCues: z.string().optional(),
     promptName: z.string().optional(),
     concept: z.string().optional(), // Optional logo concept from generate-logo-concept
+    model: z.string().optional(), // Optional model ID
 });
 export type FalGenerateLogoInput = z.infer<typeof FalGenerateLogoInputSchema>;
 
@@ -52,25 +53,28 @@ export async function generateLogoFal(
         desirableCues: cleanDesirableCues || '(none)',
         undesirableCues: cleanUndesirableCues || '(none)',
         hasConcept: !!parsed.concept,
+        model: parsed.model || 'fal-ai/ideogram/v3 (default)',
     });
 
-    let aiStylePrompt = "";
+    let fullPrompt = "";
 
-    // If concept is provided, extract the style prompt from it
+    // If concept is provided, use it directly (Concept + Style) and exclude elevator pitch
     if (parsed.concept) {
         console.log('[generate-logo-fal] Using provided concept');
-        // Extract style prompt from concept (format: "concept text\n\nStyle Prompt: style prompt text")
+        // Extract style prompt and concept
         const stylePromptMatch = parsed.concept.match(/Style Prompt:\s*([\s\S]+)/);
         if (stylePromptMatch) {
-            aiStylePrompt = stylePromptMatch[1].trim();
-            console.log('[generate-logo-fal] Extracted style prompt from concept:', aiStylePrompt);
+            const stylePrompt = stylePromptMatch[1].trim();
+            const concept = parsed.concept.replace(stylePromptMatch[0], '').trim();
+            fullPrompt = `${concept} ${stylePrompt}`;
+            console.log('[generate-logo-fal] Using concept + style prompt (no pitch)');
         } else {
             // If no "Style Prompt:" marker, use the entire concept
-            aiStylePrompt = parsed.concept.trim();
-            console.log('[generate-logo-fal] Using entire concept as style prompt');
+            fullPrompt = parsed.concept.trim();
+            console.log('[generate-logo-fal] Using entire concept as prompt (no pitch)');
         }
     } else {
-        // Generate brand-specific style prompt using genkit (fallback)
+        // Fallback: Generate brand-specific style prompt using genkit
         console.log('[generate-logo-fal] Generating style prompt using genkit');
         const stylePromptPrompt = `You are an expert brand designer. Based on the following brand information, describe the logo concept and create a detailed stylePrompt that can be used for ideogram image generation.
 
@@ -81,15 +85,16 @@ ${cleanDesirableCues ? `Desirable Visual Cues: ${cleanDesirableCues}` : ''}
 ${cleanUndesirableCues ? `Undesirable Visual Cues: ${cleanUndesirableCues}` : ''}
 
 Describe the logo concept as a brand designer would, focusing on:
-- Visual style and aesthetic
-- Symbolic elements that represent the brand
-- Design principles that align with the brand identity
-- Specific visual characteristics
+- Simple white logo on plain black background
+- Visual style and aesthetic appropriate for the brand
+- Symbolic elements to use
+- How to combine the visual elements that would best represent the brand
 
-Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly used for ideogram image generation. The stylePrompt should be specific, actionable, and focused on visual design elements. Do not include the brand name or pitch in the stylePrompt - focus purely on the visual style and design characteristics.`;
+Then, return ONLY a concise Prompt (4-5 sentences) that can be directly used for image generation. It should be specific, actionable, and focused on visual design elements without any abstract concepts. Do not include the brand name or pitch in the Prompt - focus purely on the visual style and design characteristics.`;
 
         console.log('[generate-logo-fal] Genkit style prompt request:', stylePromptPrompt);
 
+        let aiStylePrompt = "";
         try {
             const genkitResponse = await ai.generate({
                 model: 'googleai/gemini-2.5-flash',
@@ -99,18 +104,16 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
             console.log('[generate-logo-fal] AI-generated style prompt:', aiStylePrompt);
         } catch (error: any) {
             console.error('[generate-logo-fal] Error generating style prompt:', error);
-            // Fallback to empty string if genkit call fails
             aiStylePrompt = "";
         }
+
+        // Use AI-generated style prompt if available, otherwise fallback to base style requirements
+        const combinedStylePrompt = aiStylePrompt || baseStylePrompt;
+        console.log('[generate-logo-fal] Base style prompt:', baseStylePrompt);
+        console.log('[generate-logo-fal] Combined style prompt:', combinedStylePrompt);
+
+        fullPrompt = `${cleanPitch}. ${combinedStylePrompt}`;
     }
-
-    // Use AI-generated style prompt if available, otherwise fallback to base style requirements
-    const combinedStylePrompt = aiStylePrompt || baseStylePrompt;
-
-    console.log('[generate-logo-fal] Base style prompt:', baseStylePrompt);
-    console.log('[generate-logo-fal] Combined style prompt:', combinedStylePrompt);
-
-    let fullPrompt = `${cleanPitch}. ${combinedStylePrompt}`;
 
     // Truncate prompt if too long (Ideogram usually handles long prompts, but safe limit is good)
     const originalPromptLength = fullPrompt.length;
@@ -122,17 +125,33 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
     console.log('[generate-logo-fal] Full prompt for Ideogram:', fullPrompt);
     console.log('[generate-logo-fal] Full prompt length:', fullPrompt.length);
 
+    const modelId = parsed.model || "fal-ai/ideogram/v3";
+    console.log(`[generate-logo-fal] Calling ${modelId}`);
+
+    // Prepare input based on model
+    let modelInput: any = {
+        prompt: fullPrompt,
+    };
+
+    if (modelId === "fal-ai/ideogram/v3") {
+        modelInput.image_size = {
+            width: 720,
+            height: 720
+        };
+    } else if (modelId === "fal-ai/nano-banana-pro") {
+        modelInput.aspect_ratio = "1:1";
+        modelInput.output_format = "png";
+    } else if (modelId === "fal-ai/reve/text-to-image") {
+        modelInput.aspect_ratio = "1:1";
+        modelInput.output_format = "png";
+    } else {
+        // Default fallback for unknown models (assume aspect_ratio support)
+        modelInput.aspect_ratio = "1:1";
+    }
+
     try {
-        console.log('[generate-logo-fal] Calling Ideogram V3 with image size: 720x720');
-        // Use Ideogram V3 as requested
-        const result: any = await fal.subscribe("fal-ai/ideogram/v3", {
-            input: {
-                prompt: fullPrompt,
-                image_size: {
-                    width: 720,
-                    height: 720
-                },
-            },
+        const result: any = await fal.subscribe(modelId, {
+            input: modelInput,
             logs: true,
             onQueueUpdate: (update: any) => {
                 if (update.status === "IN_PROGRESS") {
@@ -141,8 +160,9 @@ Then, return ONLY a concise stylePrompt (3-4 sentences) that can be directly use
             },
         });
 
-        console.log('[generate-logo-fal] Ideogram generation completed');
-        // Fal returns image URLs, we need to convert to data URI
+        console.log(`[generate-logo-fal] ${modelId} generation completed`);
+
+        // Handle different response formats if necessary, but most Fal image models return { images: [{ url, ... }] }
         const imageUrl = result.data?.images?.[0]?.url;
         if (!imageUrl) {
             throw new Error('Fal did not return an image URL.');

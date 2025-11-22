@@ -11,6 +11,7 @@ export interface Brand {
     latestConcept?: string;
     logoUrl?: string;
     primaryTagline?: string;
+    font?: string;
 }
 
 export interface Tagline {
