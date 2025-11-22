@@ -1,105 +1,154 @@
 /**
  * Google Fonts configuration for brand name display
  * Each font includes multiple weights for variety
+ * Sorted alphabetically for easy reference
+ * Size multipliers help visually balance fonts to take up similar space
  */
 
-import { Variable } from "lucide-react";
-
 export const BRAND_FONTS = [
-    {
-        name: 'Momo Trust',
-        weights: [400],
-        variable: '--font-momo-trust',
-    },
-    {
-        name: 'Boldonse',
-        weights: [400],
-        variable: '--font-boldonse',
-    },
-    {
-        name: 'Gabarito',
-        weights: [400, 500, 600, 700, 800, 900],
-        variable: '--font-gabarito',
-    },
-    {
-        name: 'Corben',
-        weights: [400, 700],
-        variable: '--font-corben',
-    },
-    {
-        name: 'Tilt Warp',
-        weights: [400],
-        variable: '--font-tilt-warp',
-    },
     {
         name: 'Aboreto',
         weights: [400],
         variable: '--font-aboreto',
+        sizeMultiplier: 0.95, // Slightly condensed
     },
     {
-        name: 'Caparasimo',
-        weights: [400],
-        variable: '--font-caparasimo',
-    },
-    {
-        name: 'Jomhuria',
-        weights: [400],
-        variable: '--font-jomhuria',
-    },
-    {
-        name: 'Freeman',
-        weights: [400],
-        variable: '--font-freeman',
-    },
-    {
-        name: 'Nixie One',
-        weights: [400],
-        variable: '--font-nixie-one',
-    },
-    {
-        name: 'Tektur',
+        name: 'Archivo',
         weights: [400, 500, 600, 700, 800, 900],
-        variable: '--font-tektur',
-    },
-    {
-        name: 'Faculty Glyphic',
-        weights: [400],
-        variable: '--font-faculty-glyphic',
+        variable: '--font-archivo',
+        sizeMultiplier: 1.0, // Well-balanced
     },
     {
         name: 'BioRhyme Expanded',
         weights: [400, 700, 800],
         variable: '--font-biorhyme-expanded',
+        sizeMultiplier: 0.85, // Very wide, needs reduction
     },
     {
-        name: 'Rowdies',
-        weights: [300, 400, 700],
-        variable: '--font-rowdies',
-    },
-    {
-        name: 'Instrument Serif',
-        weights: [400],
-        variable: '--font-instrument-serif',
-    },
-    {
-        name: 'Instrument Sans',
+        name: 'Cabin',
         weights: [400, 500, 600, 700],
-        variable: '--font-instrument-sans',
+        variable: '--font-cabin',
+        sizeMultiplier: 1.0, // Well-balanced
     },
     {
-        name: 'TASA Orbiter',
-        weights: [400, 500, 600, 700, 800, 900],
-        variable: '--font-tasa-orbiter',
-    },
-    {
-        name: 'Fraunces',
-        weights: [400, 500, 600, 700, 800, 900],
-        variable: '--font-fraunces',
+        name: 'Caprasimo',
+        weights: [400],
+        variable: '--font-caparasimo',
+        sizeMultiplier: 0.9, // Bold and wide
     },
     {
         name: 'Commissioner',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-commissioner',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Corben',
+        weights: [400, 700],
+        variable: '--font-corben',
+        sizeMultiplier: 0.8, // Slightly bold
+    },
+    {
+        name: 'Faculty Glyphic',
+        weights: [400],
+        variable: '--font-faculty-glyphic',
+        sizeMultiplier: 0.9, // Narrow, needs increase
+    },
+    {
+        name: 'Fraunces',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-fraunces',
+        sizeMultiplier: 0.95, // Slightly wide
+    },
+    {
+        name: 'Freeman',
+        weights: [400],
+        variable: '--font-freeman',
+        sizeMultiplier: 0.9, // Bold and chunky
+    },
+    {
+        name: 'Gabarito',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-gabarito',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Genos',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-genos',
+        sizeMultiplier: 1.15, // Very narrow/condensed
+    },
+    {
+        name: 'Instrument Sans',
+        weights: [400, 500, 600, 700],
+        variable: '--font-instrument-sans',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Instrument Serif',
+        weights: [400],
+        variable: '--font-instrument-serif',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Jomhuria',
+        weights: [400],
+        variable: '--font-jomhuria',
+        sizeMultiplier: 1.5, // Very tall and decorative
+    },
+    {
+        name: 'Jost',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-jost',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Lexend',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-lexend',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'M PLUS Rounded 1c',
+        weights: [400, 500, 700, 800, 900],
+        variable: '--font-m-plus-rounded-1c',
+        sizeMultiplier: 1.05, // Slightly narrow
+    },
+    {
+        name: 'Michroma',
+        weights: [400],
+        variable: '--font-michroma',
+        sizeMultiplier: 1.1, // Narrow and geometric
+    },
+    {
+        name: 'Nixie One',
+        weights: [400],
+        variable: '--font-nixie-one',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Rowdies',
+        weights: [300, 400, 700],
+        variable: '--font-rowdies',
+        sizeMultiplier: 0.9, // Bold and playful
+    },
+    {
+        name: 'Saira',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-saira',
+        sizeMultiplier: 1.05, // Slightly condensed
+    },
+    {
+        name: 'Tektur',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-tektur',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Tilt Warp',
+        weights: [400],
+        variable: '--font-tilt-warp',
+        sizeMultiplier: 0.95, // Slightly wide
     }
 ] as const;
 
@@ -136,7 +185,6 @@ export function getBrandFontStyle(brandId: string): {
  */
 export function getGoogleFontsUrl(): string {
     const fontParams = BRAND_FONTS
-        .filter(font => font.name !== 'Momo Trust' && font.name !== 'Boldonse') // Filter out custom fonts
         .map(font => {
             const weightsStr = font.weights.join(';');
             const fontName = font.name.replace(/ /g, '+');

@@ -17,10 +17,10 @@ interface BrandIdentityHeaderProps {
   onGenerateConcept: () => void;
   logoConcept: string | null;
   onConceptChange: (concept: string) => void;
-  selectedProvider: 'gemini' | 'openai' | 'ideogram';
-  setSelectedProvider: (provider: 'gemini' | 'openai' | 'ideogram') => void;
+  selectedProvider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana';
+  setSelectedProvider: (provider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => void;
   isGeneratingLogo: boolean;
-  onGenerateLogo: (provider: 'gemini' | 'openai' | 'ideogram') => void;
+  onGenerateLogo: (provider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => void;
   showCritique: boolean;
   setShowCritique: (show: boolean) => void;
   isCritiquing: boolean;
@@ -67,14 +67,16 @@ export function BrandIdentityHeader({
         </Button>
         {logoConcept && (
           <>
-            <Select value={selectedProvider} onValueChange={(value: 'gemini' | 'openai' | 'ideogram') => setSelectedProvider(value)}>
+            <Select value={selectedProvider} onValueChange={(value: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => setSelectedProvider(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="ideogram">Ideogram v3</SelectItem>
+                <SelectItem value="reve">Reve</SelectItem>
+                <SelectItem value="nano-banana">Nano Banana Pro</SelectItem>
                 <SelectItem value="gemini">Gemini</SelectItem>
                 <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="ideogram">Ideogram</SelectItem>
               </SelectContent>
             </Select>
             <Button

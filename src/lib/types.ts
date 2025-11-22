@@ -47,6 +47,7 @@ export interface Logo {
     palettes?: string[][]; // Deprecated: caused nested arrays issue
     critique?: Critique;
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
+    externalMediaUrl?: string;
 }
 
 export interface CritiquePoint {

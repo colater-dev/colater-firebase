@@ -188,6 +188,8 @@ export default function LogoPage() {
                     selectedBrandFont={brand.font || 'Inter'}
                     onFontChange={() => { }}
                     readOnly={true}
+                    selectedProvider="ideogram"
+                    setSelectedProvider={() => { }}
                 />
 
                 {/* Feedback Section */}

@@ -156,7 +156,7 @@ export default function BrandPage() {
   }, []);
 
   // Logo generation handler
-  const [provider, setProvider] = useState<'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana'>('gemini');
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana'>('ideogram');
   const handleGenerateLogo = useCallback(async () => {
     if (!brand || !user || !firestore || !storage || !logoConcept) return;
     setIsGeneratingLogo(true);
@@ -527,6 +527,29 @@ export default function BrandPage() {
     }
   }, [logos, currentLogoIndex, brandRef, brand?.logoUrl, currentLogo]);
 
+  const handleSaveExternalMedia = useCallback(async (logoId: string, url: string) => {
+    if (!user || !brandId || !firestore) return;
+
+    try {
+      const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`);
+      await updateDoc(logoRef, {
+        externalMediaUrl: url
+      });
+
+      toast({
+        title: 'Media Saved',
+        description: 'External media link has been updated.',
+      });
+    } catch (error) {
+      console.error('Error saving external media:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: 'Could not save external media link.',
+      });
+    }
+  }, [user, brandId, firestore, toast]);
+
   const isLoading = isLoadingBrand;
 
   return (
@@ -571,6 +594,9 @@ export default function BrandPage() {
             onFontChange={handleFontChange}
             onSaveDisplaySettings={handleSaveDisplaySettings}
             onMakeLogoPublic={handleMakeLogoPublic}
+            selectedProvider={provider}
+            setSelectedProvider={setProvider}
+            onSaveExternalMedia={handleSaveExternalMedia}
           />
 
           <BrandHeader brand={brand} />

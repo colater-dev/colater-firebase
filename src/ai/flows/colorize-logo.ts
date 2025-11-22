@@ -74,13 +74,12 @@ const colorizeLogoFlow = ai.defineFlow(
           Undesirable Cues for color and style: ${input.undesirableCues || 'None'}
 
           Instructions:
-1. Introduce up to 3 modern, complementary brand-appropriate colors. The palette should feel premium, intentional, and visually cohesive.
+1. Introduce up to 3 modern, complementary brand-appropriate colors. The palette should feel intentional, and visually cohesive.
 2. Preserve the logo's shape, silhouette, spacing, and internal structure exactly. Do not alter, distort, add, or remove any shapes.
-3. You *may* use gradients, soft shadows, subtle lighting effects—only if they enhance clarity and do not change the structure of the mark. It should feel like a brand from 2030.
-4. The output must be a 160x160 pixel image.
-5. Place the colored logo on a clean white background with no extra elements, textures, patterns, or framing.
-6. Do not add any text to the image.
-7. After generating the image, return a JSON object in a markdown code block listing the 3 dominant hex colors used. Example:
+3. You *may* use soft shadows, subtle lighting effects—only if they enhance clarity and do not change the structure of the mark.
+4. Place the colored logo on a clean white background with no extra elements, textures, patterns, or framing.
+5. Do not add any text to the image.
+6. After generating the image, return a JSON object in a markdown code block listing the 3 dominant hex colors used. Example:
               \`\`\`json
               {
                 "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]

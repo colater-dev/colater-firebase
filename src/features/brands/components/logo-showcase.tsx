@@ -158,7 +158,7 @@ export function LogoShowcase({
                                 className="font-bold text-gray-900 leading-none"
                                 style={{
                                     fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
-                                    fontSize: `${36 * (0.5 + (logoTextBalance / 100))}px`,
+                                    fontSize: `${36 * (0.5 + (logoTextBalance / 100)) * (BRAND_FONTS.find(f => f.name === selectedBrandFont)?.sizeMultiplier || 1.0)}px`,
                                     textTransform: textTransform === 'none' ? 'none' : textTransform
                                 }}
                             >
