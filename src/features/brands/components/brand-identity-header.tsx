@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Type } from 'lucide-react';
+import { Loader2, MessageSquare, Type, Share2 } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Logo } from '@/lib/types';
 
@@ -28,6 +28,7 @@ interface BrandIdentityHeaderProps {
   currentLogo: Logo | undefined;
   selectedBrandFont: string;
   onFontChange: (font: string) => void;
+  onShareLogo: () => void;
 }
 
 export function BrandIdentityHeader({
@@ -46,6 +47,7 @@ export function BrandIdentityHeader({
   currentLogo,
   selectedBrandFont,
   onFontChange,
+  onShareLogo,
 }: BrandIdentityHeaderProps) {
   return (
     <CardHeader className="flex flex-col lg:flex-row items-start justify-between gap-4 p-0">
@@ -89,7 +91,7 @@ export function BrandIdentityHeader({
               )}
             </Button>
             <Button
-              variant={showCritique ? "default" : "outline"}
+              variant="outline"
               onClick={() => {
                 if (currentLogo?.critique) {
                   setShowCritique(!showCritique);
@@ -111,6 +113,14 @@ export function BrandIdentityHeader({
                   {currentLogo?.critique ? (showCritique ? 'Hide Critique' : 'Show Critique') : 'Critique'}
                 </>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onShareLogo}
+              disabled={!currentLogo}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
             </Button>
           </>
         )}

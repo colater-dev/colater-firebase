@@ -14,10 +14,14 @@ import {
 interface LogoControlsProps {
     logoLayout: 'horizontal' | 'vertical';
     setLogoLayout: (layout: 'horizontal' | 'vertical') => void;
+    textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
+    setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
     animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
     triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
     showBrandName: boolean;
     setShowBrandName: (show: boolean) => void;
+    invertLogo: boolean;
+    setInvertLogo: (invert: boolean) => void;
     logoTextGap: number;
     setLogoTextGap: (gap: number) => void;
     logoTextBalance: number;
@@ -31,10 +35,14 @@ interface LogoControlsProps {
 export function LogoControls({
     logoLayout,
     setLogoLayout,
+    textTransform,
+    setTextTransform,
     animationType,
     triggerAnimation,
     showBrandName,
     setShowBrandName,
+    invertLogo,
+    setInvertLogo,
     logoTextGap,
     setLogoTextGap,
     logoTextBalance,
@@ -64,6 +72,48 @@ export function LogoControls({
                         onClick={() => setLogoLayout('vertical')}
                     >
                         <ArrowDown className="h-3 w-3" />
+                    </Button>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Text Transform</Label>
+                <div className="flex bg-muted rounded-md p-1 gap-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`flex-1 h-6 px-1 text-[10px] ${textTransform === 'none' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
+                        onClick={() => setTextTransform('none')}
+                        title="Original"
+                    >
+                        Original
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`flex-1 h-6 px-1 text-[10px] ${textTransform === 'lowercase' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
+                        onClick={() => setTextTransform('lowercase')}
+                        title="lowercase"
+                    >
+                        abc
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`flex-1 h-6 px-1 text-[10px] ${textTransform === 'capitalize' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
+                        onClick={() => setTextTransform('capitalize')}
+                        title="Capitalize"
+                    >
+                        Abc
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`flex-1 h-6 px-1 text-[10px] ${textTransform === 'uppercase' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
+                        onClick={() => setTextTransform('uppercase')}
+                        title="UPPERCASE"
+                    >
+                        ABC
                     </Button>
                 </div>
             </div>
@@ -115,6 +165,14 @@ export function LogoControls({
                 <Switch
                     checked={showBrandName}
                     onCheckedChange={setShowBrandName}
+                    className="scale-75"
+                />
+            </div>
+            <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Invert Logo</Label>
+                <Switch
+                    checked={invertLogo}
+                    onCheckedChange={setInvertLogo}
                     className="scale-75"
                 />
             </div>

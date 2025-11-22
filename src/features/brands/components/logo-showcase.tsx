@@ -29,11 +29,15 @@ interface LogoShowcaseProps {
     // Control Props
     logoLayout: 'horizontal' | 'vertical';
     setLogoLayout: (layout: 'horizontal' | 'vertical') => void;
+    textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
+    setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
     animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
     triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
     animationKey: number;
     showBrandName: boolean;
     setShowBrandName: (show: boolean) => void;
+    invertLogo: boolean;
+    setInvertLogo: (invert: boolean) => void;
     logoTextGap: number;
     setLogoTextGap: (gap: number) => void;
     logoTextBalance: number;
@@ -62,11 +66,15 @@ export function LogoShowcase({
     isGeneratingLogo,
     logoLayout,
     setLogoLayout,
+    textTransform,
+    setTextTransform,
     animationType,
     triggerAnimation,
     animationKey,
     showBrandName,
     setShowBrandName,
+    invertLogo,
+    setInvertLogo,
     logoTextGap,
     setLogoTextGap,
     logoTextBalance,
@@ -91,10 +99,14 @@ export function LogoShowcase({
                     <LogoControls
                         logoLayout={logoLayout}
                         setLogoLayout={setLogoLayout}
+                        textTransform={textTransform}
+                        setTextTransform={setTextTransform}
                         animationType={animationType}
                         triggerAnimation={triggerAnimation}
                         showBrandName={showBrandName}
                         setShowBrandName={setShowBrandName}
+                        invertLogo={invertLogo}
+                        setInvertLogo={setInvertLogo}
                         logoTextGap={logoTextGap}
                         setLogoTextGap={setLogoTextGap}
                         logoTextBalance={logoTextBalance}
@@ -125,7 +137,9 @@ export function LogoShowcase({
                             fill
                             className="object-contain"
                             unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                            style={{ filter: `brightness(${logoBrightness}%) contrast(${logoContrast}%)` }}
+                            style={{
+                                filter: `brightness(${logoBrightness}%) contrast(${logoContrast}%)${invertLogo ? ' invert(1)' : ''}`
+                            }}
                         />
                     </motion.div>
 
@@ -140,7 +154,8 @@ export function LogoShowcase({
                                 className="font-bold text-gray-900 leading-none"
                                 style={{
                                     fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
-                                    fontSize: `${36 * (0.5 + (logoTextBalance / 100))}px`
+                                    fontSize: `${36 * (0.5 + (logoTextBalance / 100))}px`,
+                                    textTransform: textTransform === 'none' ? 'none' : textTransform
                                 }}
                             >
                                 {brandName.split('').map((char, index) => (

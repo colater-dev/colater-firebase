@@ -72,6 +72,8 @@ export function BrandIdentityCard({
   const [logoBrightness, setLogoBrightness] = useState(100);
   const [logoContrast, setLogoContrast] = useState(120);
   const [showBrandName, setShowBrandName] = useState(true);
+  const [invertLogo, setInvertLogo] = useState(false);
+  const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
 
   const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'blur' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
@@ -105,6 +107,16 @@ export function BrandIdentityCard({
   };
 
   const currentLogo = logos?.[currentLogoIndex];
+
+  const handleShareLogo = () => {
+    if (!currentLogo) return;
+    const url = `${window.location.origin}/brands/${currentLogo.brandId}/logos/${currentLogo.id}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: 'Link copied!',
+      description: 'Share this link to show this logo.',
+    });
+  };
 
   // Reset hue shifts when logo changes
   useEffect(() => {
@@ -151,6 +163,7 @@ export function BrandIdentityCard({
         currentLogo={currentLogo}
         selectedBrandFont={selectedBrandFont}
         onFontChange={onFontChange}
+        onShareLogo={handleShareLogo}
       />
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
         <div className="w-full space-y-4 pt-6 flex flex-col items-center">
@@ -174,11 +187,15 @@ export function BrandIdentityCard({
               isGeneratingLogo={isGeneratingLogo}
               logoLayout={logoLayout}
               setLogoLayout={setLogoLayout}
+              textTransform={textTransform}
+              setTextTransform={setTextTransform}
               animationType={animationType}
               triggerAnimation={triggerAnimation}
               animationKey={animationKey}
               showBrandName={showBrandName}
               setShowBrandName={setShowBrandName}
+              invertLogo={invertLogo}
+              setInvertLogo={setInvertLogo}
               logoTextGap={logoTextGap}
               setLogoTextGap={setLogoTextGap}
               logoTextBalance={logoTextBalance}
@@ -290,52 +307,31 @@ export function BrandIdentityCard({
           })()}
         </div>
 
-        {logos && logos.length > 0 && currentLogo && (
+        {logos && logos.length > 1 && (
           <div className="flex flex-col items-center gap-4 w-full">
             <div className="flex items-center justify-center w-full gap-4">
-              {logos.length > 1 && (
-                <>
-                  <Button
-                    variant="light"
-                    size="icon"
-                    onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
-                    disabled={currentLogoIndex === 0}
-                  >
-                    <ChevronLeft />
-                  </Button>
-                  <Button
-                    variant="light"
-                    size="icon"
-                    onClick={() =>
-                      onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))
-                    }
-                    disabled={currentLogoIndex === logos.length - 1}
-                  >
-                    <ChevronRight />
-                  </Button>
-                </>
-              )}
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const url = `${window.location.origin}/brands/${currentLogo.brandId}/logos/${currentLogo.id}`;
-                  navigator.clipboard.writeText(url);
-                  toast({
-                    title: 'Link copied!',
-                    description: 'Share this link to show this logo.',
-                  });
-                }}
+                variant="light"
+                size="icon"
+                onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
+                disabled={currentLogoIndex === 0}
               >
-                <Share2 className="mr-2 h-4 w-4" />
-                Share Logo
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="light"
+                size="icon"
+                onClick={() =>
+                  onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))
+                }
+                disabled={currentLogoIndex === logos.length - 1}
+              >
+                <ChevronRight />
               </Button>
             </div>
-            {logos.length > 1 && (
-              <p className="text-sm text-muted-foreground">
-                Logo {currentLogoIndex + 1} of {logos.length}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">
+              Logo {currentLogoIndex + 1} of {logos.length}
+            </p>
           </div>
         )}
       </CardContent>
