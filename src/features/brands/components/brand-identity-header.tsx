@@ -137,7 +137,7 @@ export function BrandIdentityHeader({
           </SelectTrigger>
           <SelectContent>
             {BRAND_FONTS.map((font) => (
-              <SelectItem key={font.name} value={font.name} style={{ fontFamily: `var(${font.variable})` }}>
+              <SelectItem key={font.name} value={font.name} style={{ fontFamily: `var(${font.variable})`, fontSize: `${font.sizeMultiplier}em` }}>
                 {font.name}
               </SelectItem>
             ))}

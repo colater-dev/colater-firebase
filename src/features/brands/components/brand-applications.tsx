@@ -12,6 +12,8 @@ interface BrandApplicationsProps {
     logoScale?: number;
     contrast?: number;
     invert?: boolean;
+    smoothness?: number;
+    brightness?: number;
 }
 
 export function BrandApplications({
@@ -24,6 +26,8 @@ export function BrandApplications({
     logoScale = 1,
     contrast = 1.2,
     invert = false,
+    smoothness = 0,
+    brightness = 1,
 }: BrandApplicationsProps) {
 
     // Determine background style (gradient or solid)
@@ -38,7 +42,9 @@ export function BrandApplications({
     const isBgLight = isLightColor(bgForContrast);
 
     const logoStyle = {
-        filter: isBgLight ? 'none' : 'invert(1)',
+        filter: isBgLight
+            ? `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast})`
+            : `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast}) invert(1)`,
         mixBlendMode: isBgLight ? 'multiply' as const : 'screen' as const,
         transform: `scale(${logoScale})`,
         transition: 'transform 0.2s ease-out'
@@ -61,7 +67,7 @@ export function BrandApplications({
                                     className="object-contain object-left"
                                     style={{
                                         transform: `scale(${logoScale})`,
-                                        filter: `contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
+                                        filter: `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
                                         transition: 'transform 0.2s ease-out'
                                     }}
                                     unoptimized={logoUrl.startsWith('data:')}
@@ -90,10 +96,7 @@ export function BrandApplications({
                                     alt="Logo"
                                     fill
                                     className="object-contain"
-                                    style={{
-                                        ...logoStyle,
-                                        filter: `${logoStyle.filter} contrast(${contrast})`
-                                    }}
+                                    style={logoStyle}
                                     unoptimized={logoUrl.startsWith('data:')}
                                 />
                             </div>
@@ -115,7 +118,7 @@ export function BrandApplications({
 
                         {/* App Icon */}
                         <div
-                            className="w-1/2 aspect-square shadow-2xl relative overflow-hidden flex items-center justify-center"
+                            className="w-1/2 aspect-square rounded-[22%] shadow-2xl relative overflow-hidden flex items-center justify-center"
                             style={backgroundStyle}
                         >
                             <div className="w-full h-full relative p-4">

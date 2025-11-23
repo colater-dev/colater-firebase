@@ -46,6 +46,8 @@ interface LogoShowcaseProps {
     setLogoBrightness: (brightness: number) => void;
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
+    logoSmoothness: number;
+    setLogoSmoothness: (smoothness: number) => void;
     readOnly?: boolean;
     // External Media Props
     externalMediaUrl?: string;
@@ -53,6 +55,7 @@ interface LogoShowcaseProps {
     isSavingMedia?: boolean;
     onExternalMediaBlur?: () => void;
     onFileUpload?: (file: File) => void;
+    onDeleteColorVersion?: (index: number) => void;
 }
 
 export function LogoShowcase({
@@ -90,12 +93,15 @@ export function LogoShowcase({
     setLogoBrightness,
     logoContrast,
     setLogoContrast,
+    logoSmoothness,
+    setLogoSmoothness,
     readOnly = false,
     externalMediaUrl,
     onExternalMediaChange,
     isSavingMedia,
     onExternalMediaBlur,
     onFileUpload,
+    onDeleteColorVersion,
 }: LogoShowcaseProps) {
     const animationVariants = {
         fade: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
@@ -136,6 +142,8 @@ export function LogoShowcase({
                             setLogoBrightness={setLogoBrightness}
                             logoContrast={logoContrast}
                             setLogoContrast={setLogoContrast}
+                            logoSmoothness={logoSmoothness}
+                            setLogoSmoothness={setLogoSmoothness}
                         />
                     )}
 
@@ -160,7 +168,7 @@ export function LogoShowcase({
                             className="object-contain"
                             unoptimized={currentLogo.logoUrl.startsWith('data:')}
                             style={{
-                                filter: `brightness(${logoBrightness}%) contrast(${logoContrast}%)${invertLogo ? ' invert(1)' : ''}`
+                                filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${invertLogo ? ' invert(1)' : ''}`
                             }}
                         />
                     </motion.div>
@@ -468,7 +476,7 @@ export function LogoShowcase({
                             const shiftedPalette = colorVersion.palette.map(color => shiftHue(color, currentHueShift));
 
                             return (
-                                <div key={`color-version-${versionIndex}`} className="relative aspect-square bg-white flex flex-col items-center justify-center">
+                                <div key={`color-version-${versionIndex}`} className="relative aspect-square bg-white flex flex-col items-center justify-center group">
                                     {/* Color logo with hue shift */}
                                     <div className="flex-1 w-full flex items-center justify-center relative">
                                         <Image
@@ -498,6 +506,36 @@ export function LogoShowcase({
                                                 />
                                             ))}
                                         </div>
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onColorizeLogo();
+                                            }}
+                                            disabled={isColorizing}
+                                            title="Generate another color version"
+                                        >
+                                            <RefreshCw className={`w-4 h-4 ${isColorizing ? 'animate-spin' : ''}`} />
+                                        </Button>
+
+                                        {/* Delete Button */}
+                                        {!readOnly && onDeleteColorVersion && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute top-12 right-2 w-8 h-8 bg-red-500/20 hover:bg-red-500/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteColorVersion(versionIndex);
+                                                }}
+                                                title="Delete this color version"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {/* Hue slider at bottom */}

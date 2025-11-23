@@ -30,6 +30,8 @@ interface LogoControlsProps {
     setLogoBrightness: (brightness: number) => void;
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
+    logoSmoothness: number;
+    setLogoSmoothness: (smoothness: number) => void;
 }
 
 export function LogoControls({
@@ -51,6 +53,8 @@ export function LogoControls({
     setLogoBrightness,
     logoContrast,
     setLogoContrast,
+    logoSmoothness,
+    setLogoSmoothness,
 }: LogoControlsProps) {
     return (
         <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30">
@@ -216,8 +220,18 @@ export function LogoControls({
                     value={[logoContrast]}
                     onValueChange={(value) => setLogoContrast(value[0])}
                     min={0}
-                    max={200}
+                    max={300}
                     step={1}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Smoothness</Label>
+                <Slider
+                    value={[logoSmoothness]}
+                    onValueChange={(value) => setLogoSmoothness(value[0])}
+                    min={0}
+                    max={1.5}
+                    step={0.1}
                 />
             </div>
         </div>

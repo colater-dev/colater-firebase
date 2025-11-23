@@ -40,6 +40,7 @@ interface BrandIdentityCardProps {
   selectedProvider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana';
   setSelectedProvider: (provider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => void;
   onSaveExternalMedia?: (logoId: string, url: string) => void;
+  onDeleteColorVersion?: (index: number) => void;
 }
 
 export function BrandIdentityCard({
@@ -68,6 +69,7 @@ export function BrandIdentityCard({
   selectedProvider,
   setSelectedProvider,
   onSaveExternalMedia,
+  onDeleteColorVersion,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
 
@@ -83,6 +85,7 @@ export function BrandIdentityCard({
   const [logoLayout, setLogoLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [logoBrightness, setLogoBrightness] = useState(100);
   const [logoContrast, setLogoContrast] = useState(120);
+  const [logoSmoothness, setLogoSmoothness] = useState(0);
   const [showBrandName, setShowBrandName] = useState(true);
   const [invertLogo, setInvertLogo] = useState(false);
   const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
@@ -160,6 +163,7 @@ export function BrandIdentityCard({
       setLogoTextBalance(currentLogo.displaySettings.logoTextBalance);
       setLogoBrightness(currentLogo.displaySettings.logoBrightness);
       setLogoContrast(currentLogo.displaySettings.logoContrast);
+      setLogoSmoothness(currentLogo.displaySettings.logoSmoothness || 0);
     }
     if (currentLogo?.externalMediaUrl) {
       setExternalMediaUrl(currentLogo.externalMediaUrl);
@@ -189,6 +193,7 @@ export function BrandIdentityCard({
         logoTextBalance,
         logoBrightness,
         logoContrast,
+        logoSmoothness,
       };
       onSaveDisplaySettings(currentLogo.id, settings);
     }, 500);
@@ -198,7 +203,7 @@ export function BrandIdentityCard({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [currentLogo?.id, logoLayout, textTransform, showBrandName, invertLogo, logoTextGap, logoTextBalance, logoBrightness, logoContrast, onSaveDisplaySettings]);
+  }, [currentLogo?.id, logoLayout, textTransform, showBrandName, invertLogo, logoTextGap, logoTextBalance, logoBrightness, logoContrast, logoSmoothness, onSaveDisplaySettings]);
 
 
   // Reset hue shifts when logo changes
@@ -289,10 +294,13 @@ export function BrandIdentityCard({
               setLogoBrightness={setLogoBrightness}
               logoContrast={logoContrast}
               setLogoContrast={setLogoContrast}
+              logoSmoothness={logoSmoothness}
+              setLogoSmoothness={setLogoSmoothness}
               readOnly={readOnly}
               // External Media Props
               externalMediaUrl={externalMediaUrl}
               onExternalMediaChange={setExternalMediaUrl}
+              onDeleteColorVersion={onDeleteColorVersion}
               isSavingMedia={isSavingMedia}
               onExternalMediaBlur={() => {
                 if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl && onSaveExternalMedia) {
@@ -390,6 +398,8 @@ export function BrandIdentityCard({
                   logoScale={logoScale}
                   contrast={logoContrast / 100}
                   invert={invertLogo}
+                  smoothness={logoSmoothness}
+                  brightness={logoBrightness / 100}
                 />
               </div>
             );
