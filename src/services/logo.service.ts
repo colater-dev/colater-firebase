@@ -18,7 +18,7 @@ import type { Logo } from '@/lib/types';
  * Service layer for logo-related operations.
  */
 export class LogoService {
-  constructor(private firestore: Firestore) {}
+  constructor(private firestore: Firestore) { }
 
   /**
    * Get the logo generations collection for a brand
@@ -93,7 +93,22 @@ export class LogoService {
   }
 
   /**
-   * Delete a logo generation
+   * Update a logo with crop details
+   */
+  async updateLogoCropDetails(
+    userId: string,
+    brandId: string,
+    logoId: string,
+    cropDetails: { x: number; y: number; width: number; height: number }
+  ): Promise<void> {
+    const logoDoc = this.getLogoDoc(userId, brandId, logoId);
+    await updateDoc(logoDoc, {
+      cropDetails,
+    });
+  }
+
+  /**
+   * Soft delete a logo generation
    */
   async deleteLogo(
     userId: string,
@@ -101,7 +116,9 @@ export class LogoService {
     logoId: string
   ): Promise<void> {
     const logoDoc = this.getLogoDoc(userId, brandId, logoId);
-    await deleteDoc(logoDoc);
+    await updateDoc(logoDoc, {
+      isDeleted: true
+    });
   }
 }
 

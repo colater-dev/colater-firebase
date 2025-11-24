@@ -49,6 +49,8 @@ interface BrandIdentityCardProps {
   onVectorizeLogo?: (croppedLogoUrl: string) => void;
   isVectorizing?: boolean;
   onBrandNameChange?: (name: string, elevatorPitch: string) => Promise<void>;
+  onDeleteLogo?: () => Promise<void>;
+  onSaveCropDetails?: (logoId: string, cropDetails: { x: number; y: number; width: number; height: number }) => Promise<void>;
 }
 
 export function BrandIdentityCard({
@@ -81,6 +83,8 @@ export function BrandIdentityCard({
   onVectorizeLogo,
   isVectorizing,
   onBrandNameChange,
+  onDeleteLogo,
+  onSaveCropDetails,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -140,7 +144,7 @@ export function BrandIdentityCard({
   };
 
   const currentLogo = logos?.[currentLogoIndex];
-  
+
   // Track slide direction when logo index changes
   const prevLogoIndexRef = useRef(currentLogoIndex);
   useEffect(() => {
@@ -300,6 +304,7 @@ export function BrandIdentityCard({
           selectedBrandFont={selectedBrandFont}
           onFontChange={onFontChange}
           onShareLogo={handleShareLogo}
+          onDeleteLogo={onDeleteLogo}
         />
       )}
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
@@ -328,110 +333,111 @@ export function BrandIdentityCard({
             ) : currentLogo?.logoUrl ? (
               <motion.div
                 key={currentLogoIndex}
-                initial={{ x: slideDirection === 'right' ? 300 : -300, opacity: 0 }}
+                initial={{ x: slideDirection === 'right' ? 50 : -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                exit={{ x: slideDirection === 'right' ? -300 : 300, opacity: 0 }}
+                exit={{ x: slideDirection === 'right' ? -50 : 50, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="w-full"
               >
                 <LogoShowcase
-              currentLogo={currentLogo}
-              brandName={brandName}
-              selectedBrandFont={selectedBrandFont}
-              showCritique={showCritique}
-              expandedPointId={expandedPointId}
-              setExpandedPointId={setExpandedPointId}
-              hueShifts={hueShifts}
-              setHueShifts={setHueShifts}
-              cardModes={cardModes}
-              cycleCardMode={cycleCardMode}
-              getCardMode={getCardMode}
-              getModeStyles={getModeStyles}
-              onColorizeLogo={onColorizeLogo}
-              isColorizing={isColorizing}
-              isGeneratingLogo={isGeneratingLogo}
-              logoLayout={logoLayout}
-              setLogoLayout={setLogoLayout}
-              textTransform={textTransform}
-              setTextTransform={setTextTransform}
-              animationType={animationType}
-              triggerAnimation={triggerAnimation}
-              animationKey={animationKey}
-              showBrandName={showBrandName}
-              setShowBrandName={setShowBrandName}
-              invertLogo={invertLogo}
-              setInvertLogo={setInvertLogo}
-              logoTextGap={logoTextGap}
-              setLogoTextGap={setLogoTextGap}
-              logoTextBalance={logoTextBalance}
-              setLogoTextBalance={setLogoTextBalance}
-              logoBrightness={logoBrightness}
-              setLogoBrightness={setLogoBrightness}
-              logoContrast={logoContrast}
-              setLogoContrast={setLogoContrast}
-              logoSmoothness={logoSmoothness}
-              setLogoSmoothness={setLogoSmoothness}
-              readOnly={readOnly}
-              // External Media Props
-              externalMediaUrl={externalMediaUrl}
-              onExternalMediaChange={setExternalMediaUrl}
-              onDeleteColorVersion={onDeleteColorVersion}
-              onVectorizeLogo={onVectorizeLogo}
-              isVectorizing={isVectorizing}
-              isSavingMedia={isSavingMedia}
-              onExternalMediaBlur={() => {
-                if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl && onSaveExternalMedia) {
-                  setIsSavingMedia(true);
-                  onSaveExternalMedia(currentLogo.id, externalMediaUrl);
-                  setTimeout(() => setIsSavingMedia(false), 1000);
-                }
-              }}
-              onFileUpload={async (file) => {
-                if (!file || !onSaveExternalMedia) return;
+                  currentLogo={currentLogo}
+                  brandName={brandName}
+                  selectedBrandFont={selectedBrandFont}
+                  showCritique={showCritique}
+                  expandedPointId={expandedPointId}
+                  setExpandedPointId={setExpandedPointId}
+                  hueShifts={hueShifts}
+                  setHueShifts={setHueShifts}
+                  cardModes={cardModes}
+                  cycleCardMode={cycleCardMode}
+                  getCardMode={getCardMode}
+                  getModeStyles={getModeStyles}
+                  onColorizeLogo={onColorizeLogo}
+                  isColorizing={isColorizing}
+                  isGeneratingLogo={isGeneratingLogo}
+                  logoLayout={logoLayout}
+                  setLogoLayout={setLogoLayout}
+                  textTransform={textTransform}
+                  setTextTransform={setTextTransform}
+                  animationType={animationType}
+                  triggerAnimation={triggerAnimation}
+                  animationKey={animationKey}
+                  showBrandName={showBrandName}
+                  setShowBrandName={setShowBrandName}
+                  invertLogo={invertLogo}
+                  setInvertLogo={setInvertLogo}
+                  logoTextGap={logoTextGap}
+                  setLogoTextGap={setLogoTextGap}
+                  logoTextBalance={logoTextBalance}
+                  setLogoTextBalance={setLogoTextBalance}
+                  logoBrightness={logoBrightness}
+                  setLogoBrightness={setLogoBrightness}
+                  logoContrast={logoContrast}
+                  setLogoContrast={setLogoContrast}
+                  logoSmoothness={logoSmoothness}
+                  setLogoSmoothness={setLogoSmoothness}
+                  readOnly={readOnly}
+                  // External Media Props
+                  externalMediaUrl={externalMediaUrl}
+                  onExternalMediaChange={setExternalMediaUrl}
+                  onDeleteColorVersion={onDeleteColorVersion}
+                  onVectorizeLogo={onVectorizeLogo}
+                  isVectorizing={isVectorizing}
+                  isSavingMedia={isSavingMedia}
+                  onSaveCropDetails={onSaveCropDetails}
+                  onExternalMediaBlur={() => {
+                    if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl && onSaveExternalMedia) {
+                      setIsSavingMedia(true);
+                      onSaveExternalMedia(currentLogo.id, externalMediaUrl);
+                      setTimeout(() => setIsSavingMedia(false), 1000);
+                    }
+                  }}
+                  onFileUpload={async (file) => {
+                    if (!file || !onSaveExternalMedia) return;
 
-                try {
-                  setIsSavingMedia(true);
-                  const { getPresignedUploadUrl } = await import('@/app/actions/upload-media');
+                    try {
+                      setIsSavingMedia(true);
+                      const { getPresignedUploadUrl } = await import('@/app/actions/upload-media');
 
-                  // 1. Get presigned URL
-                  const result = await getPresignedUploadUrl(file.type, file.name);
-                  if (!result.success || !result.url || !result.publicUrl) {
-                    throw new Error(result.error || 'Failed to get upload URL');
-                  }
+                      // 1. Get presigned URL
+                      const result = await getPresignedUploadUrl(file.type, file.name);
+                      if (!result.success || !result.url || !result.publicUrl) {
+                        throw new Error(result.error || 'Failed to get upload URL');
+                      }
 
-                  // 2. Upload file
-                  const uploadResponse = await fetch(result.url, {
-                    method: 'PUT',
-                    body: file,
-                    headers: {
-                      'Content-Type': file.type,
-                    },
-                  });
+                      // 2. Upload file
+                      const uploadResponse = await fetch(result.url, {
+                        method: 'PUT',
+                        body: file,
+                        headers: {
+                          'Content-Type': file.type,
+                        },
+                      });
 
-                  if (!uploadResponse.ok) {
-                    throw new Error('Failed to upload file');
-                  }
+                      if (!uploadResponse.ok) {
+                        throw new Error('Failed to upload file');
+                      }
 
-                  // 3. Save URL
-                  setExternalMediaUrl(result.publicUrl);
-                  onSaveExternalMedia(currentLogo.id, result.publicUrl);
+                      // 3. Save URL
+                      setExternalMediaUrl(result.publicUrl);
+                      onSaveExternalMedia(currentLogo.id, result.publicUrl);
 
-                  toast({
-                    title: 'Upload Successful',
-                    description: 'File uploaded and saved.',
-                  });
-                } catch (error) {
-                  console.error('Upload error:', error);
-                  toast({
-                    variant: 'destructive',
-                    title: 'Upload Failed',
-                    description: 'Could not upload file. Please check your R2 credentials.',
-                  });
-                } finally {
-                  setIsSavingMedia(false);
-                }
-              }}
-            />
+                      toast({
+                        title: 'Upload Successful',
+                        description: 'File uploaded and saved.',
+                      });
+                    } catch (error) {
+                      console.error('Upload error:', error);
+                      toast({
+                        variant: 'destructive',
+                        title: 'Upload Failed',
+                        description: 'Could not upload file. Please check your R2 credentials.',
+                      });
+                    } finally {
+                      setIsSavingMedia(false);
+                    }
+                  }}
+                />
               </motion.div>
             ) : null}
           </AnimatePresence>

@@ -50,6 +50,8 @@ export interface Logo {
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
     externalMediaUrl?: string;
     vectorLogoUrl?: string;
+    isDeleted?: boolean;
+    cropDetails?: { x: number; y: number; width: number; height: number };
 }
 
 export interface CritiquePoint {

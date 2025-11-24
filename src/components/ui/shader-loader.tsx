@@ -98,6 +98,8 @@ export const ShaderLoader = () => {
     };
 
     const draw = (p5: p5Types) => {
+        if (!theShader) return;
+
         p5.clear();
         p5.shader(theShader);
 

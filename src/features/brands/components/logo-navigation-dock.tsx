@@ -5,11 +5,53 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import type { Logo } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { cropImageToContent } from '@/lib/image-utils';
 
 interface LogoNavigationDockProps {
   logos: Logo[];
   currentLogoIndex: number;
   onLogoIndexChange: (index: number) => void;
+}
+
+function DockItem({ logo, isActive, onClick }: { logo: Logo; isActive: boolean; onClick: () => void }) {
+  const [croppedUrl, setCroppedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (logo.logoUrl) {
+      cropImageToContent(logo.logoUrl).then(setCroppedUrl);
+    }
+  }, [logo.logoUrl]);
+
+  const displayUrl = croppedUrl || logo.logoUrl;
+  const shouldInvert = logo.displaySettings?.invertLogo;
+  const contrast = logo.displaySettings?.logoContrast || 100;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200
+        ${isActive
+          ? 'border-primary scale-125 shadow-lg z-10'
+          : 'border-transparent hover:border-muted-foreground/50 opacity-70 hover:opacity-100 hover:scale-110'
+        }
+      `}
+    >
+      <div className="relative w-full h-full bg-white">
+        <Image
+          src={displayUrl}
+          alt="Logo thumbnail"
+          fill
+          className="object-contain p-1"
+          style={{
+            filter: `contrast(${contrast}%) ${shouldInvert ? 'invert(1)' : ''}`.trim()
+          }}
+          unoptimized={displayUrl.startsWith('data:')}
+        />
+      </div>
+    </button>
+  );
 }
 
 export function LogoNavigationDock({
@@ -35,51 +77,30 @@ export function LogoNavigationDock({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg">
-      <div className="container mx-auto max-w-7xl px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
+      <div className="container mx-auto max-w-7xl px-3 py-2">
+        <div className="flex items-center justify-between gap-3">
           {/* Previous Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handlePrevious}
             disabled={currentLogoIndex === 0}
-            className="flex-shrink-0"
+            className="flex-shrink-0 h-8 w-8"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
 
           {/* Logo Thumbnails */}
-          <div className="flex-1 flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-2 px-2">
-              {logos.map((logo, index) => {
-                const logoUrl = logo.colorLogoUrl || logo.logoUrl;
-                const isActive = index === currentLogoIndex;
-
-                return (
-                  <button
-                    key={logo.id || index}
-                    onClick={() => onLogoIndexChange(index)}
-                    className={`
-                      relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all
-                      ${isActive 
-                        ? 'border-primary scale-110 shadow-lg' 
-                        : 'border-transparent hover:border-muted-foreground/50 opacity-70 hover:opacity-100'
-                      }
-                    `}
-                  >
-                    <Image
-                      src={logoUrl}
-                      alt={`Logo ${index + 1}`}
-                      fill
-                      className="object-contain p-1"
-                      unoptimized={logoUrl.startsWith('data:')}
-                    />
-                    {isActive && (
-                      <div className="absolute inset-0 bg-primary/10" />
-                    )}
-                  </button>
-                );
-              })}
+          <div className="flex-1 flex items-center justify-center overflow-hidden py-2">
+            <div className="flex items-center gap-2 px-2 overflow-x-auto scrollbar-hide py-1 max-w-full">
+              {logos.map((logo, index) => (
+                <DockItem
+                  key={logo.id || index}
+                  logo={logo}
+                  isActive={index === currentLogoIndex}
+                  onClick={() => onLogoIndexChange(index)}
+                />
+              ))}
             </div>
           </div>
 
@@ -89,15 +110,10 @@ export function LogoNavigationDock({
             size="icon"
             onClick={handleNext}
             disabled={currentLogoIndex === logos.length - 1}
-            className="flex-shrink-0"
+            className="flex-shrink-0 h-8 w-8"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
-        </div>
-        <div className="text-center mt-2">
-          <p className="text-xs text-muted-foreground">
-            Logo {currentLogoIndex + 1} of {logos.length}
-          </p>
         </div>
       </div>
     </div>

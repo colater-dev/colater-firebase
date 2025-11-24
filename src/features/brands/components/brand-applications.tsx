@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Wifi, Battery, Signal } from 'lucide-react';
 import { isLightColor } from '@/lib/color-utils';
+import { cropImageToContent } from '@/lib/image-utils';
 
 interface BrandApplicationsProps {
     logoUrl: string;
@@ -29,6 +31,18 @@ export function BrandApplications({
     smoothness = 0,
     brightness = 1,
 }: BrandApplicationsProps) {
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
+    const [rotationFront, setRotationFront] = useState(0);
+    const [rotationBack, setRotationBack] = useState(0);
+
+    useEffect(() => {
+        if (logoUrl) {
+            cropImageToContent(logoUrl).then(setCroppedLogoUrl);
+        }
+        // Random rotation between 2 and 12 degrees (positive or negative)
+        setRotationFront((Math.random() * 10 + 2) * (Math.random() > 0.5 ? 1 : -1));
+        setRotationBack((Math.random() * 10 + 2) * (Math.random() > 0.5 ? 1 : -1));
+    }, [logoUrl]);
 
     // Determine background style (gradient or solid)
     const hasGradient = palette.length >= 2;
@@ -43,7 +57,7 @@ export function BrandApplications({
 
     // Determine if logo should be inverted on business card back
     const shouldInvertOnCardBack = invert && isBgLight ? true : (!invert && !isBgLight);
-    
+
     const logoStyle = {
         filter: isBgLight
             ? `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast})${shouldInvertOnCardBack ? ' invert(1)' : ''}`
@@ -58,54 +72,67 @@ export function BrandApplications({
             <h3 className="text-lg font-semibold mb-6 text-left px-4">Brand Applications</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 w-full">
 
-                {/* 1. Business Card Front */}
-                <div className="flex flex-col">
-                    <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-left p-0 border border-gray-100">
-                        <div className="relative w-full aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-row justify-between">
-                            <div className="w-16 h-16 relative">
-                                <Image
-                                    src={logoUrl}
-                                    alt="Logo"
-                                    fill
-                                    className="object-contain object-left"
-                                    style={{
-                                        transform: `scale(${logoScale})`,
-                                        filter: `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
-                                        transition: 'transform 0.2s ease-out'
-                                    }}
-                                    unoptimized={logoUrl.startsWith('data:')}
-                                />
-                            </div>
-                            <div className="text-left">
-                                <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: `var(${fontVariable})` }}>John Doe</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Founder</p>
-                                <p className="text-xs text-gray-400 mt-4">john@{brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p className="text-xs text-center text-muted-foreground mt-2">Business Card (Front)</p>
-                </div>
+                {/* 1. Business Cards (Combined) */}
+                <div className="flex flex-col md:col-span-2">
+                    <div className="relative w-full aspect-square md:aspect-[2/1] bg-gray-50 flex items-center justify-center p-0 border border-gray-100 overflow-hidden">
+                        <div className="relative w-full h-full flex items-center justify-center">
 
-                {/* 2. Business Card Back */}
-                <div className="flex flex-col">
-                    <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center p-0 border border-gray-100">
-                        <div
-                            className="relative w-full aspect-[3.5/2] shadow-xl flex items-center justify-center p-6"
-                            style={backgroundStyle}
-                        >
-                            <div className="w-24 h-24 relative">
-                                <Image
-                                    src={logoUrl}
-                                    alt="Logo"
-                                    fill
-                                    className="object-contain"
-                                    style={logoStyle}
-                                    unoptimized={logoUrl.startsWith('data:')}
-                                />
+                            {/* Back Card (Behind) */}
+                            <div
+                                className="absolute w-[70%] md:w-[45%] aspect-[3.5/2] shadow-xl flex items-center justify-center p-6 z-0"
+                                style={{
+                                    ...backgroundStyle,
+                                    transform: `translate(15%, 10%) rotate(${rotationBack}deg)`,
+                                    transition: 'transform 0.5s ease-out'
+                                }}
+                            >
+                                <div className="w-24 h-24 relative">
+                                    <Image
+                                        src={croppedLogoUrl || logoUrl}
+                                        alt="Logo"
+                                        fill
+                                        className="object-contain"
+                                        style={{
+                                            ...logoStyle,
+                                            transform: `scale(${logoScale * 1.2})`, // 20% larger
+                                        }}
+                                        unoptimized={(croppedLogoUrl || logoUrl).startsWith('data:')}
+                                    />
+                                </div>
                             </div>
+
+                            {/* Front Card (Front) */}
+                            <div
+                                className="absolute w-[70%] md:w-[45%] aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-row justify-between z-10"
+                                style={{
+                                    transform: `translate(-15%, -10%) rotate(${rotationFront}deg)`,
+                                    transition: 'transform 0.5s ease-out'
+                                }}
+                            >
+                                <div className="w-16 h-16 relative">
+                                    <Image
+                                        src={croppedLogoUrl || logoUrl}
+                                        alt="Logo"
+                                        fill
+                                        className="object-contain object-left-top"
+                                        style={{
+                                            transform: `scale(${logoScale * 0.8})`, // 20% smaller
+                                            filter: `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
+                                            transition: 'transform 0.2s ease-out'
+                                        }}
+                                        unoptimized={(croppedLogoUrl || logoUrl).startsWith('data:')}
+                                    />
+                                </div>
+                                <div className="text-left self-end">
+                                    <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: `var(${fontVariable})` }}>John Doe</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Founder</p>
+                                    <p className="text-xs text-gray-400 mt-4">john@{brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com</p>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-                    <p className="text-xs text-center text-muted-foreground mt-2">Business Card (Back)</p>
+                    <p className="text-xs text-center text-muted-foreground mt-2">Business Cards</p>
                 </div>
 
                 {/* 3. App Icon (Digital/Small Scale) */}

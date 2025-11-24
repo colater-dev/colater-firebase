@@ -7,10 +7,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Type, Share2 } from 'lucide-react';
+import { Loader2, MessageSquare, Type, Share2, Trash2 } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Logo } from '@/lib/types';
+import { useState } from 'react';
 
 interface BrandIdentityHeaderProps {
   isGeneratingConcept: boolean;
@@ -29,6 +41,7 @@ interface BrandIdentityHeaderProps {
   selectedBrandFont: string;
   onFontChange: (font: string) => void;
   onShareLogo: () => void;
+  onDeleteLogo?: () => Promise<void>;
 }
 
 export function BrandIdentityHeader({
@@ -48,7 +61,10 @@ export function BrandIdentityHeader({
   selectedBrandFont,
   onFontChange,
   onShareLogo,
+  onDeleteLogo,
 }: BrandIdentityHeaderProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   return (
     <CardHeader className="flex flex-col lg:flex-row items-start justify-between gap-4 p-0">
       <div className="flex flex-wrap gap-2 items-center">
@@ -124,6 +140,38 @@ export function BrandIdentityHeader({
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </Button>
+
+            {onDeleteLogo && currentLogo && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="icon" disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Logo?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove the logo from your collection. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        setIsDeleting(true);
+                        await onDeleteLogo();
+                        setIsDeleting(false);
+                      }}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </>
         )}
       </div>

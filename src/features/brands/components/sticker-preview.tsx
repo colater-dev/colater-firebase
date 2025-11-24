@@ -5,9 +5,10 @@ interface StickerPreviewProps {
     brandName: string;
     label: string;
     isColor?: boolean;
+    invert?: boolean;
 }
 
-export function StickerPreview({ stickerUrl, brandName, label, isColor = false }: StickerPreviewProps) {
+export function StickerPreview({ stickerUrl, brandName, label, isColor = false, invert = false }: StickerPreviewProps) {
     const handleDownload = () => {
         const link = document.createElement('a');
         const filename = isColor ? 'color-sticker' : 'sticker';
@@ -36,8 +37,8 @@ export function StickerPreview({ stickerUrl, brandName, label, isColor = false }
                     maxWidth: isColor ? '50%' : '45%',
                     maxHeight: isColor ? '50%' : '45%',
                     filter: isColor
-                        ? 'drop-shadow(0 5px 3px rgba(0,0,0,0.8))'
-                        : 'invert(1) drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)',
+                        ? 'drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)'
+                        : `${invert ? 'invert(1) ' : ''}drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)`,
                     transform: `rotate(${isColor ? '15' : '-12'}deg)`,
                     opacity: 0.8
                 }}

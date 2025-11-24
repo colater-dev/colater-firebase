@@ -1,9 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRequireAuth } from '@/features/auth/hooks';
 import { createBrandService } from '@/services';
@@ -19,22 +18,45 @@ import { getBrandFontStyle } from '@/config/brand-fonts';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontStyle = getBrandFontStyle(brand.id);
-    const displayLogoUrl = brand.logoUrl;
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
+    const displayLogoUrl = croppedLogoUrl || brand.logoUrl;
+
+    useEffect(() => {
+        if (brand.logoUrl) {
+            import('@/lib/image-utils').then(({ cropImageToContent }) => {
+                // Ensure logoUrl is a string before calling
+                if (brand.logoUrl) {
+                    cropImageToContent(brand.logoUrl).then(setCroppedLogoUrl);
+                }
+            });
+        }
+    }, [brand.logoUrl]);
+
+    // Use defaults since we don't have full logo details in the list view
+    const contrast = 100;
+    const brightness = 100;
+    const smoothness = 0;
+    const invert = false;
+
+    // Simple background check for inversion logic (assuming light bg for card)
+    const shouldInvert = invert;
 
     return (
         <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
             <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
                 <CardContent className="flex-grow flex flex-col p-6 gap-4">
                     <div className="flex items-center">
-                        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+                        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center relative">
                             {displayLogoUrl ? (
                                 <Image
                                     src={displayLogoUrl}
                                     alt={`${brand.latestName} logo`}
-                                    width={64}
-                                    height={64}
+                                    fill
                                     className="object-contain rounded-md"
                                     unoptimized={displayLogoUrl.startsWith('data:')}
+                                    style={{
+                                        filter: `blur(${smoothness}px) brightness(${brightness}%) contrast(${contrast}%) ${shouldInvert ? 'invert(1)' : ''}`
+                                    }}
                                 />
                             ) : (
                                 <div className="w-full h-full bg-muted rounded-md" />

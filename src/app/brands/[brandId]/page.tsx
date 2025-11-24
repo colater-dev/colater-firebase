@@ -31,7 +31,7 @@ import { uploadDataUriToR2Client } from '@/lib/r2-upload-client';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createBrandService } from '@/services';
+import { createBrandService, createLogoService } from '@/services';
 import { BrandHeader, BrandIdentityCard } from '@/features/brands/components';
 import { ContentCard } from '@/components/layout';
 import type { Brand, Logo } from '@/lib/types';
@@ -53,6 +53,7 @@ export default function BrandPage() {
 
   // Initialize service
   const brandService = useMemo(() => createBrandService(firestore), [firestore]);
+  const logoService = useMemo(() => createLogoService(firestore), [firestore]);
 
   // Fetch brand data
   const brandRef = useMemoFirebase(
@@ -102,7 +103,12 @@ export default function BrandPage() {
   );
   const { data: logos, isLoading: isLoadingLogos } = useCollection<Logo>(logosQuery);
 
-  const currentLogo = logos?.[currentLogoIndex];
+  // Filter out deleted logos
+  const filteredLogos = useMemo(() => {
+    return logos?.filter(logo => !logo.isDeleted) || [];
+  }, [logos]);
+
+  const currentLogo = filteredLogos?.[currentLogoIndex];
 
 
   // Logo concept handler
@@ -400,37 +406,13 @@ export default function BrandPage() {
   // We check logos.length. If we just added a logo, the length increased.
   // If we have 1 logo (index 0), next is 2.
   // The requirement: "for 2n logo - use the fresh brand concept, for 2n+1 use the existing brand concept but request a new one in the background."
-  // Let's interpret "2n logo" as the 2nd, 4th, 6th... logo (indices 1, 3, 5...).
-  // Wait, "2n" usually means even numbers (0, 2, 4...). "2n+1" is odd (1, 3, 5...).
+  // Let's interpret "2n" usually means even numbers (0, 2, 4...). "2n+1" is odd (1, 3, 5...).
   // If 0-indexed:
-  // Index 0 (1st logo): Use existing. Request new one?
-  // Requirement: "When the next logo is generated, use the same brand concept, but fire off a request for a new brand concept so one is readily available if the user requests a new logo."
-  // "Therefore, for 2n logo - use the fresh brand concept, for 2n+1 use the existing brand concept but request a new one in the background."
-  // Let's map this:
-  // Logo #1 (Index 0): 2*0 + 1? No, 2*0 = 0. So Index 0 is "2n". Use fresh concept. (We auto-generated it on load).
-  // Logo #2 (Index 1): 2*0 + 1. Use existing concept. Fire off request.
-  // Logo #3 (Index 2): 2*1. Use fresh concept (generated in background of #2).
-  // Logo #4 (Index 3): 2*1 + 1. Use existing. Fire off request.
-  // So:
-  // If (logos.length % 2 !== 0) -> We just added an ODD number logo (Index 0, 2, 4... wait length is 1, 3, 5).
-  // If we just added Logo #1 (Length 1). Next is Logo #2 (Index 1).
-  // Wait, the trigger happens AFTER generation.
-  // User clicks Generate. Logo is added.
-  // If we now have 1 logo (Length 1). This was Index 0. This was a "2n" logo (0).
-  // Next one will be Index 1 ("2n+1").
-  // The requirement says: "for 2n+1 use the existing brand concept but request a new one in the background."
-  // So when we are ABOUT TO generate Index 1, we use existing.
-  // When we FINISH generating Index 1, we should have fired a request? Or should we fire it during?
-  // "fire off a request for a new brand concept so one is readily available if the user requests a new logo."
-  // This implies we need it ready for Index 2.
-  // So during/after generation of Index 1 (2n+1), we fetch for Index 2.
-  // Index 0 (2n): Use fresh.
-  // Index 1 (2n+1): Use existing. Fetch new.
-  // Index 2 (2n): Use fresh (fetched during 1).
-  // Index 3 (2n+1): Use existing. Fetch new.
+  // Index 0 (1st logo): Use fresh concept. (We auto-generated it on load).
+  // Index 1 (2nd logo): Use existing concept. Fire off request.
+  // Index 2 (3rd logo): Use fresh concept (generated in background of #2).
+  // Index 3 (4th logo): Use existing. Fire off request.
   // So we need to trigger background fetch when we generate an ODD index logo (1, 3, 5...).
-  // OR, simpler: Trigger it when we generate a logo that makes the count EVEN?
-  // No, we generate Index 1. That is the "2n+1" logo. We need to fire request.
   // So when `handleGenerateLogo` completes, if the NEW logo index was odd...
   // `logos` array updates.
   // Let's use a useEffect on `logos`.
@@ -698,6 +680,39 @@ export default function BrandPage() {
     }
   }, [user, brandId, brandRef]);
 
+  const handleDeleteLogo = useCallback(async () => {
+    if (!currentLogo || !user || !brandId) return;
+    try {
+      await logoService.deleteLogo(user.uid, brandId as string, currentLogo.id);
+
+      // Adjust index if needed
+      if (currentLogoIndex >= filteredLogos.length - 1) {
+        setCurrentLogoIndex(Math.max(0, filteredLogos.length - 2));
+      }
+
+      toast({
+        title: 'Logo deleted',
+        description: 'The logo has been removed.',
+      });
+    } catch (error) {
+      console.error('Error deleting logo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Could not delete the logo.',
+      });
+    }
+  }, [currentLogo, user, brandId, logoService, currentLogoIndex, filteredLogos.length, toast]);
+
+  const handleSaveCropDetails = useCallback(async (logoId: string, cropDetails: { x: number; y: number; width: number; height: number }) => {
+    if (!user || !brandId) return;
+    try {
+      await logoService.updateLogoCropDetails(user.uid, brandId as string, logoId, cropDetails);
+    } catch (error) {
+      console.error('Error saving crop details:', error);
+    }
+  }, [user, brandId, logoService]);
+
   const isLoading = isLoadingBrand;
 
   return (
@@ -722,36 +737,38 @@ export default function BrandPage() {
 
           {brand && (
             <div className="space-y-8">
-          <BrandIdentityCard
-            brandName={brand.latestName}
-            primaryTagline={primaryTagline}
-            logos={logos}
-            currentLogoIndex={currentLogoIndex}
-            isLoadingLogos={isLoadingLogos}
-            isGeneratingLogo={isGeneratingLogo}
-            isGeneratingConcept={isGeneratingConcept}
-            isColorizing={isColorizing}
-            isLoadingTaglines={false}
-            logoConcept={logoConcept}
-            onGenerateConcept={handleGenerateConcept}
-            onConceptChange={handleConceptChange}
-            onGenerateLogo={handleGenerateLogo}
-            onColorizeLogo={handleColorizeLogo}
-            onLogoIndexChange={setCurrentLogoIndex}
-            onCritiqueLogo={handleCritiqueLogo}
-            isCritiquing={isCritiquing}
-            selectedBrandFont={selectedBrandFont}
-            onFontChange={handleFontChange}
-            onSaveDisplaySettings={handleSaveDisplaySettings}
-            onMakeLogoPublic={handleMakeLogoPublic}
-            selectedProvider={provider}
-            setSelectedProvider={setProvider}
-            onSaveExternalMedia={handleSaveExternalMedia}
-            onDeleteColorVersion={handleDeleteColorVersion}
-            onVectorizeLogo={handleVectorizeLogo}
-            isVectorizing={isVectorizing}
-            onBrandNameChange={handleBrandNameChange}
-          />
+              <BrandIdentityCard
+                brandName={brand.latestName}
+                primaryTagline={primaryTagline}
+                logos={filteredLogos}
+                currentLogoIndex={currentLogoIndex}
+                isLoadingLogos={isLoadingLogos}
+                isGeneratingLogo={isGeneratingLogo}
+                isGeneratingConcept={isGeneratingConcept}
+                isColorizing={isColorizing}
+                isLoadingTaglines={false}
+                logoConcept={logoConcept}
+                onGenerateConcept={handleGenerateConcept}
+                onConceptChange={handleConceptChange}
+                onGenerateLogo={handleGenerateLogo}
+                onColorizeLogo={handleColorizeLogo}
+                onLogoIndexChange={setCurrentLogoIndex}
+                onCritiqueLogo={handleCritiqueLogo}
+                isCritiquing={isCritiquing}
+                selectedBrandFont={selectedBrandFont}
+                onFontChange={handleFontChange}
+                onSaveDisplaySettings={handleSaveDisplaySettings}
+                onMakeLogoPublic={handleMakeLogoPublic}
+                selectedProvider={provider}
+                setSelectedProvider={setProvider}
+                onSaveExternalMedia={handleSaveExternalMedia}
+                onDeleteColorVersion={handleDeleteColorVersion}
+                onVectorizeLogo={handleVectorizeLogo}
+                isVectorizing={isVectorizing}
+                onBrandNameChange={handleBrandNameChange}
+                onDeleteLogo={handleDeleteLogo}
+                onSaveCropDetails={handleSaveCropDetails}
+              />
 
             </div>
           )}
