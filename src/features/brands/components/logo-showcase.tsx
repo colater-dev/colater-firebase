@@ -120,6 +120,7 @@ export function LogoShowcase({
     };
 
     const logoContainerRef = useRef<HTMLDivElement>(null);
+    const logoImageRef = useRef<HTMLImageElement | null>(null);
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const [stickerLogoUrl, setStickerLogoUrl] = useState<string | null>(null);
     const [colorStickerUrl, setColorStickerUrl] = useState<string | null>(null);
@@ -129,22 +130,71 @@ export function LogoShowcase({
     // Existing effect for bw sticker and cropped logo
     useEffect(() => {
         if (currentLogo?.logoUrl) {
-            cropImageToContent(currentLogo.logoUrl).then((cropped) => {
-                setCroppedLogoUrl(cropped);
-                // Calculate crop bounds from the cropped image
-                const img = document.createElement('img');
-                img.onload = () => {
-                    // This is approximate - the actual crop bounds would need to be calculated from the cropImageToContent function
-                    // For now, we'll use the image dimensions as a proxy
+            // Calculate crop bounds from original image
+            const originalImg = document.createElement('img');
+            originalImg.crossOrigin = "Anonymous";
+            originalImg.onload = () => {
+                // Use cropImageToContent logic to find bounds
+                const canvas = document.createElement('canvas');
+                canvas.width = originalImg.width;
+                canvas.height = originalImg.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                
+                ctx.drawImage(originalImg, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Get background color from top-left pixel
+                const bgR = data[0];
+                const bgG = data[1];
+                const bgB = data[2];
+                const bgA = data[3];
+                const threshold = 30;
+                
+                let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+                let foundContent = false;
+                
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const i = (y * canvas.width + x) * 4;
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        const a = data[i + 3];
+                        
+                        if (bgA === 0 && a === 0) continue;
+                        
+                        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
+                        
+                        if (diff > threshold) {
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                            foundContent = true;
+                        }
+                    }
+                }
+                
+                if (foundContent) {
+                    const padding = 20;
+                    minX = Math.max(0, minX - padding);
+                    minY = Math.max(0, minY - padding);
+                    maxX = Math.min(canvas.width, maxX + padding);
+                    maxY = Math.min(canvas.height, maxY + padding);
+                    
                     setCropBounds({
-                        x: 0,
-                        y: 0,
-                        width: img.width,
-                        height: img.height
+                        x: minX,
+                        y: minY,
+                        width: maxX - minX,
+                        height: maxY - minY
                     });
-                };
-                img.src = cropped;
-            });
+                }
+            };
+            originalImg.src = currentLogo.logoUrl;
+            
+            cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
             createStickerEffect(currentLogo.logoUrl).then(setStickerLogoUrl);
         }
     }, [currentLogo?.logoUrl]);
@@ -266,6 +316,9 @@ export function LogoShowcase({
                         }}
                     >
                         <Image
+                            ref={(el) => {
+                                if (el) logoImageRef.current = el as HTMLImageElement;
+                            }}
                             src={currentLogo.logoUrl}
                             alt="Logo on white background"
                             fill
@@ -274,18 +327,54 @@ export function LogoShowcase({
                             style={{
                                 filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
                             }}
+                            onLoad={() => {
+                                // Recalculate crop bounds when image loads to get proper scaling
+                                if (cropMode && cropBounds && logoImageRef.current) {
+                                    // The bounds will be recalculated in the useEffect
+                                }
+                            }}
                         />
-                        {cropMode && croppedLogoUrl && cropBounds && (
-                            <div
-                                className="absolute border-2 border-dashed border-red-500 pointer-events-none"
-                                style={{
-                                    left: `${cropBounds.x}px`,
-                                    top: `${cropBounds.y}px`,
-                                    width: `${cropBounds.width}px`,
-                                    height: `${cropBounds.height}px`,
-                                }}
-                            />
-                        )}
+                        {cropMode && cropBounds && (() => {
+                            // Calculate scale factor based on displayed size vs original
+                            const displayedWidth = 128 * (1.5 - (logoTextBalance / 100));
+                            const displayedHeight = 128 * (1.5 - (logoTextBalance / 100));
+                            
+                            // Get original image dimensions from crop bounds context
+                            // We need to get the actual image natural dimensions
+                            const originalWidth = logoImageRef.current?.naturalWidth || 512;
+                            const originalHeight = logoImageRef.current?.naturalHeight || 512;
+                            
+                            // Calculate scale (assuming object-contain maintains aspect ratio)
+                            const scaleX = displayedWidth / originalWidth;
+                            const scaleY = displayedHeight / originalHeight;
+                            const scale = Math.min(scaleX, scaleY);
+                            
+                            // Calculate actual displayed image size (may be smaller than container due to object-contain)
+                            const actualDisplayedWidth = originalWidth * scale;
+                            const actualDisplayedHeight = originalHeight * scale;
+                            
+                            // Calculate offset to center the image
+                            const offsetX = (displayedWidth - actualDisplayedWidth) / 2;
+                            const offsetY = (displayedHeight - actualDisplayedHeight) / 2;
+                            
+                            // Scale crop bounds to displayed size
+                            const scaledX = cropBounds.x * scale + offsetX;
+                            const scaledY = cropBounds.y * scale + offsetY;
+                            const scaledWidth = cropBounds.width * scale;
+                            const scaledHeight = cropBounds.height * scale;
+                            
+                            return (
+                                <div
+                                    className="absolute border-2 border-dashed border-red-500 pointer-events-none z-10"
+                                    style={{
+                                        left: `${scaledX}px`,
+                                        top: `${scaledY}px`,
+                                        width: `${scaledWidth}px`,
+                                        height: `${scaledHeight}px`,
+                                    }}
+                                />
+                            );
+                        })()}
                     </motion.div>
 
                     {showBrandName && (
@@ -426,21 +515,23 @@ export function LogoShowcase({
 
             {/* 2x2 Grid for additional previews */}
             <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-0">
-                {/* Sticker Effect - Only show color sticker if it exists, otherwise show black/white sticker */}
-                {colorStickerUrl ? (
+                {/* Sticker Effect - Show black/white sticker if available */}
+                {stickerLogoUrl && (
+                    <StickerPreview
+                        stickerUrl={stickerLogoUrl}
+                        brandName={brandName}
+                        label="Sticker"
+                    />
+                )}
+                {/* Color Sticker Effect - Show color sticker if available */}
+                {colorStickerUrl && (
                     <StickerPreview
                         stickerUrl={colorStickerUrl}
                         brandName={brandName}
                         label="Color Sticker"
                         isColor={true}
                     />
-                ) : stickerLogoUrl ? (
-                    <StickerPreview
-                        stickerUrl={stickerLogoUrl}
-                        brandName={brandName}
-                        label="Sticker"
-                    />
-                ) : null}
+                )}
 
                 {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>

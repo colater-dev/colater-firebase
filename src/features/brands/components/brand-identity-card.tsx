@@ -7,7 +7,8 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { Share2, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
 import { ShaderLoader } from '@/components/ui/shader-loader';
@@ -15,6 +16,7 @@ import type { Logo } from '@/lib/types';
 import { BrandApplications } from './brand-applications';
 import { BrandIdentityHeader } from './brand-identity-header';
 import { LogoShowcase } from './logo-showcase';
+import { LogoNavigationDock } from './logo-navigation-dock';
 import { useToast } from '@/hooks/use-toast';
 
 interface BrandIdentityCardProps {
@@ -104,6 +106,7 @@ export function BrandIdentityCard({
   const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
   const [externalMediaUrl, setExternalMediaUrl] = useState('');
   const [isSavingMedia, setIsSavingMedia] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
   const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'blur' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
@@ -137,6 +140,15 @@ export function BrandIdentityCard({
   };
 
   const currentLogo = logos?.[currentLogoIndex];
+  
+  // Track slide direction when logo index changes
+  const prevLogoIndexRef = useRef(currentLogoIndex);
+  useEffect(() => {
+    if (prevLogoIndexRef.current !== currentLogoIndex) {
+      setSlideDirection(prevLogoIndexRef.current < currentLogoIndex ? 'right' : 'left');
+      prevLogoIndexRef.current = currentLogoIndex;
+    }
+  }, [currentLogoIndex]);
 
   const handleShareLogo = async () => {
     if (!currentLogo) return;
@@ -291,10 +303,38 @@ export function BrandIdentityCard({
         />
       )}
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
-        <div className="w-full space-y-4 pt-6 flex flex-col items-center">
+        <div className="w-full space-y-4 pt-6 flex flex-col items-center overflow-hidden relative">
           {/* Logo Applications Showcase */}
-          {currentLogo?.logoUrl && (
-            <LogoShowcase
+          <AnimatePresence mode="wait">
+            {isGeneratingLogo ? (
+              <motion.div
+                key="generating"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full max-w-4xl mt-8 flex flex-col items-center justify-center min-h-[480px]"
+              >
+                <div className="w-full h-[480px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
+                  <ShaderLoader />
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+                      <p className="text-sm text-muted-foreground">Generating your logo...</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : currentLogo?.logoUrl ? (
+              <motion.div
+                key={currentLogoIndex}
+                initial={{ x: slideDirection === 'right' ? 300 : -300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: slideDirection === 'right' ? -300 : 300, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="w-full"
+              >
+                <LogoShowcase
               currentLogo={currentLogo}
               brandName={brandName}
               selectedBrandFont={selectedBrandFont}
@@ -392,55 +432,70 @@ export function BrandIdentityCard({
                 }
               }}
             />
-          )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
 
           {/* Brand Applications Section */}
-          {currentLogo?.logoUrl && (() => {
-            // Determine primary color from palette or fallback
-            const colorVersions = currentLogo.colorVersions || [];
-            let primaryColor = '#000000';
+          <AnimatePresence mode="wait">
+            {!isGeneratingLogo && currentLogo?.logoUrl && (
+              <motion.div
+                key={`applications-${currentLogoIndex}`}
+                initial={{ x: slideDirection === 'right' ? 300 : -300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: slideDirection === 'right' ? -300 : 300, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="w-full"
+              >
+                {(() => {
+                  // Determine primary color from palette or fallback
+                  const colorVersions = currentLogo.colorVersions || [];
+                  let primaryColor = '#000000';
 
-            if (colorVersions.length > 0 && colorVersions[0].palette.length > 0) {
-              primaryColor = colorVersions[0].palette[0];
-            } else if (currentLogo.palette && currentLogo.palette.length > 0) {
-              primaryColor = currentLogo.palette[0];
-            }
+                  if (colorVersions.length > 0 && colorVersions[0].palette.length > 0) {
+                    primaryColor = colorVersions[0].palette[0];
+                  } else if (currentLogo.palette && currentLogo.palette.length > 0) {
+                    primaryColor = currentLogo.palette[0];
+                  }
 
-            // Apply hue shift if applicable
-            if (colorVersions.length > 0) {
-              const currentHueShift = hueShifts[0] || 0;
-              primaryColor = shiftHue(primaryColor, currentHueShift);
-            }
+                  // Apply hue shift if applicable
+                  if (colorVersions.length > 0) {
+                    const currentHueShift = hueShifts[0] || 0;
+                    primaryColor = shiftHue(primaryColor, currentHueShift);
+                  }
 
-            return (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 w-fit self-end">
-                  <Slider
-                    value={[logoScale]}
-                    onValueChange={(value) => setLogoScale(value[0])}
-                    min={1}
-                    max={2.0}
-                    step={0.01}
-                    className="w-32"
-                  />
-                  <span className="text-xs font-mono text-gray-400 w-8 text-right">{logoScale.toFixed(2)}x</span>
-                </div>
-                <BrandApplications
-                  logoUrl={currentLogo.logoUrl}
-                  brandName={brandName}
-                  tagline={primaryTagline}
-                  primaryColor={primaryColor}
-                  fontVariable={BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'}
-                  palette={colorVersions.length > 0 ? colorVersions[0].palette : currentLogo.palette || []}
-                  logoScale={logoScale}
-                  contrast={logoContrast / 100}
-                  invert={invertLogo}
-                  smoothness={logoSmoothness}
-                  brightness={logoBrightness / 100}
-                />
-              </div>
-            );
-          })()}
+                  return (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 w-fit self-end">
+                        <Slider
+                          value={[logoScale]}
+                          onValueChange={(value) => setLogoScale(value[0])}
+                          min={1}
+                          max={2.0}
+                          step={0.01}
+                          className="w-32"
+                        />
+                        <span className="text-xs font-mono text-gray-400 w-8 text-right">{logoScale.toFixed(2)}x</span>
+                      </div>
+                      <BrandApplications
+                        logoUrl={currentLogo.logoUrl}
+                        brandName={brandName}
+                        tagline={primaryTagline}
+                        primaryColor={primaryColor}
+                        fontVariable={BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'}
+                        palette={colorVersions.length > 0 ? colorVersions[0].palette : currentLogo.palette || []}
+                        logoScale={logoScale}
+                        contrast={logoContrast / 100}
+                        invert={invertLogo}
+                        smoothness={logoSmoothness}
+                        brightness={logoBrightness / 100}
+                      />
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Brand Palette Section - Show all color version palettes with hue shifts */}
           {currentLogo?.logoUrl && (() => {
@@ -498,33 +553,6 @@ export function BrandIdentityCard({
           })()}
         </div>
 
-        {logos && logos.length > 1 && (
-          <div className="flex flex-col items-center gap-4 w-full">
-            <div className="flex items-center justify-center w-full gap-4">
-              <Button
-                variant="light"
-                size="icon"
-                onClick={() => onLogoIndexChange(Math.max(0, currentLogoIndex - 1))}
-                disabled={currentLogoIndex === 0}
-              >
-                <ChevronLeft />
-              </Button>
-              <Button
-                variant="light"
-                size="icon"
-                onClick={() =>
-                  onLogoIndexChange(Math.min(logos.length - 1, currentLogoIndex + 1))
-                }
-                disabled={currentLogoIndex === logos.length - 1}
-              >
-                <ChevronRight />
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Logo {currentLogoIndex + 1} of {logos.length}
-            </p>
-          </div>
-        )}
 
 
       </CardContent>
@@ -602,6 +630,13 @@ export function BrandIdentityCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Logo Navigation Dock */}
+      <LogoNavigationDock
+        logos={logos || []}
+        currentLogoIndex={currentLogoIndex}
+        onLogoIndexChange={onLogoIndexChange}
+      />
     </Card>
   );
 }

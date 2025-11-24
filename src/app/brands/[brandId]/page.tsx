@@ -27,6 +27,7 @@ import {
   getVectorizedLogo,
 } from '@/app/actions';
 import { uploadDataUriToStorageClient } from '@/lib/client-storage';
+import { uploadDataUriToR2Client } from '@/lib/r2-upload-client';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -158,7 +159,7 @@ export default function BrandPage() {
   }, []);
 
   // Logo generation handler
-  const [provider, setProvider] = useState<'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana'>('ideogram');
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana'>('nano-banana');
   const handleGenerateLogo = useCallback(async (providerOverride?: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => {
     const selectedProvider = providerOverride || provider;
     if (!brand || !user || !firestore || !storage || !logoConcept) return;
@@ -203,9 +204,18 @@ export default function BrandPage() {
       }
 
       if (result.success && result.data) {
-        console.log('Uploading logo to Firebase Storage...');
-        const logoUrl = await uploadDataUriToStorageClient(result.data.logoUrl, user.uid, storage);
-        console.log('Logo uploaded successfully:', logoUrl);
+        console.log('Uploading logo to R2...');
+        let logoUrl: string;
+        try {
+          // Try R2 first (new method)
+          logoUrl = await uploadDataUriToR2Client(result.data.logoUrl, user.uid, 'logos');
+          console.log('Logo uploaded to R2 successfully:', logoUrl);
+        } catch (r2Error) {
+          console.warn('R2 upload failed, falling back to Firebase Storage:', r2Error);
+          // Fallback to Firebase Storage for backward compatibility
+          logoUrl = await uploadDataUriToStorageClient(result.data.logoUrl, user.uid, storage);
+          console.log('Logo uploaded to Firebase Storage successfully:', logoUrl);
+        }
 
         const logoData = {
           brandId,
@@ -459,10 +469,18 @@ export default function BrandPage() {
       });
 
       if (result.success && result.data) {
-        // Upload the colorized logo to Firebase Storage from client side
-        console.log('Uploading colorized logo to Firebase Storage...');
-        const colorLogoUrl = await uploadDataUriToStorageClient(result.data.colorLogoUrl, user.uid, storage);
-        console.log('Colorized logo uploaded successfully:', colorLogoUrl);
+        // Upload the colorized logo to R2 (new method)
+        console.log('Uploading colorized logo to R2...');
+        let colorLogoUrl: string;
+        try {
+          colorLogoUrl = await uploadDataUriToR2Client(result.data.colorLogoUrl, user.uid, 'logos');
+          console.log('Colorized logo uploaded to R2 successfully:', colorLogoUrl);
+        } catch (r2Error) {
+          console.warn('R2 upload failed, falling back to Firebase Storage:', r2Error);
+          // Fallback to Firebase Storage for backward compatibility
+          colorLogoUrl = await uploadDataUriToStorageClient(result.data.colorLogoUrl, user.uid, storage);
+          console.log('Colorized logo uploaded to Firebase Storage successfully:', colorLogoUrl);
+        }
 
         // Get existing color versions array or create new one from legacy fields
         const existingColorVersions = currentLogo.colorVersions || [];
@@ -567,25 +585,33 @@ export default function BrandPage() {
     if (!currentLogo || !user || !firestore || !storage) return;
     setIsVectorizing(true);
     try {
-      // 1. Upload cropped logo to storage to get a public/download URL for Fal
-      console.log('Uploading cropped logo to Firebase Storage...');
-      const uploadedCroppedUrl = await uploadDataUriToStorageClient(croppedLogoUrl, user.uid, storage);
-      console.log('Cropped logo uploaded:', uploadedCroppedUrl);
+      // 1. Upload cropped logo to R2 to get a public/download URL for Fal
+      console.log('Uploading cropped logo to R2...');
+      let uploadedCroppedUrl: string;
+      try {
+        uploadedCroppedUrl = await uploadDataUriToR2Client(croppedLogoUrl, user.uid, 'logos');
+        console.log('Cropped logo uploaded to R2:', uploadedCroppedUrl);
+      } catch (r2Error) {
+        console.warn('R2 upload failed, falling back to Firebase Storage:', r2Error);
+        uploadedCroppedUrl = await uploadDataUriToStorageClient(croppedLogoUrl, user.uid, storage);
+        console.log('Cropped logo uploaded to Firebase Storage:', uploadedCroppedUrl);
+      }
 
       // 2. Call server action to vectorize
       const result = await getVectorizedLogo(uploadedCroppedUrl);
 
       if (result.success && result.data) {
-        // 3. Upload the generated SVG data URI to Firebase Storage
-        console.log('Uploading vector logo to Firebase Storage...');
-        // Note: uploadDataUriToStorageClient handles data URIs. 
-        // The result.data.vectorLogoUrl is a data URI (image/svg+xml).
-        // We might want to ensure the file extension is .svg
-        // uploadDataUriToStorageClient usually infers from mime type or we might need to tweak it if it defaults to png.
-        // Let's check uploadDataUriToStorageClient implementation if possible, but usually it's fine.
-        // Actually, let's just pass it.
-        const vectorLogoStorageUrl = await uploadDataUriToStorageClient(result.data.vectorLogoUrl, user.uid, storage);
-        console.log('Vector logo uploaded successfully:', vectorLogoStorageUrl);
+        // 3. Upload the generated SVG data URI to R2
+        console.log('Uploading vector logo to R2...');
+        let vectorLogoStorageUrl: string;
+        try {
+          vectorLogoStorageUrl = await uploadDataUriToR2Client(result.data.vectorLogoUrl, user.uid, 'logos');
+          console.log('Vector logo uploaded to R2 successfully:', vectorLogoStorageUrl);
+        } catch (r2Error) {
+          console.warn('R2 upload failed, falling back to Firebase Storage:', r2Error);
+          vectorLogoStorageUrl = await uploadDataUriToStorageClient(result.data.vectorLogoUrl, user.uid, storage);
+          console.log('Vector logo uploaded to Firebase Storage successfully:', vectorLogoStorageUrl);
+        }
 
         // 4. Update Firestore
         const currentLogoDocRef = doc(
@@ -675,25 +701,27 @@ export default function BrandPage() {
   const isLoading = isLoadingBrand;
 
   return (
-    <ContentCard>
-      {isLoading && (
-        <div className="text-center">
-          <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground mt-2">Loading brand details...</p>
-        </div>
-      )}
+    <div className="flex justify-center">
+      <div className="w-full max-w-7xl">
+        <ContentCard>
+          {isLoading && (
+            <div className="text-center">
+              <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground mt-2">Loading brand details...</p>
+            </div>
+          )}
 
-      {!isLoading && !brand && (
-        <div className="text-center p-8">
-          <h2 className="text-xl font-bold">Brand Not Found</h2>
-          <p className="text-muted-foreground mt-2">
-            We couldn't find the brand you're looking for.
-          </p>
-        </div>
-      )}
+          {!isLoading && !brand && (
+            <div className="text-center p-8">
+              <h2 className="text-xl font-bold">Brand Not Found</h2>
+              <p className="text-muted-foreground mt-2">
+                We couldn't find the brand you're looking for.
+              </p>
+            </div>
+          )}
 
-      {brand && (
-        <div className="space-y-8">
+          {brand && (
+            <div className="space-y-8">
           <BrandIdentityCard
             brandName={brand.latestName}
             primaryTagline={primaryTagline}
@@ -725,8 +753,10 @@ export default function BrandPage() {
             onBrandNameChange={handleBrandNameChange}
           />
 
-        </div>
-      )}
-    </ContentCard>
+            </div>
+          )}
+        </ContentCard>
+      </div>
+    </div>
   );
 }
