@@ -15,12 +15,14 @@ import {
   Freeman,
   Gabarito,
   Genos,
+  Hepta_Slab,
   Instrument_Sans,
   Instrument_Serif,
   Jomhuria,
   Jost,
+  Julius_Sans_One,
+  Kodchasan,
   Lexend,
-  M_PLUS_Rounded_1c,
   Michroma,
   Nixie_One,
   Rowdies,
@@ -59,12 +61,14 @@ const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', wei
 const freeman = Freeman({ subsets: ['latin'], variable: '--font-freeman', weight: ['400'] });
 const gabarito = Gabarito({ subsets: ['latin'], variable: '--font-gabarito', weight: ['400', '500', '600', '700', '800', '900'] });
 const genos = Genos({ subsets: ['latin'], variable: '--font-genos', weight: ['400', '500', '600', '700', '800', '900'] });
+const heptaSlab = Hepta_Slab({ subsets: ['latin'], variable: '--font-hepta-slab', weight: ['400', '500', '600', '700', '800', '900'] });
 const instrumentSans = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument-sans', weight: ['400', '500', '600', '700'] });
 const instrumentSerif = Instrument_Serif({ subsets: ['latin'], variable: '--font-instrument-serif', weight: ['400'] });
 const jomhuria = Jomhuria({ subsets: ['latin'], variable: '--font-jomhuria', weight: ['400'] });
 const jost = Jost({ subsets: ['latin'], variable: '--font-jost', weight: ['400', '500', '600', '700', '800', '900'] });
+const juliusSansOne = Julius_Sans_One({ subsets: ['latin'], variable: '--font-julius-sans-one', weight: ['400'] });
+const kodchasan = Kodchasan({ subsets: ['latin'], variable: '--font-kodchasan', weight: ['400', '500', '600', '700'] });
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '500', '600', '700', '800', '900'] });
-const mPlusRounded1c = M_PLUS_Rounded_1c({ subsets: ['latin'], variable: '--font-m-plus-rounded-1c', weight: ['400', '500', '700', '800', '900'] });
 const michroma = Michroma({ subsets: ['latin'], variable: '--font-michroma', weight: ['400'] });
 const nixieOne = Nixie_One({ subsets: ['latin'], variable: '--font-nixie-one', weight: ['400'] });
 const rowdies = Rowdies({ subsets: ['latin'], variable: '--font-rowdies', weight: ['300', '400', '700'] });
@@ -96,12 +100,14 @@ export default function RootLayout({
         ${freeman.variable}
         ${gabarito.variable}
         ${genos.variable}
+        ${heptaSlab.variable}
         ${instrumentSans.variable}
         ${instrumentSerif.variable}
         ${jomhuria.variable}
         ${jost.variable}
+        ${juliusSansOne.variable}
+        ${kodchasan.variable}
         ${lexend.variable}
-        ${mPlusRounded1c.variable}
         ${michroma.variable}
         ${nixieOne.variable}
         ${rowdies.variable}

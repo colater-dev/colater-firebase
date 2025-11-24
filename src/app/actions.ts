@@ -11,6 +11,7 @@ import { generateLogoFal } from "@/ai/flows/generate-logo-fal";
 import { completeBrandDetails } from "@/ai/flows/complete-brand-details";
 import { generateLogoConcept } from "@/ai/flows/generate-logo-concept";
 import { critiqueLogo, CritiqueLogoInput, Critique } from "@/ai/flows/critique-logo";
+import { vectoriseLogo } from "@/ai/flows/vectorise-logo";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -261,6 +262,25 @@ export async function getLogoCritique(
     return {
       success: false,
       error: `An unexpected error occurred while critiquing the logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getVectorizedLogo(
+  logoUrl: string
+): Promise<{ success: boolean; data?: { vectorLogoUrl: string }; error?: string }> {
+  try {
+    if (!logoUrl) {
+      return { success: false, error: "Logo URL is required." };
+    }
+    const result = await vectoriseLogo({ logoUrl });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error vectorizing logo:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while vectorizing the logo: ${errorMessage}`,
     };
   }
 }

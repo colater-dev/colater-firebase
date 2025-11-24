@@ -49,6 +49,7 @@ export interface Logo {
     critique?: Critique;
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
     externalMediaUrl?: string;
+    vectorLogoUrl?: string;
 }
 
 export interface CritiquePoint {

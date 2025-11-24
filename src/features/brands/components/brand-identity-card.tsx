@@ -41,6 +41,8 @@ interface BrandIdentityCardProps {
   setSelectedProvider: (provider: 'gemini' | 'openai' | 'ideogram' | 'reve' | 'nano-banana') => void;
   onSaveExternalMedia?: (logoId: string, url: string) => void;
   onDeleteColorVersion?: (index: number) => void;
+  onVectorizeLogo?: (croppedLogoUrl: string) => void;
+  isVectorizing?: boolean;
 }
 
 export function BrandIdentityCard({
@@ -70,6 +72,8 @@ export function BrandIdentityCard({
   setSelectedProvider,
   onSaveExternalMedia,
   onDeleteColorVersion,
+  onVectorizeLogo,
+  isVectorizing,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
 
@@ -301,6 +305,8 @@ export function BrandIdentityCard({
               externalMediaUrl={externalMediaUrl}
               onExternalMediaChange={setExternalMediaUrl}
               onDeleteColorVersion={onDeleteColorVersion}
+              onVectorizeLogo={onVectorizeLogo}
+              isVectorizing={isVectorizing}
               isSavingMedia={isSavingMedia}
               onExternalMediaBlur={() => {
                 if (currentLogo && externalMediaUrl !== currentLogo.externalMediaUrl && onSaveExternalMedia) {

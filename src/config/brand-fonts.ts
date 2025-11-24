@@ -79,6 +79,12 @@ export const BRAND_FONTS = [
         sizeMultiplier: 1.15, // Very narrow/condensed
     },
     {
+        name: 'Hepta Slab',
+        weights: [400, 500, 600, 700, 800, 900],
+        variable: '--font-hepta-slab',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
         name: 'Instrument Sans',
         weights: [400, 500, 600, 700],
         variable: '--font-instrument-sans',
@@ -103,22 +109,29 @@ export const BRAND_FONTS = [
         sizeMultiplier: 1.0, // Well-balanced
     },
     {
+        name: 'Julius Sans One',
+        weights: [400],
+        variable: '--font-julius-sans-one',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
+        name: 'Kodchasan',
+        weights: [400, 500, 600, 700],
+        variable: '--font-kodchasan',
+        sizeMultiplier: 1.0, // Well-balanced
+    },
+    {
         name: 'Lexend',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-lexend',
         sizeMultiplier: 1.0, // Well-balanced
     },
-    {
-        name: 'M PLUS Rounded 1c',
-        weights: [400, 500, 700, 800, 900],
-        variable: '--font-m-plus-rounded-1c',
-        sizeMultiplier: 1.05, // Slightly narrow
-    },
+
     {
         name: 'Michroma',
         weights: [400],
         variable: '--font-michroma',
-        sizeMultiplier: 1.1, // Narrow and geometric
+        sizeMultiplier: 0.95, // Narrow and geometric
     },
     {
         name: 'Nixie One',

@@ -24,6 +24,7 @@ import {
 
   getLogoConcept,
   getLogoCritique,
+  getVectorizedLogo,
 } from '@/app/actions';
 import { uploadDataUriToStorageClient } from '@/lib/client-storage';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ export default function BrandPage() {
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [isGeneratingConcept, setIsGeneratingConcept] = useState(false);
   const [isColorizing, setIsColorizing] = useState(false);
+  const [isVectorizing, setIsVectorizing] = useState(false);
   const [isCritiquing, setIsCritiquing] = useState(false);
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
   const [logoConcept, setLogoConcept] = useState<string | null>(null);
@@ -565,6 +567,58 @@ export default function BrandPage() {
     }
   }, [currentLogo, brand, user, firestore, brandId, toast]);
 
+  const handleVectorizeLogo = useCallback(async (croppedLogoUrl: string) => {
+    if (!currentLogo || !user || !firestore || !storage) return;
+    setIsVectorizing(true);
+    try {
+      // 1. Upload cropped logo to storage to get a public/download URL for Fal
+      console.log('Uploading cropped logo to Firebase Storage...');
+      const uploadedCroppedUrl = await uploadDataUriToStorageClient(croppedLogoUrl, user.uid, storage);
+      console.log('Cropped logo uploaded:', uploadedCroppedUrl);
+
+      // 2. Call server action to vectorize
+      const result = await getVectorizedLogo(uploadedCroppedUrl);
+
+      if (result.success && result.data) {
+        // 3. Upload the generated SVG data URI to Firebase Storage
+        console.log('Uploading vector logo to Firebase Storage...');
+        // Note: uploadDataUriToStorageClient handles data URIs. 
+        // The result.data.vectorLogoUrl is a data URI (image/svg+xml).
+        // We might want to ensure the file extension is .svg
+        // uploadDataUriToStorageClient usually infers from mime type or we might need to tweak it if it defaults to png.
+        // Let's check uploadDataUriToStorageClient implementation if possible, but usually it's fine.
+        // Actually, let's just pass it.
+        const vectorLogoStorageUrl = await uploadDataUriToStorageClient(result.data.vectorLogoUrl, user.uid, storage);
+        console.log('Vector logo uploaded successfully:', vectorLogoStorageUrl);
+
+        // 4. Update Firestore
+        const currentLogoDocRef = doc(
+          firestore,
+          `users/${user.uid}/brands/${brandId}/logoGenerations/${currentLogo.id}`
+        );
+        await updateDoc(currentLogoDocRef, {
+          vectorLogoUrl: vectorLogoStorageUrl,
+        });
+
+        toast({
+          title: 'Vectorization complete!',
+          description: 'SVG version has been generated and saved.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to vectorize logo.');
+      }
+    } catch (error) {
+      console.error('Error vectorizing logo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Vectorization Failed',
+        description: error instanceof Error ? error.message : 'Could not vectorize the logo.',
+      });
+    } finally {
+      setIsVectorizing(false);
+    }
+  }, [currentLogo, user, firestore, storage, brandId, toast]);
+
   // Primary tagline - use brand's primary tagline or fallback
   const primaryTagline = brand?.primaryTagline || 'Your tagline will appear here.';
 
@@ -656,6 +710,8 @@ export default function BrandPage() {
             setSelectedProvider={setProvider}
             onSaveExternalMedia={handleSaveExternalMedia}
             onDeleteColorVersion={handleDeleteColorVersion}
+            onVectorizeLogo={handleVectorizeLogo}
+            isVectorizing={isVectorizing}
           />
 
           <BrandHeader brand={brand} />

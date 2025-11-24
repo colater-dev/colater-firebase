@@ -65,19 +65,15 @@ const colorizeLogoFlow = ai.defineFlow(
         },
         {
           text: `
-          You are a professional logo designer. Your task is to colorize the provided black-and-white logo while preserving its exact shape and geometry.
+          You are a professional logo designer. Your task is to colorize the provided logo while preserving its exact shape and geometry.
           
           Brand Name: ${input.name}
           Brand Description: ${input.elevatorPitch}
 
           Instructions:
-1. Introduce the minimal number of hues (max 3). 
-2. Use modern, complementary brand-appropriate colors. The palette should feel intentional, and visually cohesive.
-3. Preserve the logo's shape, silhouette, spacing, and internal structure exactly. Do not alter, distort, add, or remove any shapes.
-4. You may use subtle gradients or material effects, but only if they enhance clarity of the object represented and do not change the structure of the mark.
-5. Place the colored logo on a clean white background with no extra elements, textures, patterns, or framing.
-6. Do not add any text to the image.
-7. After generating the image, return a JSON object in a markdown code block listing the 3 dominant hex colors used. Example:
+          Recreate this image as a colored 3d render of a logo against a background color of your choice appropriate for what the logo represents.
+          
+          
               \`\`\`json
               {
                 "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]

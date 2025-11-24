@@ -1,15 +1,16 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { RefreshCw, Trash2, Download } from 'lucide-react';
+import { RefreshCw, Trash2, Download, PenTool, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor } from '@/lib/color-utils';
 import type { Logo } from '@/lib/types';
 import { LogoControls } from './logo-controls';
 import { CritiquePoint } from './critique-point';
+import { cropImageToContent } from '@/lib/image-utils';
 
 interface LogoShowcaseProps {
     currentLogo: Logo;
@@ -57,6 +58,8 @@ interface LogoShowcaseProps {
     onExternalMediaBlur?: () => void;
     onFileUpload?: (file: File) => void;
     onDeleteColorVersion?: (index: number) => void;
+    onVectorizeLogo?: (croppedLogoUrl: string) => void;
+    isVectorizing?: boolean;
 }
 
 export function LogoShowcase({
@@ -103,6 +106,8 @@ export function LogoShowcase({
     onExternalMediaBlur,
     onFileUpload,
     onDeleteColorVersion,
+    onVectorizeLogo,
+    isVectorizing,
 }: LogoShowcaseProps) {
     const animationVariants = {
         fade: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
@@ -112,6 +117,13 @@ export function LogoShowcase({
     };
 
     const logoContainerRef = useRef<HTMLDivElement>(null);
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (currentLogo?.logoUrl) {
+            cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
+        }
+    }, [currentLogo?.logoUrl]);
 
     const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement> | { current: HTMLDivElement | null }, suffix: string) => {
         if (!ref.current) {
@@ -326,6 +338,71 @@ export function LogoShowcase({
                         </div>
                     )}
                 </div>
+
+                {/* Cropped to Content */}
+                {croppedLogoUrl && (
+                    <div className="relative aspect-square bg-black flex items-center justify-center group">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-2">
+                            {onVectorizeLogo && !currentLogo.vectorLogoUrl && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onVectorizeLogo(croppedLogoUrl);
+                                    }}
+                                    disabled={isVectorizing}
+                                    title="Vectorize Logo (SVG)"
+                                >
+                                    {isVectorizing ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <PenTool className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            )}
+                            {currentLogo.vectorLogoUrl && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-8 h-8 bg-green-500/20 hover:bg-green-500/40 text-white"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const link = document.createElement('a');
+                                        link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}.svg`;
+                                        link.href = currentLogo.vectorLogoUrl!;
+                                        link.click();
+                                    }}
+                                    title="Download SVG"
+                                >
+                                    <PenTool className="w-4 h-4" />
+                                </Button>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const link = document.createElement('a');
+                                    link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-cropped.png`;
+                                    link.href = croppedLogoUrl;
+                                    link.click();
+                                }}
+                                title="Download PNG"
+                            >
+                                <Download className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <img
+                            src={croppedLogoUrl}
+                            alt="Cropped logo"
+                            className="max-w-full max-h-full object-contain border border-dashed border-yellow-500/50"
+                        />
+                        <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Cropped</p>
+                    </div>
+                )}
 
                 {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>
