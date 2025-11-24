@@ -9,12 +9,14 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { fal } from '@fal-ai/client';
+import getColors from 'get-image-colors';
 
 const ColorizeLogoInputSchema = z.object({
   logoUrl: z
     .string()
     .describe(
-      'The data URI of the black and white logo to be colorized.'
+      'The URL of the black and white logo to be colorized (must be a publicly accessible URL, not a data URI).'
     ),
   name: z.string().describe('The name of the brand.'),
   elevatorPitch: z.string().describe('The elevator pitch for the brand.'),
@@ -55,61 +57,56 @@ const colorizeLogoFlow = ai.defineFlow(
     outputSchema: ColorizeLogoOutputSchema,
   },
   async input => {
-    const { media, text } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
-      prompt: [
-        {
-          media: {
-            url: input.logoUrl,
-          },
+    const prompt = `A colored 3d render of a logo for ${input.name}. ${input.elevatorPitch}. Target audience: ${input.audience}. ${input.desirableCues || ''}. Avoid: ${input.undesirableCues || ''}`;
+
+    try {
+      const result: any = await fal.subscribe('fal-ai/reve/fast/remix', {
+        input: {
+          prompt,
+          image_urls: [input.logoUrl],
         },
-        {
-          text: `
-          You are a professional logo designer. Your task is to colorize the provided logo while preserving its exact shape and geometry.
-          
-          Brand Name: ${input.name}
-          Brand Description: ${input.elevatorPitch}
-
-          Instructions:
-          Recreate this image as a colored 3d render of a logo against a background color of your choice appropriate for what the logo represents.
-          
-          
-              \`\`\`json
-              {
-                "colors": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]
-              }
-              \`\`\`
-          `,
-        },
-      ],
-      config: {
-        responseModalities: ['IMAGE', 'TEXT'],
-      },
-    });
-
-    if (!media?.url) {
-      throw new Error('Color logo generation failed to return a data URI.');
-    }
-
-    let colors: string[] = [];
-    if (text) {
-      try {
-        const jsonString = text.match(/```json\n([\s\S]*?)\n```/)?.[1];
-        if (jsonString) {
-          const parsed = JSON.parse(jsonString);
-          if (parsed.colors && Array.isArray(parsed.colors)) {
-            colors = parsed.colors;
+        logs: true,
+        onQueueUpdate: (update) => {
+          if (update.status === 'IN_PROGRESS') {
+            update.logs.map((log) => log.message).forEach(console.log);
           }
-        }
-      } catch (e) {
-        console.error('Failed to parse color palette from model response', e);
-        // Fail gracefully, we can still return the image.
-      }
-    }
+        },
+      });
 
-    return {
-      colorLogoUrl: media.url,
-      palette: colors.slice(0, 3), // Ensure we only return max 3 colors
-    };
+      console.log('Fal AI result:', JSON.stringify(result, null, 2));
+
+      if (!result.data?.images?.[0]?.url) {
+        console.error('Unexpected Fal AI response structure:', result);
+        throw new Error(`Color logo generation failed to return an image URL. Received: ${JSON.stringify(result.data)}`);
+      }
+
+      const colorLogoUrl = result.data.images[0].url;
+      console.log('Color logo URL received:', colorLogoUrl);
+
+      // Fetch the image and convert to data URI (similar to generate-logo-fal.ts)
+      const imageResponse = await fetch(colorLogoUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch generated color logo: ${imageResponse.statusText}`);
+      }
+
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const imageContentType = imageResponse.headers.get('content-type') || 'image/png';
+      const imageBase64 = imageBuffer.toString('base64');
+      const colorLogoDataUri = `data:${imageContentType};base64,${imageBase64}`;
+
+      console.log('Color logo converted to data URI, size:', imageBuffer.byteLength, 'bytes');
+
+      // Extract colors using get-image-colors
+      const colors = await getColors(imageBuffer, imageContentType);
+      const palette = colors.map(color => color.hex()).slice(0, 3);
+
+      return {
+        colorLogoUrl: colorLogoDataUri,
+        palette,
+      };
+    } catch (error) {
+      console.error('Fal AI generation failed:', error);
+      throw error;
+    }
   }
 );

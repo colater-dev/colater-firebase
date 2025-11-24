@@ -10,7 +10,10 @@ import { shiftHue, darkenColor, isLightColor } from '@/lib/color-utils';
 import type { Logo } from '@/lib/types';
 import { LogoControls } from './logo-controls';
 import { CritiquePoint } from './critique-point';
-import { cropImageToContent } from '@/lib/image-utils';
+import { DownloadButton } from './download-button';
+import { PaletteDots } from './palette-dots';
+import { StickerPreview } from './sticker-preview';
+import { cropImageToContent, createStickerEffect } from '@/lib/image-utils';
 
 interface LogoShowcaseProps {
     currentLogo: Logo;
@@ -118,12 +121,26 @@ export function LogoShowcase({
 
     const logoContainerRef = useRef<HTMLDivElement>(null);
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
+    const [stickerLogoUrl, setStickerLogoUrl] = useState<string | null>(null);
+    const [colorStickerUrl, setColorStickerUrl] = useState<string | null>(null);
 
+    // Existing effect for bw sticker and cropped logo
     useEffect(() => {
         if (currentLogo?.logoUrl) {
             cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
+            createStickerEffect(currentLogo.logoUrl).then(setStickerLogoUrl);
         }
     }, [currentLogo?.logoUrl]);
+
+    // New effect for color sticker (if a color version exists)
+    useEffect(() => {
+        const colorUrl = currentLogo?.colorLogoUrl || (currentLogo?.colorVersions?.[0]?.colorLogoUrl);
+        if (colorUrl) {
+            createStickerEffect(colorUrl).then(setColorStickerUrl);
+        } else {
+            setColorStickerUrl(null);
+        }
+    }, [currentLogo?.colorLogoUrl, currentLogo?.colorVersions]);
 
     const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement> | { current: HTMLDivElement | null }, suffix: string) => {
         if (!ref.current) {
@@ -140,6 +157,28 @@ export function LogoShowcase({
             console.error('Failed to download logo preview:', err);
         }
     }, [brandName]);
+
+    /**
+     * Helper function to determine if logo should be inverted based on background
+     * @param backgroundType - 'light' for white/light backgrounds, 'dark' for black/dark backgrounds
+     * @returns boolean - whether to apply invert(1) filter
+     * 
+     * Logic:
+     * - Black & white logos are typically black on transparent (or white bg)
+     * - If invertLogo is FALSE (normal):
+     *   - Light backgrounds: no invert (black logo shows on white)
+     *   - Dark backgrounds: invert (black becomes white, shows on dark)
+     * - If invertLogo is TRUE (inverted):
+     *   - Light backgrounds: invert (white logo shows on white bg - needs invert to be black)
+     *   - Dark backgrounds: no invert (white logo shows on dark)
+     * 
+     * This is XOR logic: invert when (isDark XOR invertLogo)
+     */
+    const shouldInvertLogo = useCallback((backgroundType: 'light' | 'dark') => {
+        const isDark = backgroundType === 'dark';
+        // XOR: invert when exactly one is true
+        return isDark !== invertLogo;
+    }, [invertLogo]);
 
     return (
         <div className="w-full max-w-4xl mt-8">
@@ -201,7 +240,7 @@ export function LogoShowcase({
                             className="object-contain"
                             unoptimized={currentLogo.logoUrl.startsWith('data:')}
                             style={{
-                                filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${invertLogo ? ' invert(1)' : ''}`
+                                filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
                             }}
                         />
                     </motion.div>
@@ -339,6 +378,211 @@ export function LogoShowcase({
                     )}
                 </div>
 
+                {/* Sticker Effect */}
+                {stickerLogoUrl && (
+                    <StickerPreview
+                        stickerUrl={stickerLogoUrl}
+                        brandName={brandName}
+                        label="Sticker"
+                    />
+                )}
+                {/* Color Sticker Effect (if color version exists) */}
+                {colorStickerUrl && (
+                    <StickerPreview
+                        stickerUrl={colorStickerUrl}
+                        brandName={brandName}
+                        label="Color Sticker"
+                        isColor={true}
+                    />
+                )}
+
+                {!readOnly && (
+                    <LogoControls
+                        logoLayout={logoLayout}
+                        setLogoLayout={setLogoLayout}
+                        textTransform={textTransform}
+                        setTextTransform={setTextTransform}
+                        animationType={animationType}
+                        triggerAnimation={triggerAnimation}
+                        showBrandName={showBrandName}
+                        setShowBrandName={setShowBrandName}
+                        invertLogo={invertLogo}
+                        setInvertLogo={setInvertLogo}
+                        logoTextGap={logoTextGap}
+                        setLogoTextGap={setLogoTextGap}
+                        logoTextBalance={logoTextBalance}
+                        setLogoTextBalance={setLogoTextBalance}
+                        logoBrightness={logoBrightness}
+                        setLogoBrightness={setLogoBrightness}
+                        logoContrast={logoContrast}
+                        setLogoContrast={setLogoContrast}
+                        logoSmoothness={logoSmoothness}
+                        setLogoSmoothness={setLogoSmoothness}
+                        onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
+                    />
+                )}
+
+                <motion.div
+                    key={`logo-${animationKey}`}
+                    initial={animationType ? "hidden" : "visible"}
+                    animate="visible"
+                    variants={animationType ? animationVariants[animationType] : undefined}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="relative z-0"
+                    style={{
+                        width: `${128 * (1.5 - (logoTextBalance / 100))}px`,
+                        height: `${128 * (1.5 - (logoTextBalance / 100))}px`,
+                        marginRight: logoLayout === 'horizontal' ? `${logoTextGap}px` : 0,
+                        marginBottom: logoLayout === 'vertical' ? `${logoTextGap}px` : 0
+                    }}
+                >
+                    <Image
+                        src={currentLogo.logoUrl}
+                        alt="Logo on white background"
+                        fill
+                        className="object-contain"
+                        unoptimized={currentLogo.logoUrl.startsWith('data:')}
+                        style={{
+                            filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
+                        }}
+                    />
+                </motion.div>
+
+                {showBrandName && (
+                    <motion.div
+                        key={`text-${animationKey}`}
+                        initial="hidden"
+                        animate="visible"
+                        className={`relative z-10 ${logoLayout === 'vertical' ? 'text-center' : 'text-left'}`}
+                    >
+                        <h3
+                            className="font-bold text-gray-900 leading-none"
+                            style={{
+                                fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
+                                fontSize: `${36 * (0.5 + (logoTextBalance / 100)) * (BRAND_FONTS.find(f => f.name === selectedBrandFont)?.sizeMultiplier || 1.0)}px`,
+                                textTransform: textTransform === 'none' ? 'none' : textTransform
+                            }}
+                        >
+                            {brandName.split('').map((char, index) => (
+                                <motion.span
+                                    key={`${animationKey}-char-${index}`}
+                                    variants={animationType ? {
+                                        hidden: animationVariants[animationType].hidden,
+                                        visible: animationVariants[animationType].visible
+                                    } : undefined}
+                                    transition={{
+                                        duration: 0.3,
+                                        ease: "easeOut",
+                                        delay: animationType ? 0.5 + (index * 0.03) : 0
+                                    }}
+                                    style={{ display: 'inline-block' }}
+                                >
+                                    {char === ' ' ? '\u00A0' : char}
+                                </motion.span>
+                            ))}
+                        </h3>
+                    </motion.div>
+                )}
+
+                {/* Critique Points Overlay - Card 1 */}
+                {showCritique && currentLogo?.critique?.points && (
+                    <div className="absolute inset-0 z-20 pointer-events-none">
+                        {currentLogo.critique.points.map((point, index) => (
+                            <div key={index} className="pointer-events-auto">
+                                <CritiquePoint
+                                    point={point}
+                                    isExpanded={expandedPointId === `${currentLogo.id}-${index}`}
+                                    onToggle={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedPointId(
+                                            expandedPointId === `${currentLogo.id}-${index}`
+                                                ? null
+                                                : `${currentLogo.id}-${index}`
+                                        );
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">► Tap to Animate</p>
+            </div>
+
+            {/* External Media Section - Spans full width */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 flex flex-col items-center justify-center">
+                {externalMediaUrl && (
+                    <div className="w-full overflow-hidden bg-black/5 relative group">
+                        {!readOnly && onExternalMediaChange && (
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => {
+                                    onExternalMediaChange('');
+                                    if (onExternalMediaBlur) {
+                                        // Trigger save immediately after clearing
+                                        setTimeout(onExternalMediaBlur, 0);
+                                    }
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        )}
+                        {externalMediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <video
+                                src={externalMediaUrl}
+                                controls
+                                className="w-full h-auto"
+                            />
+                        ) : (
+                            <img
+                                src={externalMediaUrl}
+                                alt="External media"
+                                className="w-full h-auto"
+                            />
+                        )}
+                    </div>
+                )}
+
+                {!readOnly && onExternalMediaChange && (
+                    <div className="w-full max-w-xl space-y-2 p-8">
+                        <div className="flex gap-2">
+                            <input
+                                type="url"
+                                placeholder="Paste an image or video URL (mp4, webm, ogg)..."
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={externalMediaUrl || ''}
+                                onChange={(e) => onExternalMediaChange(e.target.value)}
+                                onBlur={onExternalMediaBlur}
+                            />
+                            {isSavingMedia && (
+                                <div className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
+                                    Saving...
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2 justify-center">
+                            <p className="text-xs text-muted-foreground">Or upload a file:</p>
+                            <input
+                                type="file"
+                                accept="image/*,video/*"
+                                className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file && onFileUpload) {
+                                        onFileUpload(file);
+                                        e.target.value = ''; // Reset input
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* 2x2 Grid for additional previews */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-0">
                 {/* Cropped to Content */}
                 {croppedLogoUrl && (
                     <div className="relative aspect-square bg-black flex items-center justify-center group">
@@ -399,9 +643,21 @@ export function LogoShowcase({
                             src={croppedLogoUrl}
                             alt="Cropped logo"
                             className="max-w-full max-h-full object-contain border border-dashed border-yellow-500/50"
+                            style={{
+                                filter: shouldInvertLogo('dark') ? 'invert(1)' : 'none'
+                            }}
                         />
                         <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Cropped</p>
                     </div>
+                )}
+
+                {/* Sticker Effect */}
+                {stickerLogoUrl && (
+                    <StickerPreview
+                        stickerUrl={stickerLogoUrl}
+                        brandName={brandName}
+                        label="Sticker"
+                    />
                 )}
 
                 {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
@@ -428,6 +684,9 @@ export function LogoShowcase({
                         height={200}
                         className="object-contain w-full h-full opacity-50"
                         unoptimized={currentLogo.logoUrl.startsWith('data:')}
+                        style={{
+                            filter: shouldInvertLogo('dark') ? 'invert(1)' : 'none'
+                        }}
                     />
                     {/* Critique Points Overlay - Card 2 */}
                     {showCritique && currentLogo?.critique?.points && (
@@ -474,7 +733,7 @@ export function LogoShowcase({
                         height={200}
                         className="object-contain w-full h-full"
                         unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                        style={{ filter: 'invert(1)' }}
+                        style={{ filter: !shouldInvertLogo('dark') ? 'invert(1)' : 'none' }}
                     />
                     {/* Critique Points Overlay - Card 3 */}
                     {showCritique && currentLogo?.critique?.points && (
@@ -581,15 +840,26 @@ export function LogoShowcase({
                                         <RefreshCw className="w-4 h-4" />
                                     </Button>
 
-                                    <Image
-                                        src={currentLogo.logoUrl}
-                                        alt={`Logo on brand color ${index + 1}`}
-                                        width={200}
-                                        height={200}
-                                        className="object-contain w-full h-full"
-                                        unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                                        style={styles}
-                                    />
+                                    {(() => {
+                                        const backgroundType = isLightColor(darkenedColor) ? 'light' : 'dark';
+                                        const baseInvert = shouldInvertLogo(backgroundType);
+                                        const combinedStyles = {
+                                            ...styles,
+                                            filter: `${baseInvert ? 'invert(1) ' : ''}${styles.filter || ''}`.trim()
+                                        };
+
+                                        return (
+                                            <Image
+                                                src={currentLogo.logoUrl}
+                                                alt={`Logo on brand color ${index + 1}`}
+                                                width={200}
+                                                height={200}
+                                                className="object-contain w-full h-full"
+                                                unoptimized={currentLogo.logoUrl.startsWith('data:')}
+                                                style={combinedStyles}
+                                            />
+                                        );
+                                    })()}
                                     <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">
                                         On Brand Color
                                     </p>

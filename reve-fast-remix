@@ -1,0 +1,204 @@
+# Reve
+
+> Reve’s fast remix model lets you upload an reference images and then combine/transform them via a text prompt at lightning speed!
+
+
+## Overview
+
+- **Endpoint**: `https://fal.run/fal-ai/reve/fast/remix`
+- **Model ID**: `fal-ai/reve/fast/remix`
+- **Category**: image-to-image
+- **Kind**: inference
+**Tags**: image-to-image
+
+
+
+## API Information
+
+This model can be used via our HTTP API or more conveniently via our client libraries.
+See the input and output schema below, as well as the usage examples.
+
+
+### Input Schema
+
+The API accepts the following input parameters:
+
+
+- **`prompt`** (`string`, _required_):
+  The text description of the desired image. May include XML img tags like <img>0</img> to refer to specific images by their index in the image_urls list.
+  - Examples: "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building."
+
+- **`image_urls`** (`list<string>`, _required_):
+  List of URLs of reference images. Must provide between 1 and 6 images (inclusive). Each image must be less than 10 MB. Supports PNG, JPEG, WebP, AVIF, and HEIF formats.
+  - Array of string
+  - Examples: ["https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png","https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png","https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"]
+
+- **`aspect_ratio`** (`AspectRatioEnum`, _optional_):
+  The desired aspect ratio of the generated image. If not provided, will be smartly chosen by the model.
+  - Options: `"16:9"`, `"9:16"`, `"3:2"`, `"2:3"`, `"4:3"`, `"3:4"`, `"1:1"`
+  - Examples: "16:9"
+
+- **`num_images`** (`integer`, _optional_):
+  Number of images to generate Default value: `1`
+  - Default: `1`
+  - Range: `1` to `4`
+  - Examples: 1
+
+- **`output_format`** (`OutputFormatEnum`, _optional_):
+  Output format for the generated image. Default value: `"png"`
+  - Default: `"png"`
+  - Options: `"png"`, `"jpeg"`, `"webp"`
+  - Examples: "png"
+
+- **`sync_mode`** (`boolean`, _optional_):
+  If `True`, the media will be returned as a data URI and the output data won't be available in the request history.
+  - Default: `false`
+
+
+
+**Required Parameters Example**:
+
+```json
+{
+  "prompt": "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building.",
+  "image_urls": [
+    "https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png",
+    "https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png",
+    "https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"
+  ]
+}
+```
+
+**Full Example**:
+
+```json
+{
+  "prompt": "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building.",
+  "image_urls": [
+    "https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png",
+    "https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png",
+    "https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"
+  ],
+  "aspect_ratio": "16:9",
+  "num_images": 1,
+  "output_format": "png"
+}
+```
+
+
+### Output Schema
+
+The API returns the following output format:
+
+- **`images`** (`list<Image>`, _required_):
+  The remixed images
+  - Array of Image
+  - Examples: [{"url":"https://v3b.fal.media/files/b/zebra/r0J_UFupv3BfooTwv2ifJ.png"}]
+
+
+
+**Example Response**:
+
+```json
+{
+  "images": [
+    {
+      "url": "https://v3b.fal.media/files/b/zebra/r0J_UFupv3BfooTwv2ifJ.png"
+    }
+  ]
+}
+```
+
+
+## Usage Examples
+
+### cURL
+
+```bash
+curl --request POST \
+  --url https://fal.run/fal-ai/reve/fast/remix \
+  --header "Authorization: Key $FAL_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+     "prompt": "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building.",
+     "image_urls": [
+       "https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png",
+       "https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png",
+       "https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"
+     ]
+   }'
+```
+
+### Python
+
+Ensure you have the Python client installed:
+
+```bash
+pip install fal-client
+```
+
+Then use the API client to make requests:
+
+```python
+import fal_client
+
+def on_queue_update(update):
+    if isinstance(update, fal_client.InProgress):
+        for log in update.logs:
+           print(log["message"])
+
+result = fal_client.subscribe(
+    "fal-ai/reve/fast/remix",
+    arguments={
+        "prompt": "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building.",
+        "image_urls": ["https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png", "https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png", "https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"]
+    },
+    with_logs=True,
+    on_queue_update=on_queue_update,
+)
+print(result)
+```
+
+### JavaScript
+
+Ensure you have the JavaScript client installed:
+
+```bash
+npm install --save @fal-ai/client
+```
+
+Then use the API client to make requests:
+
+```javascript
+import { fal } from "@fal-ai/client";
+
+const result = await fal.subscribe("fal-ai/reve/fast/remix", {
+  input: {
+    prompt: "Dress the model in the clothes and hat. Add a cat to the scene and change the background to a Victorian era building.",
+    image_urls: ["https://v3b.fal.media/files/b/monkey/lsPBOhBws_FnTzd5G9KZ9_seedream4_edit_input_4.png", "https://v3b.fal.media/files/b/monkey/ZrW5ouDj8vjLtvl1Cj9l9_seedream4_edit_input_2.png", "https://v3b.fal.media/files/b/elephant/sd0k6YhlQEKfR6d_hAmIH_seedream4_edit_input_3.png"]
+  },
+  logs: true,
+  onQueueUpdate: (update) => {
+    if (update.status === "IN_PROGRESS") {
+      update.logs.map((log) => log.message).forEach(console.log);
+    }
+  },
+});
+console.log(result.data);
+console.log(result.requestId);
+```
+
+
+## Additional Resources
+
+### Documentation
+
+- [Model Playground](https://fal.ai/models/fal-ai/reve/fast/remix)
+- [API Documentation](https://fal.ai/models/fal-ai/reve/fast/remix/api)
+- [OpenAPI Schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=fal-ai/reve/fast/remix)
+
+### fal.ai Platform
+
+- [Platform Documentation](https://docs.fal.ai)
+- [Python Client](https://docs.fal.ai/clients/python)
+- [JavaScript Client](https://docs.fal.ai/clients/javascript)

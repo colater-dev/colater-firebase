@@ -58,7 +58,7 @@ export function BrandApplications({
                 {/* 1. Business Card Front */}
                 <div className="flex flex-col">
                     <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center p-0 border border-gray-100">
-                        <div className="relative w-full aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-col justify-between">
+                        <div className="relative w-full aspect-[3.5/2] shadow-xl bg-white p-8 flex flex-row justify-between">
                             <div className="w-16 h-16 relative">
                                 <Image
                                     src={logoUrl}
@@ -73,7 +73,7 @@ export function BrandApplications({
                                     unoptimized={logoUrl.startsWith('data:')}
                                 />
                             </div>
-                            <div>
+                            <div className="text-left">
                                 <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: `var(${fontVariable})` }}>John Doe</p>
                                 <p className="text-xs text-gray-500 mt-0.5">Founder</p>
                                 <p className="text-xs text-gray-400 mt-4">john@{brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com</p>

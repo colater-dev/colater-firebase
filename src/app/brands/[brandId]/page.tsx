@@ -448,13 +448,9 @@ export default function BrandPage() {
     if (!currentLogo || !user || !firestore || !brand || !storage) return;
     setIsColorizing(true);
     try {
-      const dataUriResult = await convertUrlToDataUri(currentLogo.logoUrl);
-      if (!dataUriResult.success || !dataUriResult.data) {
-        throw new Error(dataUriResult.error || 'Failed to prepare image for colorization.');
-      }
-
+      // Pass the logo URL directly - Fal AI's reve/fast/remix requires URLs, not data URIs
       const result = await getColorizedLogo({
-        logoUrl: dataUriResult.data,
+        logoUrl: currentLogo.logoUrl,
         name: brand.latestName,
         elevatorPitch: brand.latestElevatorPitch,
         audience: brand.latestAudience,
