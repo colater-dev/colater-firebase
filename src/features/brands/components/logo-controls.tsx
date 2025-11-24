@@ -9,6 +9,7 @@ import {
     ArrowUp,
     Maximize,
     Sparkles,
+    Download,
 } from 'lucide-react';
 
 interface LogoControlsProps {
@@ -32,6 +33,7 @@ interface LogoControlsProps {
     setLogoContrast: (contrast: number) => void;
     logoSmoothness: number;
     setLogoSmoothness: (smoothness: number) => void;
+    onDownload?: () => void;
 }
 
 export function LogoControls({
@@ -55,9 +57,10 @@ export function LogoControls({
     setLogoContrast,
     logoSmoothness,
     setLogoSmoothness,
+    onDownload,
 }: LogoControlsProps) {
     return (
-        <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30">
+        <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30 max-h-[450px] overflow-y-auto">
             <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Layout</Label>
                 <div className="flex bg-muted rounded-md p-1">
@@ -234,6 +237,19 @@ export function LogoControls({
                     step={0.1}
                 />
             </div>
+            {onDownload && (
+                <div className="pt-2 border-t">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs h-8"
+                        onClick={onDownload}
+                    >
+                        <Download className="w-3 h-3 mr-2" />
+                        Download PNG
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

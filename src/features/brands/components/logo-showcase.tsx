@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { toPng } from 'html-to-image';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { RefreshCw, Trash2 } from 'lucide-react';
+import { RefreshCw, Trash2, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor } from '@/lib/color-utils';
@@ -110,11 +111,30 @@ export function LogoShowcase({
         blur: { hidden: { filter: 'blur(10px)', opacity: 0 }, visible: { filter: 'blur(0px)', opacity: 1 } },
     };
 
+    const logoContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement> | { current: HTMLDivElement | null }, suffix: string) => {
+        if (!ref.current) {
+            return;
+        }
+
+        try {
+            const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
+            const link = document.createElement('a');
+            link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-${suffix}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Failed to download logo preview:', err);
+        }
+    }, [brandName]);
+
     return (
         <div className="w-full max-w-4xl mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
                 {/* Original on White - Spans full width */}
                 <div
+                    ref={logoContainerRef}
                     className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px] ${readOnly ? 'cursor-pointer' : ''}`}
                     onClick={() => {
                         if (readOnly) {
@@ -144,6 +164,7 @@ export function LogoShowcase({
                             setLogoContrast={setLogoContrast}
                             logoSmoothness={logoSmoothness}
                             setLogoSmoothness={setLogoSmoothness}
+                            onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
                         />
                     )}
 
@@ -306,8 +327,23 @@ export function LogoShowcase({
                     )}
                 </div>
 
-                {/* On Gray (Darker, 50% opacity) - MOVED TO 2ND POSITION */}
-                <div className="relative aspect-square bg-gray-600 flex items-center justify-center group">
+                {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
+                <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 bg-black/20 hover:bg-black/40 text-white"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                // @ts-ignore - accessing ref from parent div
+                                handleDownload({ current: e.currentTarget.closest('.group') }, 'on-gray');
+                            }}
+                            title="Download PNG"
+                        >
+                            <Download className="w-4 h-4" />
+                        </Button>
+                    </div>
                     <Image
                         src={currentLogo.logoUrl}
                         alt="Logo on gray background"
@@ -340,6 +376,20 @@ export function LogoShowcase({
 
                 {/* Inverted on Black */}
                 <div className="relative aspect-square bg-black flex items-center justify-center group">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload({ current: e.currentTarget.closest('.group') as HTMLDivElement }, 'inverted-on-black');
+                            }}
+                            title="Download PNG"
+                        >
+                            <Download className="w-4 h-4" />
+                        </Button>
+                    </div>
                     <Image
                         src={currentLogo.logoUrl}
                         alt="Inverted logo on black background"
@@ -411,6 +461,20 @@ export function LogoShowcase({
                                     className="relative aspect-square flex items-center justify-center group"
                                     style={{ backgroundColor: darkenedColor }}
                                 >
+                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="w-8 h-8 bg-black/20 hover:bg-black/40 text-white"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownload({ current: e.currentTarget.closest('.group') as HTMLDivElement }, `on-brand-color-${index + 1}`);
+                                            }}
+                                            title="Download PNG"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                     {/* Small palette display at top */}
                                     <div className="absolute top-2 left-2 flex gap-1 z-10">
                                         {brandColor.palette.map((paletteColor, paletteIndex) => (
@@ -477,6 +541,20 @@ export function LogoShowcase({
 
                             return (
                                 <div key={`color-version-${versionIndex}`} className="relative aspect-square bg-white flex flex-col items-center justify-center group">
+                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="w-8 h-8 bg-black/20 hover:bg-black/40 text-white"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownload({ current: e.currentTarget.closest('.group') as HTMLDivElement }, `color-version-${versionIndex + 1}`);
+                                            }}
+                                            title="Download PNG"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                     {/* Color logo with hue shift */}
                                     <div className="flex-1 w-full flex items-center justify-center relative">
                                         <Image

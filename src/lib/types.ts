@@ -39,6 +39,7 @@ export interface Logo {
         logoTextBalance: number;
         logoBrightness: number;
         logoContrast: number;
+        logoSmoothness?: number;
     };
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
