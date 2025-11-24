@@ -56,6 +56,7 @@ export class BrandService {
       latestAudience: string;
       latestDesirableCues?: string;
       latestUndesirableCues?: string;
+      font?: string;
     }
   ): Promise<string> {
     const brandsCollection = this.getBrandsCollection(userId);
@@ -68,6 +69,7 @@ export class BrandService {
       latestAudience: brandData.latestAudience,
       latestDesirableCues: brandData.latestDesirableCues || '',
       latestUndesirableCues: brandData.latestUndesirableCues || '',
+      font: brandData.font || 'Inter',
     };
 
     const docRef = await addDoc(brandsCollection, docData);

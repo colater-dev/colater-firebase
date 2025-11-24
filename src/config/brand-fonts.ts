@@ -5,126 +5,148 @@
  * Size multipliers help visually balance fonts to take up similar space
  */
 
+export type FontCategory = 'Formal' | 'Rounded' | 'Stylish' | 'Cute' | 'Modern';
+
 export const BRAND_FONTS = [
     {
         name: 'Aboreto',
         weights: [400],
         variable: '--font-aboreto',
         sizeMultiplier: 0.95, // Slightly condensed
+        category: 'Formal' as FontCategory,
     },
     {
         name: 'Archivo',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-archivo',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'BioRhyme Expanded',
         weights: [400, 700, 800],
         variable: '--font-biorhyme-expanded',
         sizeMultiplier: 0.85, // Very wide, needs reduction
+        category: 'Stylish' as FontCategory,
     },
     {
         name: 'Cabin',
         weights: [400, 500, 600, 700],
         variable: '--font-cabin',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Caprasimo',
         weights: [400],
         variable: '--font-caparasimo',
         sizeMultiplier: 0.9, // Bold and wide
+        category: 'Cute' as FontCategory,
     },
     {
         name: 'Commissioner',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-commissioner',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Corben',
         weights: [400, 700],
         variable: '--font-corben',
         sizeMultiplier: 0.8, // Slightly bold
+        category: 'Rounded' as FontCategory,
     },
     {
         name: 'Faculty Glyphic',
         weights: [400],
         variable: '--font-faculty-glyphic',
         sizeMultiplier: 0.9, // Narrow, needs increase
+        category: 'Formal' as FontCategory,
     },
     {
         name: 'Fraunces',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-fraunces',
         sizeMultiplier: 0.95, // Slightly wide
+        category: 'Formal' as FontCategory,
     },
     {
         name: 'Freeman',
         weights: [400],
         variable: '--font-freeman',
         sizeMultiplier: 0.9, // Bold and chunky
+        category: 'Stylish' as FontCategory,
     },
     {
         name: 'Gabarito',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-gabarito',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Genos',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-genos',
         sizeMultiplier: 1.15, // Very narrow/condensed
+        category: 'Stylish' as FontCategory,
     },
     {
         name: 'Hepta Slab',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-hepta-slab',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Instrument Sans',
         weights: [400, 500, 600, 700],
         variable: '--font-instrument-sans',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Instrument Serif',
         weights: [400],
         variable: '--font-instrument-serif',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Formal' as FontCategory,
     },
     {
         name: 'Jomhuria',
         weights: [400],
         variable: '--font-jomhuria',
         sizeMultiplier: 1.5, // Very tall and decorative
+        category: 'Stylish' as FontCategory,
     },
     {
         name: 'Jost',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-jost',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Julius Sans One',
         weights: [400],
         variable: '--font-julius-sans-one',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Kodchasan',
         weights: [400, 500, 600, 700],
         variable: '--font-kodchasan',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Lexend',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-lexend',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
 
     {
@@ -132,36 +154,42 @@ export const BRAND_FONTS = [
         weights: [400],
         variable: '--font-michroma',
         sizeMultiplier: 0.95, // Narrow and geometric
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Nixie One',
         weights: [400],
         variable: '--font-nixie-one',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Stylish' as FontCategory,
     },
     {
         name: 'Rowdies',
         weights: [300, 400, 700],
         variable: '--font-rowdies',
         sizeMultiplier: 0.9, // Bold and playful
+        category: 'Cute' as FontCategory,
     },
     {
         name: 'Saira',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-saira',
         sizeMultiplier: 1.05, // Slightly condensed
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Tektur',
         weights: [400, 500, 600, 700, 800, 900],
         variable: '--font-tektur',
         sizeMultiplier: 1.0, // Well-balanced
+        category: 'Modern' as FontCategory,
     },
     {
         name: 'Tilt Warp',
         weights: [400],
         variable: '--font-tilt-warp',
         sizeMultiplier: 0.95, // Slightly wide
+        category: 'Cute' as FontCategory,
     }
 ] as const;
 
@@ -171,7 +199,7 @@ export type BrandFont = typeof BRAND_FONTS[number];
  * Get a consistent random font and weight for a brand based on its ID
  * Uses the brand ID as a seed to ensure the same brand always gets the same font
  */
-export function getBrandFontStyle(brandId: string): {
+export function getBrandFontStyle(brandId: string, category?: FontCategory): {
     fontFamily: string;
     fontWeight: number;
 } {
@@ -180,9 +208,23 @@ export function getBrandFontStyle(brandId: string): {
         return char.charCodeAt(0) + ((acc << 5) - acc);
     }, 0);
 
+    // Filter fonts by category if provided
+    const availableFonts = category
+        ? BRAND_FONTS.filter(f => f.category === category)
+        : BRAND_FONTS;
+
+    if (availableFonts.length === 0) {
+        // Fallback to all fonts if category has no matches
+        const font = BRAND_FONTS[0];
+        return {
+            fontFamily: `var(${font.variable}), ${font.name}, sans-serif`,
+            fontWeight: font.weights[0],
+        };
+    }
+
     // Use hash to select font and weight
-    const fontIndex = Math.abs(hash) % BRAND_FONTS.length;
-    const font = BRAND_FONTS[fontIndex];
+    const fontIndex = Math.abs(hash) % availableFonts.length;
+    const font = availableFonts[fontIndex];
 
     const weightIndex = Math.abs(hash >> 8) % font.weights.length;
     const weight = font.weights[weightIndex];
@@ -191,6 +233,18 @@ export function getBrandFontStyle(brandId: string): {
         fontFamily: `var(${font.variable}), ${font.name}, sans-serif`,
         fontWeight: weight,
     };
+}
+
+/**
+ * Get a random font from a specific category
+ */
+export function getRandomFontByCategory(category: FontCategory): typeof BRAND_FONTS[number] {
+    const fontsInCategory = BRAND_FONTS.filter(f => f.category === category);
+    if (fontsInCategory.length === 0) {
+        return BRAND_FONTS[0];
+    }
+    const randomIndex = Math.floor(Math.random() * fontsInCategory.length);
+    return fontsInCategory[randomIndex];
 }
 
 /**

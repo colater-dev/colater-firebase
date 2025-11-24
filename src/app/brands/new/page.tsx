@@ -19,6 +19,7 @@ import { getBrandSuggestions, getBrandCompletion } from '@/app/actions';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { ContentCard } from '@/components/layout';
+import { getRandomFontByCategory, type FontCategory } from '@/config/brand-fonts';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Brand name must be at least 2 characters.'),
@@ -39,6 +40,7 @@ export default function NewBrandPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [topic, setTopic] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<FontCategory | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -140,12 +142,18 @@ export default function NewBrandPage() {
     setIsSubmitting(true);
 
     try {
+      // Get a random font from the selected category, or use default
+      const selectedFont = selectedCategory
+        ? getRandomFontByCategory(selectedCategory)
+        : null;
+
       const brandId = await brandService.createBrand(user.uid, {
         latestName: values.name,
         latestElevatorPitch: values.elevatorPitch,
         latestAudience: values.audience,
         latestDesirableCues: values.desirableCues,
         latestUndesirableCues: values.undesirableCues,
+        font: selectedFont?.name || 'Inter',
       });
 
       toast({
@@ -198,6 +206,23 @@ export default function NewBrandPage() {
               {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
               <span className="ml-2 hidden sm:inline">Brainstorm</span>
             </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <Label>Font Style Category</Label>
+          <div className="flex flex-wrap gap-2">
+            {(['Formal', 'Rounded', 'Stylish', 'Cute', 'Modern'] as FontCategory[]).map((category) => (
+              <Button
+                key={category}
+                type="button"
+                variant={selectedCategory === category ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category)}
+                className="capitalize"
+              >
+                {category}
+              </Button>
+            ))}
           </div>
         </div>
 

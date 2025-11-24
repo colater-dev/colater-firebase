@@ -658,6 +658,20 @@ export default function BrandPage() {
     }
   }, [user, brandId, firestore, toast]);
 
+  const handleBrandNameChange = useCallback(async (name: string, elevatorPitch: string) => {
+    if (!user || !brandId || !brandRef) return;
+
+    try {
+      await updateDoc(brandRef, {
+        latestName: name,
+        latestElevatorPitch: elevatorPitch,
+      });
+    } catch (error) {
+      console.error('Error updating brand:', error);
+      throw error;
+    }
+  }, [user, brandId, brandRef]);
+
   const isLoading = isLoadingBrand;
 
   return (
@@ -708,9 +722,9 @@ export default function BrandPage() {
             onDeleteColorVersion={handleDeleteColorVersion}
             onVectorizeLogo={handleVectorizeLogo}
             isVectorizing={isVectorizing}
+            onBrandNameChange={handleBrandNameChange}
           />
 
-          <BrandHeader brand={brand} />
         </div>
       )}
     </ContentCard>

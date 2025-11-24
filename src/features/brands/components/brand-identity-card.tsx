@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
@@ -43,6 +46,7 @@ interface BrandIdentityCardProps {
   onDeleteColorVersion?: (index: number) => void;
   onVectorizeLogo?: (croppedLogoUrl: string) => void;
   isVectorizing?: boolean;
+  onBrandNameChange?: (name: string, elevatorPitch: string) => Promise<void>;
 }
 
 export function BrandIdentityCard({
@@ -74,8 +78,13 @@ export function BrandIdentityCard({
   onDeleteColorVersion,
   onVectorizeLogo,
   isVectorizing,
+  onBrandNameChange,
 }: BrandIdentityCardProps) {
   const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState(brandName);
+  const [editElevatorPitch, setEditElevatorPitch] = useState(primaryTagline);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [showCritique, setShowCritique] = useState(false);
   const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
@@ -239,6 +248,28 @@ export function BrandIdentityCard({
 
   return (
     <Card className="w-full">
+      {/* Brand Name and Elevator Pitch at Top */}
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <CardTitle className="text-3xl font-bold">{brandName}</CardTitle>
+            <CardDescription className="mt-2 text-base">{primaryTagline}</CardDescription>
+          </div>
+          {!readOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditName(brandName);
+                setEditElevatorPitch(primaryTagline);
+                setIsEditDialogOpen(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+      </CardHeader>
       {!readOnly && (
         <BrandIdentityHeader
           isGeneratingConcept={isGeneratingConcept}
@@ -497,6 +528,80 @@ export function BrandIdentityCard({
 
 
       </CardContent>
+
+      {/* Edit Brand Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Brand</DialogTitle>
+            <DialogDescription>
+              Update your brand name and elevator pitch.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="edit-name" className="text-sm font-medium">Brand Name</label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Brand name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="edit-pitch" className="text-sm font-medium">Elevator Pitch</label>
+              <Textarea
+                id="edit-pitch"
+                value={editElevatorPitch}
+                onChange={(e) => setEditElevatorPitch(e.target.value)}
+                placeholder="Describe your brand in a few sentences."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!onBrandNameChange) return;
+                if (!editName.trim() || !editElevatorPitch.trim()) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Validation Error',
+                    description: 'Brand name and elevator pitch are required.',
+                  });
+                  return;
+                }
+                setIsSaving(true);
+                try {
+                  await onBrandNameChange(editName.trim(), editElevatorPitch.trim());
+                  setIsEditDialogOpen(false);
+                  toast({
+                    title: 'Brand Updated',
+                    description: 'Your brand information has been updated.',
+                  });
+                } catch (error) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Update Failed',
+                    description: error instanceof Error ? error.message : 'Could not update brand.',
+                  });
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

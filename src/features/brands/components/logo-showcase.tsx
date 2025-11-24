@@ -123,11 +123,28 @@ export function LogoShowcase({
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const [stickerLogoUrl, setStickerLogoUrl] = useState<string | null>(null);
     const [colorStickerUrl, setColorStickerUrl] = useState<string | null>(null);
+    const [cropMode, setCropMode] = useState(false);
+    const [cropBounds, setCropBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
     // Existing effect for bw sticker and cropped logo
     useEffect(() => {
         if (currentLogo?.logoUrl) {
-            cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
+            cropImageToContent(currentLogo.logoUrl).then((cropped) => {
+                setCroppedLogoUrl(cropped);
+                // Calculate crop bounds from the cropped image
+                const img = document.createElement('img');
+                img.onload = () => {
+                    // This is approximate - the actual crop bounds would need to be calculated from the cropImageToContent function
+                    // For now, we'll use the image dimensions as a proxy
+                    setCropBounds({
+                        x: 0,
+                        y: 0,
+                        width: img.width,
+                        height: img.height
+                    });
+                };
+                img.src = cropped;
+            });
             createStickerEffect(currentLogo.logoUrl).then(setStickerLogoUrl);
         }
     }, [currentLogo?.logoUrl]);
@@ -186,37 +203,52 @@ export function LogoShowcase({
                 {/* Original on White - Spans full width */}
                 <div
                     ref={logoContainerRef}
-                    className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px] ${readOnly ? 'cursor-pointer' : ''}`}
+                    className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px] ${readOnly ? 'cursor-pointer' : ''} md:scale-100 scale-[0.8]`}
                     onClick={() => {
                         if (readOnly) {
                             triggerAnimation('scale');
                         }
                     }}
+                    onDoubleClick={() => {
+                        if (!readOnly) {
+                            setCropMode(!cropMode);
+                        }
+                    }}
                 >
                     {!readOnly && (
-                        <LogoControls
-                            logoLayout={logoLayout}
-                            setLogoLayout={setLogoLayout}
-                            textTransform={textTransform}
-                            setTextTransform={setTextTransform}
-                            animationType={animationType}
-                            triggerAnimation={triggerAnimation}
-                            showBrandName={showBrandName}
-                            setShowBrandName={setShowBrandName}
-                            invertLogo={invertLogo}
-                            setInvertLogo={setInvertLogo}
-                            logoTextGap={logoTextGap}
-                            setLogoTextGap={setLogoTextGap}
-                            logoTextBalance={logoTextBalance}
-                            setLogoTextBalance={setLogoTextBalance}
-                            logoBrightness={logoBrightness}
-                            setLogoBrightness={setLogoBrightness}
-                            logoContrast={logoContrast}
-                            setLogoContrast={setLogoContrast}
-                            logoSmoothness={logoSmoothness}
-                            setLogoSmoothness={setLogoSmoothness}
-                            onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
-                        />
+                        <>
+                            <LogoControls
+                                logoLayout={logoLayout}
+                                setLogoLayout={setLogoLayout}
+                                textTransform={textTransform}
+                                setTextTransform={setTextTransform}
+                                animationType={animationType}
+                                triggerAnimation={triggerAnimation}
+                                showBrandName={showBrandName}
+                                setShowBrandName={setShowBrandName}
+                                invertLogo={invertLogo}
+                                setInvertLogo={setInvertLogo}
+                                logoTextGap={logoTextGap}
+                                setLogoTextGap={setLogoTextGap}
+                                logoTextBalance={logoTextBalance}
+                                setLogoTextBalance={setLogoTextBalance}
+                                logoBrightness={logoBrightness}
+                                setLogoBrightness={setLogoBrightness}
+                                logoContrast={logoContrast}
+                                setLogoContrast={setLogoContrast}
+                                logoSmoothness={logoSmoothness}
+                                setLogoSmoothness={setLogoSmoothness}
+                                onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="absolute top-4 left-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setCropMode(!cropMode)}
+                            >
+                                {cropMode ? 'Exit Crop' : 'Crop Mode'}
+                            </Button>
+                        </>
                     )}
 
                     <motion.div
@@ -243,6 +275,17 @@ export function LogoShowcase({
                                 filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
                             }}
                         />
+                        {cropMode && croppedLogoUrl && cropBounds && (
+                            <div
+                                className="absolute border-2 border-dashed border-red-500 pointer-events-none"
+                                style={{
+                                    left: `${cropBounds.x}px`,
+                                    top: `${cropBounds.y}px`,
+                                    width: `${cropBounds.width}px`,
+                                    height: `${cropBounds.height}px`,
+                                }}
+                            />
+                        )}
                     </motion.div>
 
                     {showBrandName && (
@@ -257,7 +300,7 @@ export function LogoShowcase({
                                 style={{
                                     fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
                                     fontSize: `${36 * (0.5 + (logoTextBalance / 100)) * (BRAND_FONTS.find(f => f.name === selectedBrandFont)?.sizeMultiplier || 1.0)}px`,
-                                    textTransform: textTransform === 'none' ? 'none' : textTransform
+                                    textTransform: textTransform === 'none' ? 'none' : textTransform === 'capitalize' ? 'capitalize' : textTransform
                                 }}
                             >
                                 {brandName.split('').map((char, index) => (
@@ -302,7 +345,7 @@ export function LogoShowcase({
                             ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">► Tap to Animate</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">{readOnly ? '► Tap to Animate' : 'Default Logo'}</p>
                 </div>
 
                 {/* External Media Section - Spans full width */}
@@ -364,6 +407,7 @@ export function LogoShowcase({
                                 <input
                                     type="file"
                                     accept="image/*,video/*"
+                                    title="Upload image or video file"
                                     className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
@@ -378,287 +422,25 @@ export function LogoShowcase({
                     )}
                 </div>
 
-                {/* Sticker Effect */}
-                {stickerLogoUrl && (
-                    <StickerPreview
-                        stickerUrl={stickerLogoUrl}
-                        brandName={brandName}
-                        label="Sticker"
-                    />
-                )}
-                {/* Color Sticker Effect (if color version exists) */}
-                {colorStickerUrl && (
+            </div>
+
+            {/* 2x2 Grid for additional previews */}
+            <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-0">
+                {/* Sticker Effect - Only show color sticker if it exists, otherwise show black/white sticker */}
+                {colorStickerUrl ? (
                     <StickerPreview
                         stickerUrl={colorStickerUrl}
                         brandName={brandName}
                         label="Color Sticker"
                         isColor={true}
                     />
-                )}
-
-                {!readOnly && (
-                    <LogoControls
-                        logoLayout={logoLayout}
-                        setLogoLayout={setLogoLayout}
-                        textTransform={textTransform}
-                        setTextTransform={setTextTransform}
-                        animationType={animationType}
-                        triggerAnimation={triggerAnimation}
-                        showBrandName={showBrandName}
-                        setShowBrandName={setShowBrandName}
-                        invertLogo={invertLogo}
-                        setInvertLogo={setInvertLogo}
-                        logoTextGap={logoTextGap}
-                        setLogoTextGap={setLogoTextGap}
-                        logoTextBalance={logoTextBalance}
-                        setLogoTextBalance={setLogoTextBalance}
-                        logoBrightness={logoBrightness}
-                        setLogoBrightness={setLogoBrightness}
-                        logoContrast={logoContrast}
-                        setLogoContrast={setLogoContrast}
-                        logoSmoothness={logoSmoothness}
-                        setLogoSmoothness={setLogoSmoothness}
-                        onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
-                    />
-                )}
-
-                <motion.div
-                    key={`logo-${animationKey}`}
-                    initial={animationType ? "hidden" : "visible"}
-                    animate="visible"
-                    variants={animationType ? animationVariants[animationType] : undefined}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="relative z-0"
-                    style={{
-                        width: `${128 * (1.5 - (logoTextBalance / 100))}px`,
-                        height: `${128 * (1.5 - (logoTextBalance / 100))}px`,
-                        marginRight: logoLayout === 'horizontal' ? `${logoTextGap}px` : 0,
-                        marginBottom: logoLayout === 'vertical' ? `${logoTextGap}px` : 0
-                    }}
-                >
-                    <Image
-                        src={currentLogo.logoUrl}
-                        alt="Logo on white background"
-                        fill
-                        className="object-contain"
-                        unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                        style={{
-                            filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
-                        }}
-                    />
-                </motion.div>
-
-                {showBrandName && (
-                    <motion.div
-                        key={`text-${animationKey}`}
-                        initial="hidden"
-                        animate="visible"
-                        className={`relative z-10 ${logoLayout === 'vertical' ? 'text-center' : 'text-left'}`}
-                    >
-                        <h3
-                            className="font-bold text-gray-900 leading-none"
-                            style={{
-                                fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
-                                fontSize: `${36 * (0.5 + (logoTextBalance / 100)) * (BRAND_FONTS.find(f => f.name === selectedBrandFont)?.sizeMultiplier || 1.0)}px`,
-                                textTransform: textTransform === 'none' ? 'none' : textTransform
-                            }}
-                        >
-                            {brandName.split('').map((char, index) => (
-                                <motion.span
-                                    key={`${animationKey}-char-${index}`}
-                                    variants={animationType ? {
-                                        hidden: animationVariants[animationType].hidden,
-                                        visible: animationVariants[animationType].visible
-                                    } : undefined}
-                                    transition={{
-                                        duration: 0.3,
-                                        ease: "easeOut",
-                                        delay: animationType ? 0.5 + (index * 0.03) : 0
-                                    }}
-                                    style={{ display: 'inline-block' }}
-                                >
-                                    {char === ' ' ? '\u00A0' : char}
-                                </motion.span>
-                            ))}
-                        </h3>
-                    </motion.div>
-                )}
-
-                {/* Critique Points Overlay - Card 1 */}
-                {showCritique && currentLogo?.critique?.points && (
-                    <div className="absolute inset-0 z-20 pointer-events-none">
-                        {currentLogo.critique.points.map((point, index) => (
-                            <div key={index} className="pointer-events-auto">
-                                <CritiquePoint
-                                    point={point}
-                                    isExpanded={expandedPointId === `${currentLogo.id}-${index}`}
-                                    onToggle={(e) => {
-                                        e.stopPropagation();
-                                        setExpandedPointId(
-                                            expandedPointId === `${currentLogo.id}-${index}`
-                                                ? null
-                                                : `${currentLogo.id}-${index}`
-                                        );
-                                    }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">► Tap to Animate</p>
-            </div>
-
-            {/* External Media Section - Spans full width */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 flex flex-col items-center justify-center">
-                {externalMediaUrl && (
-                    <div className="w-full overflow-hidden bg-black/5 relative group">
-                        {!readOnly && onExternalMediaChange && (
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                    onExternalMediaChange('');
-                                    if (onExternalMediaBlur) {
-                                        // Trigger save immediately after clearing
-                                        setTimeout(onExternalMediaBlur, 0);
-                                    }
-                                }}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        )}
-                        {externalMediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-                            <video
-                                src={externalMediaUrl}
-                                controls
-                                className="w-full h-auto"
-                            />
-                        ) : (
-                            <img
-                                src={externalMediaUrl}
-                                alt="External media"
-                                className="w-full h-auto"
-                            />
-                        )}
-                    </div>
-                )}
-
-                {!readOnly && onExternalMediaChange && (
-                    <div className="w-full max-w-xl space-y-2 p-8">
-                        <div className="flex gap-2">
-                            <input
-                                type="url"
-                                placeholder="Paste an image or video URL (mp4, webm, ogg)..."
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={externalMediaUrl || ''}
-                                onChange={(e) => onExternalMediaChange(e.target.value)}
-                                onBlur={onExternalMediaBlur}
-                            />
-                            {isSavingMedia && (
-                                <div className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
-                                    Saving...
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2 justify-center">
-                            <p className="text-xs text-muted-foreground">Or upload a file:</p>
-                            <input
-                                type="file"
-                                accept="image/*,video/*"
-                                className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file && onFileUpload) {
-                                        onFileUpload(file);
-                                        e.target.value = ''; // Reset input
-                                    }
-                                }}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* 2x2 Grid for additional previews */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-0">
-                {/* Cropped to Content */}
-                {croppedLogoUrl && (
-                    <div className="relative aspect-square bg-black flex items-center justify-center group">
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-2">
-                            {onVectorizeLogo && !currentLogo.vectorLogoUrl && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onVectorizeLogo(croppedLogoUrl);
-                                    }}
-                                    disabled={isVectorizing}
-                                    title="Vectorize Logo (SVG)"
-                                >
-                                    {isVectorizing ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <PenTool className="w-4 h-4" />
-                                    )}
-                                </Button>
-                            )}
-                            {currentLogo.vectorLogoUrl && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-8 h-8 bg-green-500/20 hover:bg-green-500/40 text-white"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const link = document.createElement('a');
-                                        link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}.svg`;
-                                        link.href = currentLogo.vectorLogoUrl!;
-                                        link.click();
-                                    }}
-                                    title="Download SVG"
-                                >
-                                    <PenTool className="w-4 h-4" />
-                                </Button>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const link = document.createElement('a');
-                                    link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-cropped.png`;
-                                    link.href = croppedLogoUrl;
-                                    link.click();
-                                }}
-                                title="Download PNG"
-                            >
-                                <Download className="w-4 h-4" />
-                            </Button>
-                        </div>
-                        <img
-                            src={croppedLogoUrl}
-                            alt="Cropped logo"
-                            className="max-w-full max-h-full object-contain border border-dashed border-yellow-500/50"
-                            style={{
-                                filter: shouldInvertLogo('dark') ? 'invert(1)' : 'none'
-                            }}
-                        />
-                        <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Cropped</p>
-                    </div>
-                )}
-
-                {/* Sticker Effect */}
-                {stickerLogoUrl && (
+                ) : stickerLogoUrl ? (
                     <StickerPreview
                         stickerUrl={stickerLogoUrl}
                         brandName={brandName}
                         label="Sticker"
                     />
-                )}
+                ) : null}
 
                 {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>
