@@ -38,7 +38,7 @@ import type { Brand, Logo } from '@/lib/types';
 
 export default function BrandPage() {
   const { brandId } = useParams();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { storage } = useFirebase();
   const { toast } = useToast();
@@ -731,11 +731,11 @@ export default function BrandPage() {
     }
   }, [user, brandId, logoService]);
 
-  const isLoading = isLoadingBrand;
+  const isLoading = isLoadingBrand || isUserLoading;
 
   return (
     <div className="flex justify-center">
-      <div className="w-full max-w-7xl">
+      <div className="w-full max-w-[1280px]">
         <ContentCard>
           {isLoading && (
             <div className="text-center">

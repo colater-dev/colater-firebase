@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import type { Logo } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { cropImageToContent } from '@/lib/image-utils';
 
 interface LogoNavigationDockProps {
@@ -14,7 +14,14 @@ interface LogoNavigationDockProps {
   onLogoIndexChange: (index: number) => void;
 }
 
-function DockItem({ logo, isActive, onClick }: { logo: Logo; isActive: boolean; onClick: () => void }) {
+interface DockItemProps {
+  logo: Logo;
+  isActive: boolean;
+  index: number;
+  onLogoIndexChange: (index: number) => void;
+}
+
+const DockItem = memo(function DockItem({ logo, isActive, index, onLogoIndexChange }: DockItemProps) {
   const [croppedUrl, setCroppedUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +36,7 @@ function DockItem({ logo, isActive, onClick }: { logo: Logo; isActive: boolean; 
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => onLogoIndexChange(index)}
       className={`
         relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200
         ${isActive
@@ -52,9 +59,9 @@ function DockItem({ logo, isActive, onClick }: { logo: Logo; isActive: boolean; 
       </div>
     </button>
   );
-}
+});
 
-export function LogoNavigationDock({
+export const LogoNavigationDock = memo(function LogoNavigationDock({
   logos,
   currentLogoIndex,
   onLogoIndexChange,
@@ -98,7 +105,8 @@ export function LogoNavigationDock({
                   key={logo.id || index}
                   logo={logo}
                   isActive={index === currentLogoIndex}
-                  onClick={() => onLogoIndexChange(index)}
+                  index={index}
+                  onLogoIndexChange={onLogoIndexChange}
                 />
               ))}
             </div>
@@ -118,5 +126,5 @@ export function LogoNavigationDock({
       </div>
     </div>
   );
-}
+});
 

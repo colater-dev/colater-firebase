@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Share2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
@@ -95,19 +95,17 @@ export function BrandIdentityCard({
   const [showCritique, setShowCritique] = useState(false);
   const [expandedPointId, setExpandedPointId] = useState<string | null>(null);
   const [hueShifts, setHueShifts] = useState<Record<number, number>>({});
-  const [displayedPalette, setDisplayedPalette] = useState<string[] | undefined>(
-    undefined
-  );
+
   const [logoScale, setLogoScale] = useState(1);
   const [horizontalLogoTextGap, setHorizontalLogoTextGap] = useState(50);
   const [horizontalLogoTextBalance, setHorizontalLogoTextBalance] = useState(50);
   const [verticalLogoTextGap, setVerticalLogoTextGap] = useState(50);
   const [verticalLogoTextBalance, setVerticalLogoTextBalance] = useState(50);
 
-  const [logoContrast, setLogoContrast] = useState(120);
-  // Removed logoBrightness, logoSmoothness, logoLayout
+  const [logoContrast, setLogoContrast] = useState(200);
+
   const [showBrandName, setShowBrandName] = useState(true);
-  const [invertLogo, setInvertLogo] = useState(false);
+  const [invertLogo, setInvertLogo] = useState(true);
   const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
   const [externalMediaUrl, setExternalMediaUrl] = useState('');
   const [isSavingMedia, setIsSavingMedia] = useState(false);
@@ -254,17 +252,7 @@ export function BrandIdentityCard({
   // Reset hue shifts when logo changes
   useEffect(() => {
     setHueShifts({});
-
-    // Set displayed palette from first color version if available
-    const colorVersions = currentLogo?.colorVersions || [];
-    if (colorVersions.length === 0 && currentLogo?.palette) {
-      setDisplayedPalette(currentLogo.palette);
-    } else if (colorVersions.length > 0) {
-      setDisplayedPalette(colorVersions[0]?.palette);
-    } else {
-      setDisplayedPalette(undefined);
-    }
-  }, [currentLogo, currentLogo?.palette, currentLogo?.colorVersions]);
+  }, [currentLogo?.id]);
 
   // Close expanded point when clicking outside
   useEffect(() => {
@@ -511,8 +499,6 @@ export function BrandIdentityCard({
                         logoScale={logoScale}
                         contrast={logoContrast / 100}
                         invert={invertLogo}
-                        smoothness={0}
-                        brightness={1}
                       />
                     </div>
                   );

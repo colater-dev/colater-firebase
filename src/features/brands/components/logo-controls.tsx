@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -30,7 +31,7 @@ interface LogoControlsProps {
     onDownload?: () => void;
 }
 
-export function LogoControls({
+export const LogoControls = memo(function LogoControls({
     textTransform,
     setTextTransform,
     animationType,
@@ -48,7 +49,7 @@ export function LogoControls({
     onDownload,
 }: LogoControlsProps) {
     return (
-        <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30 max-h-[450px] overflow-y-auto">
+        <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30 max-h-[450px] overflow-y-auto exclude-from-download">
             <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Text Transform</Label>
                 <div className="flex bg-muted rounded-md p-1 gap-1">
@@ -178,7 +179,7 @@ export function LogoControls({
                 <Slider
                     value={[logoContrast]}
                     onValueChange={(value) => setLogoContrast(value[0])}
-                    min={0}
+                    min={100}
                     max={300}
                     step={1}
                 />
@@ -198,4 +199,4 @@ export function LogoControls({
             )}
         </div>
     );
-}
+});

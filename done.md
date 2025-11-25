@@ -58,3 +58,19 @@ src/components/ui/shader-loader.tsx (102:12) @ Object.draw
  15. [x] The main content on the public share link has a narrower width than the logo preview page. Make the width similiar to the logo preview page.
  16. [x] The main logo preview should be split into a vertical logo preview and horizontal logo preview. The spacing and relative sizing should be separately configurable - all other properties should be shared.
  17. [x] Remove the brightness and smoothness(blur) options from the logo preview options, and also remove these from affecting the logo. Clean up any references to this around the codebase.
+
+
+2. [x] The contrast slider should default to 200% and should have a range of 100% to 300%. 
+11. [x] The colored sticker should use the same mask that we created for the black and white sticker - there are sometimes other elements in the background that we want to clip when showing the sticker, and the elements are in identical positions. This sticker should also respect the hue shift applied to the logo.
+
+
+
+[x] The color sticker preview should have a white inner shadow to simulate the sticker outline.
+[x] I see some images switch from showing correctly to inverting to showing correctly again. Is there some issue with the background detection rerunning? 
+[x] Whenever I load a brand, I see "Brand not found" for a split second. This should be removed and only showed when it is actually not found.
+The download button downloads an image, but the image has the download button and the tile label. Can we remove that?
+[x] Make elements in the brand preview page take up the full width up to a max of 1280px.
+
+
+- [x] Do an audit of the codebase and document what you learn in agents.md. Remove any unused code, and do a performance audit of the codebase. Document any issues you find in todo.md
+- [x] The download button downloads an image, but the image has the download button and the tile label. Fix this so only the logo/content is downloaded.

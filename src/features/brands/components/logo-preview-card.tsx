@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { LogoControls } from './logo-controls';
@@ -40,7 +40,7 @@ interface LogoPreviewCardProps {
     shouldInvertLogo: (backgroundType: 'light' | 'dark') => boolean;
 }
 
-export function LogoPreviewCard({
+export const LogoPreviewCard = memo(function LogoPreviewCard({
     logo,
     croppedLogoUrl,
     brandName,
@@ -184,7 +184,7 @@ export function LogoPreviewCard({
 
             {/* Critique Points Overlay */}
             {showCritique && logo?.critique?.points && (
-                <div className="absolute inset-0 z-20 pointer-events-none">
+                <div className="absolute inset-0 z-20 pointer-events-none exclude-from-download">
                     {logo.critique.points.map((point, index) => (
                         <div key={index} className="pointer-events-auto">
                             <CritiquePoint
@@ -203,9 +203,9 @@ export function LogoPreviewCard({
                     ))}
                 </div>
             )}
-            <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">
+            <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400 exclude-from-download">
                 {readOnly ? '► Tap to Animate' : (layout === 'horizontal' ? 'Horizontal Logo' : 'Vertical Logo')}
             </p>
         </div>
     );
-}
+});

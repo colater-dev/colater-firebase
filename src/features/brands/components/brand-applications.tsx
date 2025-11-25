@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Image from 'next/image';
 import { Wifi, Battery, Signal } from 'lucide-react';
 import { isLightColor } from '@/lib/color-utils';
@@ -14,11 +14,9 @@ interface BrandApplicationsProps {
     logoScale?: number;
     contrast?: number;
     invert?: boolean;
-    smoothness?: number;
-    brightness?: number;
 }
 
-export function BrandApplications({
+export const BrandApplications = memo(function BrandApplications({
     logoUrl,
     brandName,
     tagline,
@@ -28,8 +26,6 @@ export function BrandApplications({
     logoScale = 1,
     contrast = 1.2,
     invert = false,
-    smoothness = 0,
-    brightness = 1,
 }: BrandApplicationsProps) {
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const [rotationFront, setRotationFront] = useState(0);
@@ -60,8 +56,8 @@ export function BrandApplications({
 
     const logoStyle = {
         filter: isBgLight
-            ? `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast})${shouldInvertOnCardBack ? ' invert(1)' : ''}`
-            : `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast})${shouldInvertOnCardBack ? ' invert(1)' : ''}`,
+            ? `contrast(${contrast})${shouldInvertOnCardBack ? ' invert(1)' : ''}`
+            : `contrast(${contrast})${shouldInvertOnCardBack ? ' invert(1)' : ''}`,
         mixBlendMode: isBgLight ? 'multiply' as const : 'screen' as const,
         transform: `scale(${logoScale})`,
         transition: 'transform 0.2s ease-out'
@@ -117,7 +113,7 @@ export function BrandApplications({
                                         className="object-contain object-left-top"
                                         style={{
                                             transform: `scale(${logoScale * 0.8})`, // 20% smaller
-                                            filter: `blur(${smoothness}px) brightness(${brightness}) contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
+                                            filter: `contrast(${contrast}) ${invert ? 'invert(1)' : ''}`,
                                             transition: 'transform 0.2s ease-out'
                                         }}
                                         unoptimized={(croppedLogoUrl || logoUrl).startsWith('data:')}
@@ -242,4 +238,4 @@ export function BrandApplications({
 
         </div>
     );
-}
+});

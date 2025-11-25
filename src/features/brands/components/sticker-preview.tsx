@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { DownloadButton } from './download-button';
 
 interface StickerPreviewProps {
@@ -9,7 +10,7 @@ interface StickerPreviewProps {
     hueShift?: number;
 }
 
-export function StickerPreview({ stickerUrl, brandName, label, isColor = false, invert = false, hueShift = 0 }: StickerPreviewProps) {
+export const StickerPreview = memo(function StickerPreview({ stickerUrl, brandName, label, isColor = false, invert = false, hueShift = 0 }: StickerPreviewProps) {
     const handleDownload = () => {
         if (!stickerUrl) return;
         const link = document.createElement('a');
@@ -42,7 +43,7 @@ export function StickerPreview({ stickerUrl, brandName, label, isColor = false, 
                         maxWidth: isColor ? '50%' : '45%',
                         maxHeight: isColor ? '50%' : '45%',
                         filter: `${isColor
-                            ? 'drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)'
+                            ? 'drop-shadow(1px 0 0 white) drop-shadow(-1px 0 0 white) drop-shadow(0 1px 0 white) drop-shadow(0 -1px 0 white) drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)'
                             : `${invert ? 'invert(1) ' : ''}drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)`
                             } hue-rotate(${hueShift}deg)`,
                         transform: `rotate(${isColor ? '15' : '-12'}deg)`,
@@ -55,4 +56,4 @@ export function StickerPreview({ stickerUrl, brandName, label, isColor = false, 
             <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">{label}</p>
         </div>
     );
-}
+});

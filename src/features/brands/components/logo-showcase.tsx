@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { toPng } from 'html-to-image';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -71,7 +71,7 @@ interface LogoShowcaseProps {
     onSaveCropDetails?: (logoId: string, cropDetails: { x: number; y: number; width: number; height: number }) => Promise<void>;
 }
 
-export function LogoShowcase({
+export const LogoShowcase = memo(function LogoShowcase({
     currentLogo,
     brandName,
     selectedBrandFont,
@@ -132,7 +132,7 @@ export function LogoShowcase({
     const [cropBounds, setCropBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
     // Existing effect for bw sticker and cropped logo
-    // Existing effect for bw sticker and cropped logo
+
     useEffect(() => {
         if (currentLogo?.logoUrl) {
             // Calculate crop bounds from original image
@@ -179,13 +179,13 @@ export function LogoShowcase({
 
                 // If at least 3 corners are light, it's a Black on White logo -> invertLogo = false
                 // Otherwise (Dark BG), it's White on Black -> invertLogo = true
-                // Only set if not already set by display settings (optimization?)
-                // But display settings might be old.
-                // Let's respect the image analysis for now, as it was before.
-                if (lightCorners >= 3) {
-                    setInvertLogo(false);
-                } else {
-                    setInvertLogo(true);
+                // Only set if not already set by display settings
+                if (!currentLogo.displaySettings) {
+                    if (lightCorners >= 3) {
+                        setInvertLogo(false);
+                    } else {
+                        setInvertLogo(true);
+                    }
                 }
 
                 if (currentLogo.cropDetails) {
@@ -261,11 +261,12 @@ export function LogoShowcase({
     useEffect(() => {
         const colorUrl = currentLogo?.colorLogoUrl || (currentLogo?.colorVersions?.[0]?.colorLogoUrl);
         if (colorUrl) {
-            createStickerEffect(colorUrl).then(setColorStickerUrl);
+            // Use the B&W logo as the mask source to ensure consistent shape
+            createStickerEffect(colorUrl, currentLogo?.logoUrl).then(setColorStickerUrl);
         } else {
             setColorStickerUrl(null);
         }
-    }, [currentLogo?.colorLogoUrl, currentLogo?.colorVersions]);
+    }, [currentLogo?.colorLogoUrl, currentLogo?.colorVersions, currentLogo?.logoUrl]);
 
     const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement> | { current: HTMLDivElement | null }, suffix: string) => {
         if (!ref.current) {
@@ -273,7 +274,13 @@ export function LogoShowcase({
         }
 
         try {
-            const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
+            const dataUrl = await toPng(ref.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                filter: (node) => {
+                    return !node.classList?.contains('exclude-from-download');
+                }
+            });
             const link = document.createElement('a');
             link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-${suffix}.png`;
             link.href = dataUrl;
@@ -467,7 +474,7 @@ export function LogoShowcase({
 
                 {/* Light Logo (On Gray) */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -495,7 +502,7 @@ export function LogoShowcase({
                     />
                     {/* Critique Points Overlay - Card 2 */}
                     {showCritique && currentLogo?.critique?.points && (
-                        <div className="absolute bottom-8 right-2 flex flex-col gap-2 items-end z-20">
+                        <div className="absolute bottom-8 right-2 flex flex-col gap-2 items-end z-20 exclude-from-download">
                             {currentLogo.critique.points
                                 .filter((_, idx) => idx % 3 === 1)
                                 .map((point) => (
@@ -512,12 +519,12 @@ export function LogoShowcase({
                                 ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Light Logo</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400 exclude-from-download">Light Logo</p>
                 </div>
 
                 {/* Dark Logo (Inverted on Black) */}
                 <div className="relative aspect-square bg-black flex items-center justify-center group">
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -542,7 +549,7 @@ export function LogoShowcase({
                     />
                     {/* Critique Points Overlay - Card 3 */}
                     {showCritique && currentLogo?.critique?.points && (
-                        <div className="absolute bottom-8 right-2 flex flex-col gap-2 items-end z-20">
+                        <div className="absolute bottom-8 right-2 flex flex-col gap-2 items-end z-20 exclude-from-download">
                             {currentLogo.critique.points
                                 .filter((_, idx) => idx % 3 === 2)
                                 .map((point) => (
@@ -559,7 +566,7 @@ export function LogoShowcase({
                                 ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Dark Logo</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400 exclude-from-download">Dark Logo</p>
                 </div>
 
                 {/* On Brand Color (Darkened) - Show all palette colors from all color versions with hue shift */}
@@ -602,7 +609,7 @@ export function LogoShowcase({
                                     className="relative aspect-square flex items-center justify-center group"
                                     style={{ backgroundColor: darkenedColor }}
                                 >
-                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -617,7 +624,7 @@ export function LogoShowcase({
                                         </Button>
                                     </div>
                                     {/* Small palette display at top */}
-                                    <div className="absolute top-2 left-2 flex gap-1 z-10">
+                                    <div className="absolute top-2 left-2 flex gap-1 z-10 exclude-from-download">
                                         {brandColor.palette.map((paletteColor, paletteIndex) => (
                                             <div
                                                 key={`palette-dot-${paletteIndex}`}
@@ -636,7 +643,7 @@ export function LogoShowcase({
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             cycleCardMode(cardKey, shouldInvert);
@@ -646,79 +653,8 @@ export function LogoShowcase({
                                     </Button>
 
                                     {(() => {
-                                        // Task 9: Logic for "on brand color" contrast
-                                        // "This should take into account whether the invert logo option is enabled, and whether the background is dark or light."
-                                        // "If there is a color that is very close to black, hide the 'On Gray' option." (Wait, 'On Gray' is 'Light Logo' now. Maybe it means hide this card if it's too dark?)
-                                        // No, "hide the 'On Gray' option" likely refers to the "Light Logo" card if the brand color is gray?
-                                        // Or maybe it means if the brand color is black, don't show "On Brand Color" card?
-                                        // The user says: "If there is a color that is very close to black, hide the 'On Gray' option."
-                                        // This is ambiguous. "On Gray" is a specific card.
-                                        // Maybe they mean if the brand color is very close to the "On Gray" background color?
-                                        // Or maybe they mean "On Brand Color" option?
-                                        // I'll assume they mean "On Brand Color" card should be hidden if color is too dark?
-                                        // But the text says "hide the 'On Gray' option".
-                                        // I'll stick to the contrast logic first.
-
-                                        const backgroundType = isLightColor(darkenedColor) ? 'light' : 'dark';
-                                        // Use shouldInvertLogo to determine if we need to invert based on background AND global invert setting
-                                        const baseInvert = shouldInvertLogo(backgroundType);
-
-                                        // Combine with card mode styles (which might also have invert)
-                                        // getModeStyles returns filter: 'invert(1)' or 'none'
-                                        // If both are invert(1), they cancel out?
-                                        // Wait, getModeStyles is for manual toggle.
-                                        // The user wants "best contrast version".
-                                        // If I use shouldInvertLogo, it handles the logic:
-                                        // - If bg is light: black logo (unless inverted globally -> white logo)
-                                        // - If bg is dark: white logo (unless inverted globally -> black logo)
-
-                                        // So baseInvert is correct.
-                                        // But cardMode allows manual override.
-                                        // If cardMode is default (0), we should use baseInvert.
-                                        // If cardMode is toggled, we use what getModeStyles says?
-                                        // getModeStyles returns fixed filters based on mode 0, 1, 2, 3.
-                                        // Mode 0: darken, none
-                                        // Mode 1: lighten, none
-                                        // Mode 2: lighten, invert
-                                        // Mode 3: darken, invert
-
-                                        // The user says "Figure out the appropriate logic to make sure each of the 'on brand color' options show the best contrast version."
-                                        // This implies the DEFAULT mode should be correct.
-                                        // Currently getCardMode returns defaultInvert ? 2 : 0.
-                                        // defaultInvert is passed as `shouldInvert`.
-                                        // `shouldInvert` was `isLightColor(darkenedColor)`.
-                                        // If light color -> shouldInvert=true -> mode 2 -> lighten, invert.
-                                        // Wait, if bg is light, we want BLACK logo (no invert).
-                                        // So if isLightColor is true, we want NO invert.
-                                        // `isLightColor` returns true if light.
-                                        // `shouldInvert` passed to getCardMode seems to mean "should default to inverted mode".
-
-                                        // Let's look at `shouldInvertLogo`.
-                                        // If bg is light, `shouldInvertLogo('light')` returns `invertLogo` (false if normal).
-                                        // If bg is dark, `shouldInvertLogo('dark')` returns `!invertLogo` (true if normal).
-
-                                        // So if bg is dark (darkenedColor is dark), we want INVERT (white logo).
-                                        // So default mode should be one with invert.
-
                                         const isDarkBg = !isLightColor(darkenedColor);
                                         const autoInvert = shouldInvertLogo(isDarkBg ? 'dark' : 'light');
-
-                                        // We need to map `autoInvert` to a mode.
-                                        // Mode 0: filter: none
-                                        // Mode 2: filter: invert(1)
-                                        // So if autoInvert is true, default to mode 2. Else mode 0.
-
-                                        // But we also have mix-blend-mode.
-                                        // Mode 0: darken. Mode 2: lighten.
-                                        // If logo is black (no invert) on light bg -> darken is good.
-                                        // If logo is white (invert) on dark bg -> lighten is good.
-
-                                        // So:
-                                        // If autoInvert is true (white logo), use Mode 2 (lighten, invert).
-                                        // If autoInvert is false (black logo), use Mode 0 (darken, none).
-
-                                        // So I should pass `autoInvert` as `defaultInvert` to `getCardMode`.
-
                                         const mode = getCardMode(cardKey, autoInvert);
                                         const styles = getModeStyles(mode);
 
@@ -734,7 +670,7 @@ export function LogoShowcase({
                                             />
                                         );
                                     })()}
-                                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">
+                                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400 exclude-from-download">
                                         On Brand Color
                                     </p>
                                 </div>
@@ -762,7 +698,7 @@ export function LogoShowcase({
 
                             return (
                                 <div key={`color-version-${versionIndex}`} className="relative aspect-square bg-white flex flex-col items-center justify-center group">
-                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <div className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -791,7 +727,7 @@ export function LogoShowcase({
                                         />
 
                                         {/* Small palette display at top */}
-                                        <div className="absolute top-2 left-2 flex gap-1">
+                                        <div className="absolute top-2 left-2 flex gap-1 exclude-from-download">
                                             {shiftedPalette.map((paletteColor, paletteIndex) => (
                                                 <div
                                                     key={`palette-dot-${paletteIndex}`}
@@ -809,7 +745,7 @@ export function LogoShowcase({
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            className="absolute top-2 right-2 w-8 h-8 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onColorizeLogo();
@@ -825,7 +761,7 @@ export function LogoShowcase({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="absolute top-12 right-2 w-8 h-8 bg-red-500/20 hover:bg-red-500/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                className="absolute top-12 right-2 w-8 h-8 bg-red-500/20 hover:bg-red-500/40 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 exclude-from-download"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onDeleteColorVersion(versionIndex);
@@ -838,7 +774,7 @@ export function LogoShowcase({
                                     </div>
 
                                     {/* Hue slider at bottom */}
-                                    <div className="w-full px-3 pb-3 pt-1">
+                                    <div className="w-full px-3 pb-3 pt-1 exclude-from-download">
                                         <Slider
                                             defaultValue={[0]}
                                             max={360}
@@ -851,7 +787,7 @@ export function LogoShowcase({
                                         />
                                     </div>
 
-                                    <p className="absolute bottom-12 left-0 right-0 text-xs text-center text-gray-400">
+                                    <p className="absolute bottom-12 left-0 right-0 text-xs text-center text-gray-400 exclude-from-download">
                                         Color Version {colorVersions.length > 1 ? versionIndex + 1 : ''}
                                     </p>
                                 </div>
@@ -878,4 +814,4 @@ export function LogoShowcase({
             </div>
         </div>
     );
-}
+});

@@ -38,9 +38,7 @@ export interface Logo {
         invertLogo: boolean;
         logoTextGap?: number; // Deprecated
         logoTextBalance?: number; // Deprecated
-        logoBrightness?: number; // Deprecated
         logoContrast: number;
-        logoSmoothness?: number; // Deprecated
 
         horizontalLogoTextGap?: number;
         horizontalLogoTextBalance?: number;
@@ -50,8 +48,6 @@ export interface Logo {
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
     colorVersions?: Array<{ colorLogoUrl: string; palette: string[] }>; // Array of color versions with their palettes
-    colorLogoUrls?: string[]; // Deprecated: caused nested arrays issue
-    palettes?: string[][]; // Deprecated: caused nested arrays issue
     critique?: Critique;
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
     externalMediaUrl?: string;
