@@ -1,4 +1,14 @@
 
+
+export function getProxyUrl(url: string): string {
+    if (url.startsWith('data:') || url.startsWith('/')) {
+        return url;
+    }
+    // Use Next.js image optimization as a proxy to avoid CORS issues
+    // We request a high quality, high resolution version
+    return `/_next/image?url=${encodeURIComponent(url)}&w=1920&q=100`;
+}
+
 export async function cropImageToContent(
     imageUrl: string,
     cropDetails?: { x: number; y: number; width: number; height: number }
@@ -119,12 +129,22 @@ export async function cropImageToContent(
 
         img.onerror = (err) => {
             console.error("Error loading image for cropping:", err);
-            resolve(imageUrl);
+            // Fallback to original URL if proxy fails, though it might fail again if CORS is the issue
+            if (img.src.includes('/_next/image')) {
+                console.warn("Proxy failed, falling back to original URL (might fail CORS)");
+                // Avoid infinite loop if original also fails
+                const originalImg = new Image();
+                originalImg.crossOrigin = "Anonymous";
+                originalImg.onload = img.onload;
+                originalImg.onerror = () => resolve(imageUrl);
+                originalImg.src = imageUrl;
+            } else {
+                resolve(imageUrl);
+            }
         };
 
-        // Append timestamp to avoid cache issues with CORS
-        const separator = imageUrl.includes('?') ? '&' : '?';
-        img.src = `${imageUrl}${separator}t=${new Date().getTime()}`;
+        // Use proxy URL
+        img.src = getProxyUrl(imageUrl);
     });
 }
 
@@ -309,7 +329,7 @@ export async function createStickerEffect(imageUrl: string): Promise<string> {
 
         img.onerror = () => resolve(imageUrl);
 
-        const separator = imageUrl.includes('?') ? '&' : '?';
-        img.src = `${imageUrl}${separator}t=${new Date().getTime()}`;
+        // Use proxy URL
+        img.src = getProxyUrl(imageUrl);
     });
 }

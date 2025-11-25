@@ -14,7 +14,7 @@ import { DownloadButton } from './download-button';
 import { PaletteDots } from './palette-dots';
 import { StickerPreview } from './sticker-preview';
 import { LogoPreviewCard } from './logo-preview-card';
-import { cropImageToContent, createStickerEffect } from '@/lib/image-utils';
+import { cropImageToContent, createStickerEffect, getProxyUrl } from '@/lib/image-utils';
 
 interface LogoShowcaseProps {
     currentLogo: Logo;
@@ -245,7 +245,8 @@ export function LogoShowcase({
                     }
                 }
             };
-            originalImg.src = currentLogo.logoUrl;
+            // Use proxy URL to avoid CORS issues
+            originalImg.src = getProxyUrl(currentLogo.logoUrl);
 
             if (currentLogo.cropDetails) {
                 cropImageToContent(currentLogo.logoUrl, currentLogo.cropDetails).then(setCroppedLogoUrl);

@@ -281,7 +281,7 @@ export default function BrandPage() {
   }, [brand, logoConcept, isLoadingLogos, logos, handleGenerateLogo]);
 
   const handleSaveDisplaySettings = useCallback(async (logoId: string, settings: Logo['displaySettings']) => {
-    if (!user) return;
+    if (!user || !settings) return;
 
     try {
       const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`);
@@ -651,7 +651,7 @@ export default function BrandPage() {
       }
 
       // Sync display settings
-      if (JSON.stringify(settingsToDisplay) !== JSON.stringify(brand?.displaySettings)) {
+      if (settingsToDisplay && JSON.stringify(settingsToDisplay) !== JSON.stringify(brand?.displaySettings)) {
         updates.displaySettings = settingsToDisplay;
       }
 
