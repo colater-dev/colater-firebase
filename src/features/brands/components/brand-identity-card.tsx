@@ -322,7 +322,7 @@ export function BrandIdentityCard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full max-w-4xl mt-8 flex flex-col items-center justify-center min-h-[480px]"
+                className="w-full mt-8 flex flex-col items-center justify-center min-h-[480px]"
               >
                 <div className="w-full h-[480px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
                   <ShaderLoader />

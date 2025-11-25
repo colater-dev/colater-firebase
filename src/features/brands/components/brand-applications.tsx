@@ -64,7 +64,7 @@ export const BrandApplications = memo(function BrandApplications({
     };
 
     return (
-        <div className="w-full max-w-4xl mt-12 mb-12">
+        <div className="w-full mt-12 mb-12">
             <h3 className="text-lg font-semibold mb-6 text-left px-4">Brand Applications</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 w-full">
 

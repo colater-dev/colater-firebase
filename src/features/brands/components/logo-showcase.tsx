@@ -313,7 +313,7 @@ export const LogoShowcase = memo(function LogoShowcase({
     }, [invertLogo]);
 
     return (
-        <div className="w-full max-w-4xl mt-8">
+        <div className="w-full mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Horizontal Preview */}
                 <LogoPreviewCard
@@ -452,7 +452,7 @@ export const LogoShowcase = memo(function LogoShowcase({
             </div>
 
             {/* 2x2 Grid for additional previews */}
-            <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-0">
+            <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-0">
                 {/* Sticker Effect - Show black/white sticker if available */}
                 <StickerPreview
                     stickerUrl={stickerLogoUrl}
@@ -653,8 +653,79 @@ export const LogoShowcase = memo(function LogoShowcase({
                                     </Button>
 
                                     {(() => {
+
+                                        // "This should take into account whether the invert logo option is enabled, and whether the background is dark or light."
+                                        // "If there is a color that is very close to black, hide the 'On Gray' option." (Wait, 'On Gray' is 'Light Logo' now. Maybe it means hide this card if it's too dark?)
+                                        // No, "hide the 'On Gray' option" likely refers to the "Light Logo" card if the brand color is gray?
+                                        // Or maybe it means if the brand color is black, don't show "On Brand Color" card?
+                                        // The user says: "If there is a color that is very close to black, hide the 'On Gray' option."
+                                        // This is ambiguous. "On Gray" is a specific card.
+                                        // Maybe they mean if the brand color is very close to the "On Gray" background color?
+                                        // Or maybe they mean "On Brand Color" option?
+                                        // I'll assume they mean "On Brand Color" card should be hidden if color is too dark?
+                                        // But the text says "hide the 'On Gray' option".
+                                        // I'll stick to the contrast logic first.
+
+                                        const backgroundType = isLightColor(darkenedColor) ? 'light' : 'dark';
+                                        // Use shouldInvertLogo to determine if we need to invert based on background AND global invert setting
+                                        const baseInvert = shouldInvertLogo(backgroundType);
+
+                                        // Combine with card mode styles (which might also have invert)
+                                        // getModeStyles returns filter: 'invert(1)' or 'none'
+                                        // If both are invert(1), they cancel out?
+                                        // Wait, getModeStyles is for manual toggle.
+                                        // The user wants "best contrast version".
+                                        // If I use shouldInvertLogo, it handles the logic:
+                                        // - If bg is light: black logo (unless inverted globally -> white logo)
+                                        // - If bg is dark: white logo (unless inverted globally -> black logo)
+
+                                        // So baseInvert is correct.
+                                        // But cardMode allows manual override.
+                                        // If cardMode is default (0), we should use baseInvert.
+                                        // If cardMode is toggled, we use what getModeStyles says?
+                                        // getModeStyles returns fixed filters based on mode 0, 1, 2, 3.
+                                        // Mode 0: darken, none
+                                        // Mode 1: lighten, none
+                                        // Mode 2: lighten, invert
+                                        // Mode 3: darken, invert
+
+                                        // The user says "Figure out the appropriate logic to make sure each of the 'on brand color' options show the best contrast version."
+                                        // This implies the DEFAULT mode should be correct.
+                                        // Currently getCardMode returns defaultInvert ? 2 : 0.
+                                        // defaultInvert is passed as `shouldInvert`.
+                                        // `shouldInvert` was `isLightColor(darkenedColor)`.
+                                        // If light color -> shouldInvert=true -> mode 2 -> lighten, invert.
+                                        // Wait, if bg is light, we want BLACK logo (no invert).
+                                        // So if isLightColor is true, we want NO invert.
+                                        // `isLightColor` returns true if light.
+                                        // `shouldInvert` passed to getCardMode seems to mean "should default to inverted mode".
+
+                                        // Let's look at `shouldInvertLogo`.
+                                        // If bg is light, `shouldInvertLogo('light')` returns `invertLogo` (false if normal).
+                                        // If bg is dark, `shouldInvertLogo('dark')` returns `!invertLogo` (true if normal).
+
+                                        // So if bg is dark (darkenedColor is dark), we want INVERT (white logo).
+                                        // So default mode should be one with invert.
+
                                         const isDarkBg = !isLightColor(darkenedColor);
                                         const autoInvert = shouldInvertLogo(isDarkBg ? 'dark' : 'light');
+
+                                        // We need to map `autoInvert` to a mode.
+                                        // Mode 0: filter: none
+                                        // Mode 2: filter: invert(1)
+                                        // So if autoInvert is true, default to mode 2. Else mode 0.
+
+                                        // But we also have mix-blend-mode.
+                                        // Mode 0: darken. Mode 2: lighten.
+                                        // If logo is black (no invert) on light bg -> darken is good.
+                                        // If logo is white (invert) on dark bg -> lighten is good.
+
+                                        // So:
+                                        // If autoInvert is true (white logo), use Mode 2 (lighten, invert).
+                                        // If autoInvert is false (black logo), use Mode 0 (darken, none).
+
+                                        // So I should pass `autoInvert` as `defaultInvert` to `getCardMode`.
+
                                         const mode = getCardMode(cardKey, autoInvert);
                                         const styles = getModeStyles(mode);
 
