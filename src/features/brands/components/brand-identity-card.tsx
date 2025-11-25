@@ -99,18 +99,19 @@ export function BrandIdentityCard({
     undefined
   );
   const [logoScale, setLogoScale] = useState(1);
-  const [logoTextGap, setLogoTextGap] = useState(50);
-  const [logoTextBalance, setLogoTextBalance] = useState(50);
-  const [logoLayout, setLogoLayout] = useState<'horizontal' | 'vertical'>('horizontal');
-  const [logoBrightness, setLogoBrightness] = useState(100);
+  const [horizontalLogoTextGap, setHorizontalLogoTextGap] = useState(50);
+  const [horizontalLogoTextBalance, setHorizontalLogoTextBalance] = useState(50);
+  const [verticalLogoTextGap, setVerticalLogoTextGap] = useState(50);
+  const [verticalLogoTextBalance, setVerticalLogoTextBalance] = useState(50);
+
   const [logoContrast, setLogoContrast] = useState(120);
-  const [logoSmoothness, setLogoSmoothness] = useState(0);
+  // Removed logoBrightness, logoSmoothness, logoLayout
   const [showBrandName, setShowBrandName] = useState(true);
   const [invertLogo, setInvertLogo] = useState(false);
   const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
   const [externalMediaUrl, setExternalMediaUrl] = useState('');
   const [isSavingMedia, setIsSavingMedia] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+
 
   const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'blur' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
@@ -145,14 +146,30 @@ export function BrandIdentityCard({
 
   const currentLogo = logos?.[currentLogoIndex];
 
-  // Track slide direction when logo index changes
+  // Track slide direction synchronously
   const prevLogoIndexRef = useRef(currentLogoIndex);
-  useEffect(() => {
-    if (prevLogoIndexRef.current !== currentLogoIndex) {
-      setSlideDirection(prevLogoIndexRef.current < currentLogoIndex ? 'right' : 'left');
-      prevLogoIndexRef.current = currentLogoIndex;
-    }
-  }, [currentLogoIndex]);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+
+  if (prevLogoIndexRef.current !== currentLogoIndex) {
+    const direction = prevLogoIndexRef.current < currentLogoIndex ? 'right' : 'left';
+    setSlideDirection(direction);
+    prevLogoIndexRef.current = currentLogoIndex;
+  }
+
+  const slideVariants = {
+    enter: (direction: 'left' | 'right') => ({
+      x: direction === 'right' ? 20 : -20,
+      opacity: 0
+    }),
+    center: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction: 'left' | 'right') => ({
+      x: direction === 'right' ? -20 : 20,
+      opacity: 0
+    })
+  };
 
   const handleShareLogo = async () => {
     if (!currentLogo) return;
@@ -182,17 +199,17 @@ export function BrandIdentityCard({
   // Load display settings from current logo
   useEffect(() => {
     if (currentLogo?.displaySettings) {
-      setLogoLayout(currentLogo.displaySettings.layout);
       setTextTransform(currentLogo.displaySettings.textTransform);
       setShowBrandName(currentLogo.displaySettings.showBrandName);
       setInvertLogo(currentLogo.displaySettings.invertLogo);
-      setLogoTextGap(currentLogo.displaySettings.logoTextGap);
-      setLogoTextBalance(currentLogo.displaySettings.logoTextBalance);
-      setLogoBrightness(currentLogo.displaySettings.logoBrightness);
-      setLogoTextBalance(currentLogo.displaySettings.logoTextBalance);
-      setLogoBrightness(currentLogo.displaySettings.logoBrightness);
+
+      // Load new settings or fallback to old ones
+      setHorizontalLogoTextGap(currentLogo.displaySettings.horizontalLogoTextGap ?? currentLogo.displaySettings.logoTextGap ?? 50);
+      setHorizontalLogoTextBalance(currentLogo.displaySettings.horizontalLogoTextBalance ?? currentLogo.displaySettings.logoTextBalance ?? 50);
+      setVerticalLogoTextGap(currentLogo.displaySettings.verticalLogoTextGap ?? currentLogo.displaySettings.logoTextGap ?? 50);
+      setVerticalLogoTextBalance(currentLogo.displaySettings.verticalLogoTextBalance ?? currentLogo.displaySettings.logoTextBalance ?? 50);
+
       setLogoContrast(currentLogo.displaySettings.logoContrast);
-      setLogoSmoothness(currentLogo.displaySettings.logoSmoothness || 0);
     }
     if (currentLogo?.externalMediaUrl) {
       setExternalMediaUrl(currentLogo.externalMediaUrl);
@@ -214,15 +231,14 @@ export function BrandIdentityCard({
     // Debounce save by 500ms
     saveTimeoutRef.current = setTimeout(() => {
       const settings = {
-        layout: logoLayout,
         textTransform,
         showBrandName,
         invertLogo,
-        logoTextGap,
-        logoTextBalance,
-        logoBrightness,
+        horizontalLogoTextGap,
+        horizontalLogoTextBalance,
+        verticalLogoTextGap,
+        verticalLogoTextBalance,
         logoContrast,
-        logoSmoothness,
       };
       onSaveDisplaySettings(currentLogo.id, settings);
     }, 500);
@@ -232,7 +248,7 @@ export function BrandIdentityCard({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [currentLogo?.id, logoLayout, textTransform, showBrandName, invertLogo, logoTextGap, logoTextBalance, logoBrightness, logoContrast, logoSmoothness, onSaveDisplaySettings]);
+  }, [currentLogo?.id, textTransform, showBrandName, invertLogo, horizontalLogoTextGap, horizontalLogoTextBalance, verticalLogoTextGap, verticalLogoTextBalance, logoContrast, onSaveDisplaySettings]);
 
 
   // Reset hue shifts when logo changes
@@ -310,7 +326,7 @@ export function BrandIdentityCard({
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
         <div className="w-full space-y-4 pt-6 flex flex-col items-center overflow-hidden relative">
           {/* Logo Applications Showcase */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={slideDirection}>
             {isGeneratingLogo ? (
               <motion.div
                 key="generating"
@@ -333,9 +349,11 @@ export function BrandIdentityCard({
             ) : currentLogo?.logoUrl ? (
               <motion.div
                 key={currentLogoIndex}
-                initial={{ x: slideDirection === 'right' ? 50 : -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: slideDirection === 'right' ? -50 : 50, opacity: 0 }}
+                custom={slideDirection}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="w-full"
               >
@@ -355,8 +373,6 @@ export function BrandIdentityCard({
                   onColorizeLogo={onColorizeLogo}
                   isColorizing={isColorizing}
                   isGeneratingLogo={isGeneratingLogo}
-                  logoLayout={logoLayout}
-                  setLogoLayout={setLogoLayout}
                   textTransform={textTransform}
                   setTextTransform={setTextTransform}
                   animationType={animationType}
@@ -366,16 +382,16 @@ export function BrandIdentityCard({
                   setShowBrandName={setShowBrandName}
                   invertLogo={invertLogo}
                   setInvertLogo={setInvertLogo}
-                  logoTextGap={logoTextGap}
-                  setLogoTextGap={setLogoTextGap}
-                  logoTextBalance={logoTextBalance}
-                  setLogoTextBalance={setLogoTextBalance}
-                  logoBrightness={logoBrightness}
-                  setLogoBrightness={setLogoBrightness}
+                  horizontalLogoTextGap={horizontalLogoTextGap}
+                  setHorizontalLogoTextGap={setHorizontalLogoTextGap}
+                  horizontalLogoTextBalance={horizontalLogoTextBalance}
+                  setHorizontalLogoTextBalance={setHorizontalLogoTextBalance}
+                  verticalLogoTextGap={verticalLogoTextGap}
+                  setVerticalLogoTextGap={setVerticalLogoTextGap}
+                  verticalLogoTextBalance={verticalLogoTextBalance}
+                  setVerticalLogoTextBalance={setVerticalLogoTextBalance}
                   logoContrast={logoContrast}
                   setLogoContrast={setLogoContrast}
-                  logoSmoothness={logoSmoothness}
-                  setLogoSmoothness={setLogoSmoothness}
                   readOnly={readOnly}
                   // External Media Props
                   externalMediaUrl={externalMediaUrl}
@@ -443,13 +459,15 @@ export function BrandIdentityCard({
           </AnimatePresence>
 
           {/* Brand Applications Section */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={slideDirection}>
             {!isGeneratingLogo && currentLogo?.logoUrl && (
               <motion.div
                 key={`applications-${currentLogoIndex}`}
-                initial={{ x: slideDirection === 'right' ? 300 : -300, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: slideDirection === 'right' ? -300 : 300, opacity: 0 }}
+                custom={slideDirection}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="w-full"
               >
@@ -493,8 +511,8 @@ export function BrandIdentityCard({
                         logoScale={logoScale}
                         contrast={logoContrast / 100}
                         invert={invertLogo}
-                        smoothness={logoSmoothness}
-                        brightness={logoBrightness / 100}
+                        smoothness={0}
+                        brightness={1}
                       />
                     </div>
                   );

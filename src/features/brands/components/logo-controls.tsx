@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 
 interface LogoControlsProps {
-    logoLayout: 'horizontal' | 'vertical';
-    setLogoLayout: (layout: 'horizontal' | 'vertical') => void;
     textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
     setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
     animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
@@ -27,18 +25,12 @@ interface LogoControlsProps {
     setLogoTextGap: (gap: number) => void;
     logoTextBalance: number;
     setLogoTextBalance: (balance: number) => void;
-    logoBrightness: number;
-    setLogoBrightness: (brightness: number) => void;
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
-    logoSmoothness: number;
-    setLogoSmoothness: (smoothness: number) => void;
     onDownload?: () => void;
 }
 
 export function LogoControls({
-    logoLayout,
-    setLogoLayout,
     textTransform,
     setTextTransform,
     animationType,
@@ -51,38 +43,12 @@ export function LogoControls({
     setLogoTextGap,
     logoTextBalance,
     setLogoTextBalance,
-    logoBrightness,
-    setLogoBrightness,
     logoContrast,
     setLogoContrast,
-    logoSmoothness,
-    setLogoSmoothness,
     onDownload,
 }: LogoControlsProps) {
     return (
         <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30 max-h-[450px] overflow-y-auto">
-            <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Layout</Label>
-                <div className="flex bg-muted rounded-md p-1">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`flex-1 h-6 ${logoLayout === 'horizontal' ? 'bg-[#f9f9f9] shadow-[0px_2px_6px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.05),inset_0px_1px_2px_0px_#ffffff] text-black' : 'text-muted-foreground hover:bg-transparent'}`}
-                        onClick={() => setLogoLayout('horizontal')}
-                    >
-                        <ArrowRight className="h-3 w-3" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`flex-1 h-6 ${logoLayout === 'vertical' ? 'bg-[#f9f9f9] shadow-[0px_2px_6px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.05),inset_0px_1px_2px_0px_#ffffff] text-black' : 'text-muted-foreground hover:bg-transparent'}`}
-                        onClick={() => setLogoLayout('vertical')}
-                    >
-                        <ArrowDown className="h-3 w-3" />
-                    </Button>
-                </div>
-            </div>
-
             <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Text Transform</Label>
                 <div className="flex bg-muted rounded-md p-1 gap-1">
@@ -208,16 +174,6 @@ export function LogoControls({
                 />
             </div>
             <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Brightness</Label>
-                <Slider
-                    value={[logoBrightness]}
-                    onValueChange={(value) => setLogoBrightness(value[0])}
-                    min={0}
-                    max={200}
-                    step={1}
-                />
-            </div>
-            <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Contrast</Label>
                 <Slider
                     value={[logoContrast]}
@@ -225,16 +181,6 @@ export function LogoControls({
                     min={0}
                     max={300}
                     step={1}
-                />
-            </div>
-            <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Smoothness</Label>
-                <Slider
-                    value={[logoSmoothness]}
-                    onValueChange={(value) => setLogoSmoothness(value[0])}
-                    min={0}
-                    max={1.5}
-                    step={0.1}
                 />
             </div>
             {onDownload && (

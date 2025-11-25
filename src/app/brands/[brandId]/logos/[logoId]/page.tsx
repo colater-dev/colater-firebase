@@ -142,9 +142,9 @@ export default function LogoPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background p-8">
-            <div className="container mx-auto max-w-7xl">
-                <ContentCard>
+        <div className="min-h-screen pt-[72px] p-4 md:p-8 mt-[60px] bg-[#f9f9f9]">
+            <div className="max-w-[1600px] mx-auto">
+                <div className="bg-white rounded-xl shadow-[0px_0px_8px_-4px_rgba(0,0,0,0.25),0px_0px_0px_1px_rgba(0,0,0,0.02)] p-4 md:p-8">
                     {/* Use BrandIdentityCard in read-only mode */}
                     <BrandIdentityCard
                         brandName={brand.latestName}
@@ -178,7 +178,7 @@ export default function LogoPage() {
                             onSubmit={handleFeedbackSubmit}
                         />
                     </div>
-                </ContentCard>
+                </div>
             </div>
         </div>
     );

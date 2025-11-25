@@ -288,10 +288,15 @@ export default function BrandPage() {
       await updateDoc(logoRef, {
         displaySettings: settings
       });
+
+      // Also update brand if this is the current logo
+      if (currentLogo && currentLogo.id === logoId && brandRef) {
+        await updateDoc(brandRef, { displaySettings: settings });
+      }
     } catch (error) {
       console.error('Error saving display settings:', error);
     }
-  }, [user, brandId, firestore]);
+  }, [user, brandId, firestore, currentLogo, brandRef]);
 
   const handleMakeLogoPublic = useCallback(async (logoId: string) => {
     if (!user) return;
@@ -634,14 +639,27 @@ export default function BrandPage() {
   }, [logos?.length]);
 
   // Update brand's primary logoUrl when the paginated logo changes
+  // Update brand's primary logoUrl and displaySettings when the paginated logo changes
   useEffect(() => {
     if (logos && logos.length > 0 && brandRef && currentLogo) {
       const logoToDisplay = currentLogo.colorLogoUrl || currentLogo.logoUrl;
+      const settingsToDisplay = currentLogo.displaySettings;
+
+      const updates: any = {};
       if (logoToDisplay !== brand?.logoUrl) {
-        updateDoc(brandRef, { logoUrl: logoToDisplay });
+        updates.logoUrl = logoToDisplay;
+      }
+
+      // Sync display settings
+      if (JSON.stringify(settingsToDisplay) !== JSON.stringify(brand?.displaySettings)) {
+        updates.displaySettings = settingsToDisplay;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updateDoc(brandRef, updates);
       }
     }
-  }, [logos, currentLogoIndex, brandRef, brand?.logoUrl, currentLogo]);
+  }, [logos, currentLogoIndex, brandRef, brand?.logoUrl, brand?.displaySettings, currentLogo]);
 
   const handleSaveExternalMedia = useCallback(async (logoId: string, url: string) => {
     if (!user || !brandId || !firestore) return;

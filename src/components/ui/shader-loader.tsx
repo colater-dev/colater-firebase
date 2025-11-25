@@ -90,21 +90,21 @@ const fragShader = `
 `;
 
 export const ShaderLoader = () => {
-    let theShader: p5Types.Shader;
+    const shaderRef = React.useRef<p5Types.Shader | null>(null);
 
     const setup = (p5: p5Types, canvasParentRef: Element) => {
         p5.createCanvas(300, 300, p5.WEBGL).parent(canvasParentRef);
-        theShader = p5.createShader(vertShader, fragShader);
+        shaderRef.current = p5.createShader(vertShader, fragShader);
     };
 
     const draw = (p5: p5Types) => {
-        if (!theShader) return;
+        if (!shaderRef.current) return;
 
         p5.clear();
-        p5.shader(theShader);
+        p5.shader(shaderRef.current);
 
-        theShader.setUniform("u_resolution", [p5.width, p5.height]);
-        theShader.setUniform("u_time", p5.millis() / 1000.0);
+        shaderRef.current.setUniform("u_resolution", [p5.width, p5.height]);
+        shaderRef.current.setUniform("u_time", p5.millis() / 1000.0);
 
         p5.rect(0, 0, p5.width, p5.height);
     };

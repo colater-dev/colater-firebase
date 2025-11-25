@@ -12,6 +12,7 @@ export interface Brand {
     logoUrl?: string;
     primaryTagline?: string;
     font?: string;
+    displaySettings?: Logo['displaySettings'];
 }
 
 export interface Tagline {
@@ -31,15 +32,20 @@ export interface Logo {
     createdAt: any; // Firestore Timestamp
     isPublic?: boolean; // Whether the logo can be publicly shared
     displaySettings?: {
-        layout: 'horizontal' | 'vertical';
+        layout?: 'horizontal' | 'vertical'; // Deprecated
         textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
         showBrandName: boolean;
         invertLogo: boolean;
-        logoTextGap: number;
-        logoTextBalance: number;
-        logoBrightness: number;
+        logoTextGap?: number; // Deprecated
+        logoTextBalance?: number; // Deprecated
+        logoBrightness?: number; // Deprecated
         logoContrast: number;
-        logoSmoothness?: number;
+        logoSmoothness?: number; // Deprecated
+
+        horizontalLogoTextGap?: number;
+        horizontalLogoTextBalance?: number;
+        verticalLogoTextGap?: number;
+        verticalLogoTextBalance?: number;
     };
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility

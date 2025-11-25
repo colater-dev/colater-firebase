@@ -32,14 +32,21 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
         }
     }, [brand.logoUrl]);
 
-    // Use defaults since we don't have full logo details in the list view
-    const contrast = 100;
-    const brightness = 100;
-    const smoothness = 0;
-    const invert = false;
+    // Use display settings if available
+    const contrast = brand.displaySettings?.logoContrast ?? 120;
+    const invert = brand.displaySettings?.invertLogo ?? false;
 
     // Simple background check for inversion logic (assuming light bg for card)
-    const shouldInvert = invert;
+    // If invert is true (user wants inverted logo), and bg is light, we show inverted (white) -> invisible?
+    // Wait, "Default Logo" logic:
+    // filter: `contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
+    // shouldInvertLogo('light') returns invertLogo.
+    // So if invertLogo is true, we invert.
+    // On white background, inverted black logo becomes white -> invisible.
+    // But usually users invert for dark backgrounds.
+    // If the dashboard card is white, and user selected "invert", they might see nothing.
+    // But the requirement is "use the same preview as the 'Default logo'".
+    // The "Default logo" is on white.
 
     return (
         <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
@@ -55,7 +62,7 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                                     className="object-contain rounded-md"
                                     unoptimized={displayLogoUrl.startsWith('data:')}
                                     style={{
-                                        filter: `blur(${smoothness}px) brightness(${brightness}%) contrast(${contrast}%) ${shouldInvert ? 'invert(1)' : ''}`
+                                        filter: `contrast(${contrast}%)${invert ? ' invert(1)' : ''}`
                                     }}
                                 />
                             ) : (

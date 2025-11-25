@@ -91,8 +91,8 @@ export function LogoNavigationDock({
           </Button>
 
           {/* Logo Thumbnails */}
-          <div className="flex-1 flex items-center justify-center overflow-hidden py-2">
-            <div className="flex items-center gap-2 px-2 overflow-x-auto scrollbar-hide py-1 max-w-full">
+          <div className="flex-1 flex items-center justify-center py-2">
+            <div className="flex items-center gap-2 px-2 overflow-x-auto scrollbar-hide py-4 max-w-full">
               {logos.map((logo, index) => (
                 <DockItem
                   key={logo.id || index}

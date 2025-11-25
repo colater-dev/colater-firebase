@@ -13,6 +13,7 @@ import { CritiquePoint } from './critique-point';
 import { DownloadButton } from './download-button';
 import { PaletteDots } from './palette-dots';
 import { StickerPreview } from './sticker-preview';
+import { LogoPreviewCard } from './logo-preview-card';
 import { cropImageToContent, createStickerEffect } from '@/lib/image-utils';
 
 interface LogoShowcaseProps {
@@ -31,9 +32,8 @@ interface LogoShowcaseProps {
     onColorizeLogo: () => void;
     isColorizing: boolean;
     isGeneratingLogo: boolean;
+
     // Control Props
-    logoLayout: 'horizontal' | 'vertical';
-    setLogoLayout: (layout: 'horizontal' | 'vertical') => void;
     textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
     setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
     animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
@@ -43,16 +43,21 @@ interface LogoShowcaseProps {
     setShowBrandName: (show: boolean) => void;
     invertLogo: boolean;
     setInvertLogo: (invert: boolean) => void;
-    logoTextGap: number;
-    setLogoTextGap: (gap: number) => void;
-    logoTextBalance: number;
-    setLogoTextBalance: (balance: number) => void;
-    logoBrightness: number;
-    setLogoBrightness: (brightness: number) => void;
+
+    // Horizontal Layout Props
+    horizontalLogoTextGap: number;
+    setHorizontalLogoTextGap: (gap: number) => void;
+    horizontalLogoTextBalance: number;
+    setHorizontalLogoTextBalance: (balance: number) => void;
+
+    // Vertical Layout Props
+    verticalLogoTextGap: number;
+    setVerticalLogoTextGap: (gap: number) => void;
+    verticalLogoTextBalance: number;
+    setVerticalLogoTextBalance: (balance: number) => void;
+
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
-    logoSmoothness: number;
-    setLogoSmoothness: (smoothness: number) => void;
     readOnly?: boolean;
     // External Media Props
     externalMediaUrl?: string;
@@ -82,8 +87,6 @@ export function LogoShowcase({
     onColorizeLogo,
     isColorizing,
     isGeneratingLogo,
-    logoLayout,
-    setLogoLayout,
     textTransform,
     setTextTransform,
     animationType,
@@ -93,16 +96,16 @@ export function LogoShowcase({
     setShowBrandName,
     invertLogo,
     setInvertLogo,
-    logoTextGap,
-    setLogoTextGap,
-    logoTextBalance,
-    setLogoTextBalance,
-    logoBrightness,
-    setLogoBrightness,
+    horizontalLogoTextGap,
+    setHorizontalLogoTextGap,
+    horizontalLogoTextBalance,
+    setHorizontalLogoTextBalance,
+    verticalLogoTextGap,
+    setVerticalLogoTextGap,
+    verticalLogoTextBalance,
+    setVerticalLogoTextBalance,
     logoContrast,
     setLogoContrast,
-    logoSmoothness,
-    setLogoSmoothness,
     readOnly = false,
     externalMediaUrl,
     onExternalMediaChange,
@@ -126,9 +129,9 @@ export function LogoShowcase({
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const [stickerLogoUrl, setStickerLogoUrl] = useState<string | null>(null);
     const [colorStickerUrl, setColorStickerUrl] = useState<string | null>(null);
-    const [cropMode, setCropMode] = useState(false);
     const [cropBounds, setCropBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
+    // Existing effect for bw sticker and cropped logo
     // Existing effect for bw sticker and cropped logo
     useEffect(() => {
         if (currentLogo?.logoUrl) {
@@ -176,65 +179,82 @@ export function LogoShowcase({
 
                 // If at least 3 corners are light, it's a Black on White logo -> invertLogo = false
                 // Otherwise (Dark BG), it's White on Black -> invertLogo = true
+                // Only set if not already set by display settings (optimization?)
+                // But display settings might be old.
+                // Let's respect the image analysis for now, as it was before.
                 if (lightCorners >= 3) {
                     setInvertLogo(false);
                 } else {
                     setInvertLogo(true);
                 }
 
-                // Get background color from top-left pixel for cropping logic
-                const bgR = data[0];
-                const bgG = data[1];
-                const bgB = data[2];
-                const bgA = data[3];
-                const threshold = 30;
+                if (currentLogo.cropDetails) {
+                    setCropBounds(currentLogo.cropDetails);
+                } else {
+                    // Get background color from top-left pixel for cropping logic
+                    const bgR = data[0];
+                    const bgG = data[1];
+                    const bgB = data[2];
+                    const bgA = data[3];
+                    const threshold = 30;
 
-                let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
-                let foundContent = false;
+                    let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+                    let foundContent = false;
 
-                for (let y = 0; y < canvas.height; y++) {
-                    for (let x = 0; x < canvas.width; x++) {
-                        const i = (y * canvas.width + x) * 4;
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
-                        const a = data[i + 3];
+                    for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            const i = (y * canvas.width + x) * 4;
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            const a = data[i + 3];
 
-                        if (bgA === 0 && a === 0) continue;
+                            if (bgA === 0 && a === 0) continue;
 
-                        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
+                            const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
 
-                        if (diff > threshold) {
-                            if (x < minX) minX = x;
-                            if (x > maxX) maxX = x;
-                            if (y < minY) minY = y;
-                            if (y > maxY) maxY = y;
-                            foundContent = true;
+                            if (diff > threshold) {
+                                if (x < minX) minX = x;
+                                if (x > maxX) maxX = x;
+                                if (y < minY) minY = y;
+                                if (y > maxY) maxY = y;
+                                foundContent = true;
+                            }
                         }
                     }
-                }
 
-                if (foundContent) {
-                    const padding = 20;
-                    minX = Math.max(0, minX - padding);
-                    minY = Math.max(0, minY - padding);
-                    maxX = Math.min(canvas.width, maxX + padding);
-                    maxY = Math.min(canvas.height, maxY + padding);
+                    if (foundContent) {
+                        const padding = 20;
+                        minX = Math.max(0, minX - padding);
+                        minY = Math.max(0, minY - padding);
+                        maxX = Math.min(canvas.width, maxX + padding);
+                        maxY = Math.min(canvas.height, maxY + padding);
 
-                    setCropBounds({
-                        x: minX,
-                        y: minY,
-                        width: maxX - minX,
-                        height: maxY - minY
-                    });
+                        const calculatedBounds = {
+                            x: minX,
+                            y: minY,
+                            width: maxX - minX,
+                            height: maxY - minY
+                        };
+                        setCropBounds(calculatedBounds);
+
+                        // Save calculated bounds
+                        if (onSaveCropDetails) {
+                            onSaveCropDetails(currentLogo.id, calculatedBounds);
+                        }
+                    }
                 }
             };
             originalImg.src = currentLogo.logoUrl;
 
-            cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
+            if (currentLogo.cropDetails) {
+                cropImageToContent(currentLogo.logoUrl, currentLogo.cropDetails).then(setCroppedLogoUrl);
+            } else {
+                cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
+            }
             createStickerEffect(currentLogo.logoUrl).then(setStickerLogoUrl);
         }
-    }, [currentLogo?.logoUrl]);
+    }, [currentLogo?.logoUrl, currentLogo?.cropDetails, onSaveCropDetails, setInvertLogo]);
 
     // New effect for color sticker (if a color version exists)
     useEffect(() => {
@@ -286,176 +306,69 @@ export function LogoShowcase({
 
     return (
         <div className="w-full max-w-4xl mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
-                {/* Original on White - Spans full width */}
-                <div
-                    ref={logoContainerRef}
-                    className={`col-span-1 md:col-span-2 lg:col-span-3 relative bg-white flex ${logoLayout === 'horizontal' ? 'flex-row' : 'flex-col'} items-center justify-center py-12 group h-[480px] ${readOnly ? 'cursor-pointer' : ''} md:scale-100 scale-[0.8]`}
-                    onClick={() => {
-                        if (readOnly) {
-                            triggerAnimation('scale');
-                        }
-                    }}
-                    onDoubleClick={() => {
-                        if (!readOnly) {
-                            setCropMode(!cropMode);
-                        }
-                    }}
-                >
-                    {!readOnly && (
-                        <>
-                            <LogoControls
-                                logoLayout={logoLayout}
-                                setLogoLayout={setLogoLayout}
-                                textTransform={textTransform}
-                                setTextTransform={setTextTransform}
-                                animationType={animationType}
-                                triggerAnimation={triggerAnimation}
-                                showBrandName={showBrandName}
-                                setShowBrandName={setShowBrandName}
-                                invertLogo={invertLogo}
-                                setInvertLogo={setInvertLogo}
-                                logoTextGap={logoTextGap}
-                                setLogoTextGap={setLogoTextGap}
-                                logoTextBalance={logoTextBalance}
-                                setLogoTextBalance={setLogoTextBalance}
-                                logoBrightness={logoBrightness}
-                                setLogoBrightness={setLogoBrightness}
-                                logoContrast={logoContrast}
-                                setLogoContrast={setLogoContrast}
-                                logoSmoothness={logoSmoothness}
-                                setLogoSmoothness={setLogoSmoothness}
-                                onDownload={() => handleDownload(logoContainerRef, 'logo-preview')}
-                            />
-                        </>
-                    )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Horizontal Preview */}
+                <LogoPreviewCard
+                    layout="horizontal"
+                    logo={currentLogo}
+                    croppedLogoUrl={croppedLogoUrl}
+                    brandName={brandName}
+                    selectedBrandFont={selectedBrandFont}
+                    showCritique={showCritique}
+                    expandedPointId={expandedPointId}
+                    setExpandedPointId={setExpandedPointId}
+                    readOnly={readOnly}
+                    textTransform={textTransform}
+                    setTextTransform={setTextTransform}
+                    showBrandName={showBrandName}
+                    setShowBrandName={setShowBrandName}
+                    invertLogo={invertLogo}
+                    setInvertLogo={setInvertLogo}
+                    logoTextGap={horizontalLogoTextGap}
+                    setLogoTextGap={setHorizontalLogoTextGap}
+                    logoTextBalance={horizontalLogoTextBalance}
+                    setLogoTextBalance={setHorizontalLogoTextBalance}
+                    logoContrast={logoContrast}
+                    setLogoContrast={setLogoContrast}
+                    animationType={animationType}
+                    triggerAnimation={triggerAnimation}
+                    animationKey={animationKey}
+                    onDownload={(ref) => handleDownload(ref, 'horizontal-preview')}
+                    shouldInvertLogo={shouldInvertLogo}
+                />
 
-                    <motion.div
-                        key={`logo-${animationKey}`}
-                        initial={animationType ? "hidden" : "visible"}
-                        animate="visible"
-                        variants={animationType ? animationVariants[animationType] : undefined}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="relative z-0"
-                        style={{
-                            width: `${128 * (1.5 - (logoTextBalance / 100))}px`,
-                            height: `${128 * (1.5 - (logoTextBalance / 100))}px`,
-                            marginRight: logoLayout === 'horizontal' ? `${logoTextGap}px` : 0,
-                            marginBottom: logoLayout === 'vertical' ? `${logoTextGap}px` : 0
-                        }}
-                    >
-                        <Image
-                            ref={(el) => {
-                                if (el) logoImageRef.current = el as HTMLImageElement;
-                            }}
-                            src={croppedLogoUrl || currentLogo.logoUrl}
-                            alt="Logo on white background"
-                            fill
-                            className="object-contain"
-                            unoptimized={(croppedLogoUrl || currentLogo.logoUrl).startsWith('data:')}
-                            style={{
-                                filter: `blur(${logoSmoothness}px) brightness(${logoBrightness}%) contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
-                            }}
-                        />
-                    </motion.div>
-
-                    {showBrandName && (
-                        <motion.div
-                            key={`text-${animationKey}`}
-                            initial="hidden"
-                            animate="visible"
-                            className={`relative z-10 ${logoLayout === 'vertical' ? 'text-center' : 'text-left'}`}
-                        >
-                            <h3
-                                className="font-bold text-gray-900 leading-none"
-                                style={{
-                                    fontFamily: `var(${BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'})`,
-                                    fontSize: `${36 * (0.5 + (logoTextBalance / 100)) * (BRAND_FONTS.find(f => f.name === selectedBrandFont)?.sizeMultiplier || 1.0)}px`,
-                                    textTransform: textTransform === 'none' ? 'none' : textTransform === 'capitalize' ? 'capitalize' : textTransform
-                                }}
-                            >
-                                {brandName.split('').map((char, index) => (
-                                    <motion.span
-                                        key={`${animationKey}-char-${index}`}
-                                        variants={animationType ? {
-                                            hidden: animationVariants[animationType].hidden,
-                                            visible: animationVariants[animationType].visible
-                                        } : undefined}
-                                        transition={{
-                                            duration: 0.3,
-                                            ease: "easeOut",
-                                            delay: animationType ? 0.5 + (index * 0.03) : 0
-                                        }}
-                                        style={{ display: 'inline-block' }}
-                                    >
-                                        {char === ' ' ? '\u00A0' : char}
-                                    </motion.span>
-                                ))}
-                            </h3>
-                        </motion.div>
-                    )}
-
-                    {/* Critique Points Overlay - Card 1 */}
-                    {showCritique && currentLogo?.critique?.points && (
-                        <div className="absolute inset-0 z-20 pointer-events-none">
-                            {currentLogo.critique.points.map((point, index) => (
-                                <div key={index} className="pointer-events-auto">
-                                    <CritiquePoint
-                                        point={point}
-                                        isExpanded={expandedPointId === `${currentLogo.id}-${index}`}
-                                        onToggle={(e) => {
-                                            e.stopPropagation();
-                                            setExpandedPointId(
-                                                expandedPointId === `${currentLogo.id}-${index}`
-                                                    ? null
-                                                    : `${currentLogo.id}-${index}`
-                                            );
-                                        }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">{readOnly ? '► Tap to Animate' : 'Default Logo'}</p>
-
-                    {/* Crop Overlay */}
-                    {cropMode && cropBounds && !readOnly && (
-                        <div className="absolute inset-0 z-30 pointer-events-none">
-                            <div className="relative w-full h-full">
-                                {/* Visual representation of crop bounds - scaled to fit container if needed, but here we assume 1:1 for simplicity or need to map coordinates */}
-                                {/* Note: The canvas calculation was on the original image size. We need to map this to the displayed image size. */}
-                                {/* For now, let's just show the Save button as the visual crop might require complex coordinate mapping */}
-                                <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onSaveCropDetails && currentLogo && cropBounds) {
-                                                onSaveCropDetails(currentLogo.id, cropBounds);
-                                                setCropMode(false);
-                                            }
-                                        }}
-                                    >
-                                        Save Auto-Crop
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setCropMode(false);
-                                        }}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* Vertical Preview */}
+                <LogoPreviewCard
+                    layout="vertical"
+                    logo={currentLogo}
+                    croppedLogoUrl={croppedLogoUrl}
+                    brandName={brandName}
+                    selectedBrandFont={selectedBrandFont}
+                    showCritique={showCritique}
+                    expandedPointId={expandedPointId}
+                    setExpandedPointId={setExpandedPointId}
+                    readOnly={readOnly}
+                    textTransform={textTransform}
+                    setTextTransform={setTextTransform}
+                    showBrandName={showBrandName}
+                    setShowBrandName={setShowBrandName}
+                    invertLogo={invertLogo}
+                    setInvertLogo={setInvertLogo}
+                    logoTextGap={verticalLogoTextGap}
+                    setLogoTextGap={setVerticalLogoTextGap}
+                    logoTextBalance={verticalLogoTextBalance}
+                    setLogoTextBalance={setVerticalLogoTextBalance}
+                    logoContrast={logoContrast}
+                    setLogoContrast={setLogoContrast}
+                    animationType={animationType}
+                    triggerAnimation={triggerAnimation}
+                    animationKey={animationKey}
+                    onDownload={(ref) => handleDownload(ref, 'vertical-preview')}
+                    shouldInvertLogo={shouldInvertLogo}
+                />
 
                 {/* External Media Section - Spans full width */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gray-50 border-y border-gray-100 flex flex-col items-center justify-center">
+                <div className="col-span-1 md:col-span-2 w-full bg-gray-50 border-y border-gray-100 flex flex-col items-center justify-center">
                     {externalMediaUrl && (
                         <div className="w-full overflow-hidden bg-black/5 relative group">
                             {!readOnly && onExternalMediaChange && (
@@ -533,25 +446,25 @@ export function LogoShowcase({
             {/* 2x2 Grid for additional previews */}
             <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-0">
                 {/* Sticker Effect - Show black/white sticker if available */}
-                {stickerLogoUrl && (
-                    <StickerPreview
-                        stickerUrl={stickerLogoUrl}
-                        brandName={brandName}
-                        label="Sticker"
-                        invert={invertLogo}
-                    />
-                )}
+                <StickerPreview
+                    stickerUrl={stickerLogoUrl}
+                    brandName={brandName}
+                    label="Sticker"
+                    invert={invertLogo}
+                />
+
                 {/* Color Sticker Effect - Show color sticker if available */}
-                {colorStickerUrl && (
+                {(currentLogo?.colorLogoUrl || currentLogo?.colorVersions?.[0]?.colorLogoUrl) && (
                     <StickerPreview
                         stickerUrl={colorStickerUrl}
                         brandName={brandName}
                         label="Color Sticker"
                         isColor={true}
+                        hueShift={hueShifts[0] || 0}
                     />
                 )}
 
-                {/* On Gray (Darker, 50% opacity)                {/* On Gray */}
+                {/* Light Logo (On Gray) */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <Button
@@ -561,7 +474,7 @@ export function LogoShowcase({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 // @ts-ignore - accessing ref from parent div
-                                handleDownload({ current: e.currentTarget.closest('.group') }, 'on-gray');
+                                handleDownload({ current: e.currentTarget.closest('.group') }, 'light-logo');
                             }}
                             title="Download PNG"
                         >
@@ -598,10 +511,10 @@ export function LogoShowcase({
                                 ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">On Gray</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Light Logo</p>
                 </div>
 
-                {/* Inverted on Black */}
+                {/* Dark Logo (Inverted on Black) */}
                 <div className="relative aspect-square bg-black flex items-center justify-center group">
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <Button
@@ -610,7 +523,7 @@ export function LogoShowcase({
                             className="w-8 h-8 bg-white/20 hover:bg-white/40 text-white"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload({ current: e.currentTarget.closest('.group') as HTMLDivElement }, 'inverted-on-black');
+                                handleDownload({ current: e.currentTarget.closest('.group') as HTMLDivElement }, 'dark-logo');
                             }}
                             title="Download PNG"
                         >
@@ -645,7 +558,7 @@ export function LogoShowcase({
                                 ))}
                         </div>
                     )}
-                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Inverted on Black</p>
+                    <p className="absolute bottom-2 left-0 right-0 text-xs text-center text-gray-400">Dark Logo</p>
                 </div>
 
                 {/* On Brand Color (Darkened) - Show all palette colors from all color versions with hue shift */}
@@ -732,12 +645,81 @@ export function LogoShowcase({
                                     </Button>
 
                                     {(() => {
+                                        // Task 9: Logic for "on brand color" contrast
+                                        // "This should take into account whether the invert logo option is enabled, and whether the background is dark or light."
+                                        // "If there is a color that is very close to black, hide the 'On Gray' option." (Wait, 'On Gray' is 'Light Logo' now. Maybe it means hide this card if it's too dark?)
+                                        // No, "hide the 'On Gray' option" likely refers to the "Light Logo" card if the brand color is gray?
+                                        // Or maybe it means if the brand color is black, don't show "On Brand Color" card?
+                                        // The user says: "If there is a color that is very close to black, hide the 'On Gray' option."
+                                        // This is ambiguous. "On Gray" is a specific card.
+                                        // Maybe they mean if the brand color is very close to the "On Gray" background color?
+                                        // Or maybe they mean "On Brand Color" option?
+                                        // I'll assume they mean "On Brand Color" card should be hidden if color is too dark?
+                                        // But the text says "hide the 'On Gray' option".
+                                        // I'll stick to the contrast logic first.
+
                                         const backgroundType = isLightColor(darkenedColor) ? 'light' : 'dark';
+                                        // Use shouldInvertLogo to determine if we need to invert based on background AND global invert setting
                                         const baseInvert = shouldInvertLogo(backgroundType);
-                                        const combinedStyles = {
-                                            ...styles,
-                                            filter: `${baseInvert ? 'invert(1) ' : ''}${styles.filter || ''}`.trim()
-                                        };
+
+                                        // Combine with card mode styles (which might also have invert)
+                                        // getModeStyles returns filter: 'invert(1)' or 'none'
+                                        // If both are invert(1), they cancel out?
+                                        // Wait, getModeStyles is for manual toggle.
+                                        // The user wants "best contrast version".
+                                        // If I use shouldInvertLogo, it handles the logic:
+                                        // - If bg is light: black logo (unless inverted globally -> white logo)
+                                        // - If bg is dark: white logo (unless inverted globally -> black logo)
+
+                                        // So baseInvert is correct.
+                                        // But cardMode allows manual override.
+                                        // If cardMode is default (0), we should use baseInvert.
+                                        // If cardMode is toggled, we use what getModeStyles says?
+                                        // getModeStyles returns fixed filters based on mode 0, 1, 2, 3.
+                                        // Mode 0: darken, none
+                                        // Mode 1: lighten, none
+                                        // Mode 2: lighten, invert
+                                        // Mode 3: darken, invert
+
+                                        // The user says "Figure out the appropriate logic to make sure each of the 'on brand color' options show the best contrast version."
+                                        // This implies the DEFAULT mode should be correct.
+                                        // Currently getCardMode returns defaultInvert ? 2 : 0.
+                                        // defaultInvert is passed as `shouldInvert`.
+                                        // `shouldInvert` was `isLightColor(darkenedColor)`.
+                                        // If light color -> shouldInvert=true -> mode 2 -> lighten, invert.
+                                        // Wait, if bg is light, we want BLACK logo (no invert).
+                                        // So if isLightColor is true, we want NO invert.
+                                        // `isLightColor` returns true if light.
+                                        // `shouldInvert` passed to getCardMode seems to mean "should default to inverted mode".
+
+                                        // Let's look at `shouldInvertLogo`.
+                                        // If bg is light, `shouldInvertLogo('light')` returns `invertLogo` (false if normal).
+                                        // If bg is dark, `shouldInvertLogo('dark')` returns `!invertLogo` (true if normal).
+
+                                        // So if bg is dark (darkenedColor is dark), we want INVERT (white logo).
+                                        // So default mode should be one with invert.
+
+                                        const isDarkBg = !isLightColor(darkenedColor);
+                                        const autoInvert = shouldInvertLogo(isDarkBg ? 'dark' : 'light');
+
+                                        // We need to map `autoInvert` to a mode.
+                                        // Mode 0: filter: none
+                                        // Mode 2: filter: invert(1)
+                                        // So if autoInvert is true, default to mode 2. Else mode 0.
+
+                                        // But we also have mix-blend-mode.
+                                        // Mode 0: darken. Mode 2: lighten.
+                                        // If logo is black (no invert) on light bg -> darken is good.
+                                        // If logo is white (invert) on dark bg -> lighten is good.
+
+                                        // So:
+                                        // If autoInvert is true (white logo), use Mode 2 (lighten, invert).
+                                        // If autoInvert is false (black logo), use Mode 0 (darken, none).
+
+                                        // So I should pass `autoInvert` as `defaultInvert` to `getCardMode`.
+
+                                        const mode = getCardMode(cardKey, autoInvert);
+                                        const styles = getModeStyles(mode);
 
                                         return (
                                             <Image
@@ -747,7 +729,7 @@ export function LogoShowcase({
                                                 height={200}
                                                 className="object-contain w-full h-full"
                                                 unoptimized={currentLogo.logoUrl.startsWith('data:')}
-                                                style={combinedStyles}
+                                                style={styles}
                                             />
                                         );
                                     })()}
@@ -801,7 +783,7 @@ export function LogoShowcase({
                                             width={200}
                                             height={200}
                                             className="object-contain w-full h-full"
-                                            unoptimized={colorVersion.colorLogoUrl.startsWith('data:')}
+                                            unoptimized={true}
                                             style={{
                                                 filter: `hue-rotate(${currentHueShift}deg)`
                                             }}
