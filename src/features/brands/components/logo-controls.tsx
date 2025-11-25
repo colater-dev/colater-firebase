@@ -29,6 +29,7 @@ interface LogoControlsProps {
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
     onDownload?: () => void;
+    onDownloadSvg?: () => void;
 }
 
 export const LogoControls = memo(function LogoControls({
@@ -47,6 +48,7 @@ export const LogoControls = memo(function LogoControls({
     logoContrast,
     setLogoContrast,
     onDownload,
+    onDownloadSvg,
 }: LogoControlsProps) {
     return (
         <div className="absolute top-4 right-4 flex flex-col gap-4 w-48 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-4 rounded-lg border shadow-sm z-30 max-h-[450px] overflow-y-auto exclude-from-download">
@@ -185,16 +187,27 @@ export const LogoControls = memo(function LogoControls({
                 />
             </div>
             {onDownload && (
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t flex gap-2">
                     <Button
                         variant="outline"
                         size="sm"
-                        className="w-full text-xs h-8"
+                        className="flex-1 text-xs h-8"
                         onClick={onDownload}
                     >
                         <Download className="w-3 h-3 mr-2" />
-                        Download PNG
+                        PNG
                     </Button>
+                    {onDownloadSvg && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-8"
+                            onClick={onDownloadSvg}
+                        >
+                            <Download className="w-3 h-3 mr-2" />
+                            SVG
+                        </Button>
+                    )}
                 </div>
             )}
         </div>

@@ -37,6 +37,7 @@ interface LogoPreviewCardProps {
     animationKey: number;
 
     onDownload: (ref: React.RefObject<HTMLDivElement>) => void;
+    onDownloadSvg?: () => void;
     shouldInvertLogo: (backgroundType: 'light' | 'dark') => boolean;
 }
 
@@ -66,6 +67,7 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
     triggerAnimation,
     animationKey,
     onDownload,
+    onDownloadSvg,
     shouldInvertLogo
 }: LogoPreviewCardProps) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,7 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
                     logoContrast={logoContrast}
                     setLogoContrast={setLogoContrast}
                     onDownload={() => onDownload(containerRef)}
+                    onDownloadSvg={onDownloadSvg}
                 />
             )}
 

@@ -13,6 +13,8 @@ import { CritiquePoint } from './critique-point';
 import { DownloadButton } from './download-button';
 import { PaletteDots } from './palette-dots';
 import { StickerPreview } from './sticker-preview';
+import { MockupPreview } from './mockup-preview';
+
 import { LogoPreviewCard } from './logo-preview-card';
 import { cropImageToContent, createStickerEffect, getProxyUrl } from '@/lib/image-utils';
 
@@ -312,6 +314,22 @@ export const LogoShowcase = memo(function LogoShowcase({
         return isDark !== invertLogo;
     }, [invertLogo]);
 
+    const handleDownloadSvg = useCallback(async () => {
+        if (!currentLogo?.logoUrl || !onVectorizeLogo) return;
+
+        // If we already have a vector URL, download it directly
+        if (currentLogo.vectorLogoUrl) {
+            const link = document.createElement('a');
+            link.href = currentLogo.vectorLogoUrl;
+            link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-logo.svg`;
+            link.click();
+        } else {
+            // Otherwise trigger vectorization
+            // Use cropped URL if available, otherwise original
+            onVectorizeLogo(croppedLogoUrl || currentLogo.logoUrl);
+        }
+    }, [currentLogo, onVectorizeLogo, croppedLogoUrl, brandName]);
+
     return (
         <div className="w-full mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,6 +360,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                     triggerAnimation={triggerAnimation}
                     animationKey={animationKey}
                     onDownload={(ref) => handleDownload(ref, 'horizontal-preview')}
+                    onDownloadSvg={handleDownloadSvg}
                     shouldInvertLogo={shouldInvertLogo}
                 />
 
@@ -372,6 +391,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                     triggerAnimation={triggerAnimation}
                     animationKey={animationKey}
                     onDownload={(ref) => handleDownload(ref, 'vertical-preview')}
+                    onDownloadSvg={handleDownloadSvg}
                     shouldInvertLogo={shouldInvertLogo}
                 />
 
@@ -471,6 +491,14 @@ export const LogoShowcase = memo(function LogoShowcase({
                         hueShift={hueShifts[0] || 0}
                     />
                 )}
+
+                {/* T-Shirt Mockup */}
+                <MockupPreview
+                    logoUrl={croppedLogoUrl || currentLogo.logoUrl}
+                    mockupImage="/t-shirt-mockup.png"
+                    brandName={brandName}
+                    label="T-Shirt"
+                />
 
                 {/* Light Logo (On Gray) */}
                 <div className="relative aspect-square bg-gray-900 flex items-center justify-center group" ref={useRef<HTMLDivElement>(null)}>

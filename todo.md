@@ -1,2 +1,1 @@
-- [x] The download button downloads an image, but the image has the download button and the tile label. Fix this so only the logo/content is downloaded.
-- [x] I just generated a new logo and it did not automatically turn on invert logo - the value should default to on.
+Remove the "Generating your logo..." text and the circular loader from when a logo is generating

@@ -16,15 +16,15 @@ import type { Brand } from '@/lib/types';
 import { getBrandFontStyle } from '@/config/brand-fonts';
 
 
+import { BRAND_FONTS } from '@/config/brand-fonts';
+
 const BrandListItem = ({ brand }: { brand: Brand }) => {
-    const fontStyle = getBrandFontStyle(brand.id);
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const displayLogoUrl = croppedLogoUrl || brand.logoUrl;
 
     useEffect(() => {
         if (brand.logoUrl) {
             import('@/lib/image-utils').then(({ cropImageToContent }) => {
-                // Ensure logoUrl is a string before calling
                 if (brand.logoUrl) {
                     cropImageToContent(brand.logoUrl).then(setCroppedLogoUrl);
                 }
@@ -32,28 +32,36 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
         }
     }, [brand.logoUrl]);
 
-    // Use display settings if available
-    const contrast = brand.displaySettings?.logoContrast ?? 120;
-    const invert = brand.displaySettings?.invertLogo ?? false;
+    // Display settings
+    const settings = brand.displaySettings;
+    const gap = (settings?.horizontalLogoTextGap ?? settings?.logoTextGap ?? 50) * 0.5; // Scale 0.5
+    const balance = settings?.horizontalLogoTextBalance ?? settings?.logoTextBalance ?? 50;
+    const contrast = settings?.logoContrast ?? 120;
+    const invert = settings?.invertLogo ?? false;
+    const textTransform = settings?.textTransform || 'none';
+    const showBrandName = settings?.showBrandName ?? true;
 
-    // Simple background check for inversion logic (assuming light bg for card)
-    // If invert is true (user wants inverted logo), and bg is light, we show inverted (white) -> invisible?
-    // Wait, "Default Logo" logic:
-    // filter: `contrast(${logoContrast}%)${shouldInvertLogo('light') ? ' invert(1)' : ''}`
-    // shouldInvertLogo('light') returns invertLogo.
-    // So if invertLogo is true, we invert.
-    // On white background, inverted black logo becomes white -> invisible.
-    // But usually users invert for dark backgrounds.
-    // If the dashboard card is white, and user selected "invert", they might see nothing.
-    // But the requirement is "use the same preview as the 'Default logo'".
-    // The "Default logo" is on white.
+    // Font configuration
+    const fontConfig = BRAND_FONTS.find(f => f.name === brand.font) || BRAND_FONTS[0];
+    const fontVariable = fontConfig.variable;
+    const sizeMultiplier = fontConfig.sizeMultiplier || 1.0;
+
+    // Calculate sizes (Scale 0.5 relative to LogoPreviewCard)
+    // Base logo size 128 * 0.5 = 64
+    const logoSize = 64 * (1.5 - (balance / 100));
+
+    // Base font size 36 * 0.5 = 18
+    const fontSize = 18 * (0.5 + (balance / 100)) * sizeMultiplier;
 
     return (
         <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
             <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
                 <CardContent className="flex-grow flex flex-col p-6 gap-4">
                     <div className="flex items-center">
-                        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center relative">
+                        <div
+                            className="flex-shrink-0 flex items-center justify-center relative"
+                            style={{ width: logoSize, height: logoSize }}
+                        >
                             {displayLogoUrl ? (
                                 <Image
                                     src={displayLogoUrl}
@@ -69,12 +77,20 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                                 <div className="w-full h-full bg-muted rounded-md" />
                             )}
                         </div>
-                        <CardTitle
-                            className="text-xl ml-4"
-                            style={fontStyle}
-                        >
-                            {brand.latestName}
-                        </CardTitle>
+                        {showBrandName && (
+                            <CardTitle
+                                className="leading-none"
+                                style={{
+                                    marginLeft: `${gap}px`,
+                                    fontFamily: `var(${fontVariable}), sans-serif`,
+                                    fontSize: `${fontSize}px`,
+                                    textTransform: textTransform as any,
+                                    fontWeight: 700 // Force bold as per CardTitle default? Or use font weight? LogoPreviewCard uses bold.
+                                }}
+                            >
+                                {brand.latestName}
+                            </CardTitle>
+                        )}
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
                 </CardContent>

@@ -187,154 +187,177 @@ export default function NewBrandPage() {
 
   return (
     <ContentCard>
-      <div className="max-w-[640px] mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Create a New Brand</h1>
-          <p className="text-muted-foreground">Fill out the details below to get started, or let AI fill it for you.</p>
+          <p className="text-muted-foreground">Choose how you want to start.</p>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <Label htmlFor="topic-input">Start from an Idea</Label>
-          <div className="flex gap-2">
-            <Input
-              id="topic-input"
-              placeholder="A coffee shop for developers"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
-            <Button onClick={handleFillForMe} disabled={isGenerating}>
-              {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              <span className="ml-2 hidden sm:inline">Brainstorm</span>
-            </Button>
-          </div>
-        </div>
-
-        <div className="space-y-4 mb-6">
-          <Label>Font Style Category</Label>
-          <div className="flex flex-wrap gap-2">
-            {(['Formal', 'Rounded', 'Stylish', 'Cute', 'Modern'] as FontCategory[]).map((category) => (
-              <Button
-                key={category}
-                type="button"
-                variant={selectedCategory === category ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(category)}
-                className="capitalize"
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <Separator className="mb-6" />
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Brand Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Acmecorp" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="elevatorPitch"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Elevator Pitch</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe your brand in a few sentences."
-                      rows={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="button"
-              variant="light"
-              className="w-full"
-              onClick={handleFillEverythingElse}
-              disabled={isGenerating}
-            >
-              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Fill everything else for me
-            </Button>
-            <FormField
-              control={form.control}
-              name="audience"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Audience</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., 'Tech-savvy millennials who value design...'"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="desirableCues"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Desirable visual cues</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., 'minimalist, elegant, bird, blue'"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="undesirableCues"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Undesirable visual cues</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., 'complex, childish, gradients, red'"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Brand & Generate Assets'
-                )}
-              </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Left Section: Brainstorm */}
+          <div className="space-y-6 p-8 bg-muted/30 rounded-xl border">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Help me brainstorm a name</h2>
+              <p className="text-sm text-muted-foreground">
+                Not sure where to start? Enter a topic and let AI generate a complete brand identity for you.
+              </p>
             </div>
-          </form>
-        </Form>
+
+            <div className="space-y-4">
+              <Label htmlFor="topic-input">Topic or Idea</Label>
+              <div className="flex flex-col gap-3">
+                <Input
+                  id="topic-input"
+                  placeholder="e.g. A coffee shop for developers"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                />
+                <Button onClick={handleFillForMe} disabled={isGenerating} className="w-full">
+                  {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
+                  Brainstorm Brand
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Section: Manual Form */}
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">I have a name for my brand</h2>
+              <p className="text-sm text-muted-foreground">
+                Already have a vision? Fill in the details below.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-8">
+              <Label>Font Style Category</Label>
+              <div className="flex flex-wrap gap-2">
+                {(['Formal', 'Rounded', 'Stylish', 'Cute', 'Modern'] as FontCategory[]).map((category) => (
+                  <Button
+                    key={category}
+                    type="button"
+                    variant={selectedCategory === category ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(category)}
+                    className="capitalize"
+                    size="sm"
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Brand Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Acmecorp" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="elevatorPitch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Elevator Pitch</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe your brand in a few sentences."
+                          rows={4}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleFillEverythingElse}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Fill everything else for me
+                </Button>
+                <FormField
+                  control={form.control}
+                  name="audience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Target Audience</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., 'Tech-savvy millennials who value design...'"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="desirableCues"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Desirable visual cues</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="e.g., 'minimalist, elegant, bird, blue'"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="undesirableCues"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Undesirable visual cues</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="e.g., 'complex, childish, gradients, red'"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Brand & Generate Assets'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        </div>
       </div>
     </ContentCard>
   );

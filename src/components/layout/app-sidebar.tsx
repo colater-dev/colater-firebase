@@ -15,16 +15,6 @@ const navigationItems = [
         name: 'Tagline',
         href: '/taglines',
         icon: Sparkles,
-    },
-    {
-        name: 'Styleguide',
-        href: '/styleguide',
-        icon: Users,
-    },
-    {
-        name: 'Moodboard',
-        href: '/moodboard',
-        icon: Palette,
     }
 ];
 

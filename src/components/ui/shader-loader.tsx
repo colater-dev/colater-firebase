@@ -112,9 +112,6 @@ export const ShaderLoader = () => {
     return (
         <div className="flex flex-col items-center justify-center">
             <Sketch setup={setup} draw={draw} />
-            <p className="mt-4 text-sm text-muted-foreground animate-pulse">
-                Synthesizing visual data...
-            </p>
         </div>
     );
 };

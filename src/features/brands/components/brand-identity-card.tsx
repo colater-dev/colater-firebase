@@ -11,7 +11,6 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
-import { ShaderLoader } from '@/components/ui/shader-loader';
 import type { Logo } from '@/lib/types';
 import { BrandApplications } from './brand-applications';
 import { BrandIdentityHeader } from './brand-identity-header';
@@ -108,7 +107,18 @@ export function BrandIdentityCard({
   const [invertLogo, setInvertLogo] = useState(true);
   const [textTransform, setTextTransform] = useState<'none' | 'lowercase' | 'capitalize' | 'uppercase'>('none');
   const [externalMediaUrl, setExternalMediaUrl] = useState('');
+
   const [isSavingMedia, setIsSavingMedia] = useState(false);
+
+  // Loading state management
+  const [viewingGeneration, setViewingGeneration] = useState(false);
+
+  // Reset viewingGeneration when generation starts
+  useEffect(() => {
+    if (isGeneratingLogo) {
+      setViewingGeneration(true);
+    }
+  }, [isGeneratingLogo]);
 
 
   const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'blur' | null>(null);
@@ -315,7 +325,7 @@ export function BrandIdentityCard({
         <div className="w-full space-y-4 pt-6 flex flex-col items-center overflow-hidden relative">
           {/* Logo Applications Showcase */}
           <AnimatePresence mode="wait" custom={slideDirection}>
-            {isGeneratingLogo ? (
+            {isGeneratingLogo && viewingGeneration ? (
               <motion.div
                 key="generating"
                 initial={{ opacity: 0 }}
@@ -324,14 +334,7 @@ export function BrandIdentityCard({
                 transition={{ duration: 0.3 }}
                 className="w-full mt-8 flex flex-col items-center justify-center min-h-[480px]"
               >
-                <div className="w-full h-[480px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
-                  <ShaderLoader />
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                    <div className="text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-                      <p className="text-sm text-muted-foreground">Generating your logo...</p>
-                    </div>
-                  </div>
+                <div className="w-full h-[480px] bg-gray-50 rounded-lg border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden animate-pulse">
                 </div>
               </motion.div>
             ) : currentLogo?.logoUrl ? (
@@ -448,7 +451,7 @@ export function BrandIdentityCard({
 
           {/* Brand Applications Section */}
           <AnimatePresence mode="wait" custom={slideDirection}>
-            {!isGeneratingLogo && currentLogo?.logoUrl && (
+            {(!isGeneratingLogo || !viewingGeneration) && currentLogo?.logoUrl && (
               <motion.div
                 key={`applications-${currentLogoIndex}`}
                 custom={slideDirection}
@@ -641,11 +644,13 @@ export function BrandIdentityCard({
         </DialogContent>
       </Dialog>
 
-      {/* Logo Navigation Dock */}
       <LogoNavigationDock
         logos={logos || []}
         currentLogoIndex={currentLogoIndex}
-        onLogoIndexChange={onLogoIndexChange}
+        onLogoIndexChange={(index) => {
+          setViewingGeneration(false);
+          onLogoIndexChange(index);
+        }}
       />
     </Card>
   );
