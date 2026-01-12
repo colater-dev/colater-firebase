@@ -78,3 +78,4 @@ The download button downloads an image, but the image has the download button an
 - [x] Implement PowerPoint-style Brand Presentation view triggerable from dashboard.
 - [x] Designed and implemented 6 presentation slides (Cover, Concept, Showcase, Palette, Mockup, Social).
 - [x] Implemented AI-generated Social Assets (3 Instagram stories) using Gemini.
+- [x] Upgrade Next.js to 16.1.1 and React to 19.0.0 to address security vulnerabilities.

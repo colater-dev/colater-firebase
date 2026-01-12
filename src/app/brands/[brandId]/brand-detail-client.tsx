@@ -197,6 +197,8 @@ export function BrandDetailClient() {
                     brandId,
                     userId: user.uid,
                     logoUrl: logoUrl,
+                    prompt: result.data.prompt,
+                    concept: logoConcept,
                     createdAt: serverTimestamp(),
                     isPublic: false,
                 };

@@ -29,6 +29,8 @@ export interface Logo {
     brandId: string;
     userId: string;
     logoUrl: string;
+    prompt?: string;
+    concept?: string;
     createdAt: any; // Firestore Timestamp
     isPublic?: boolean; // Whether the logo can be publicly shared
     displaySettings?: {

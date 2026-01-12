@@ -193,17 +193,6 @@ export function BrandIdentityHeader({
         </Select>
       </div>
 
-      {logoConcept && (
-        <div className="w-full lg:w-auto lg:max-w-md flex-1">
-          <Textarea
-            id="logo-concept"
-            value={logoConcept}
-            onChange={(e) => onConceptChange(e.target.value)}
-            placeholder="Logo concept will appear here..."
-            className="min-h-[120px] resize-none"
-          />
-        </div>
-      )}
     </CardHeader>
   );
 }
