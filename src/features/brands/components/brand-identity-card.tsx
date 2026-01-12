@@ -227,7 +227,7 @@ export function BrandIdentityCard({
   }, [currentLogo?.id]);
 
   // Debounced save of display settings
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   useEffect(() => {
     if (!currentLogo || !onSaveDisplaySettings) return;
 

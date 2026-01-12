@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useFirestore, useStorage } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useRequireAuth } from '@/features/auth/hooks';
 import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,12 @@ import { Label } from '@/components/ui/label';
 import { ContentCard } from '@/components/layout';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X } from 'lucide-react';
-import { uploadDataUriToStorageClient } from '@/lib/client-storage';
+import { uploadDataUriToR2Client } from '@/lib/r2-upload-client';
 
 export function StartFromImageClient() {
     const router = useRouter();
     const { user } = useRequireAuth();
     const firestore = useFirestore();
-    const storage = useStorage();
     const brandService = useMemo(() => createBrandService(firestore), [firestore]);
     const { toast } = useToast();
 
@@ -110,9 +109,9 @@ export function StartFromImageClient() {
         setIsSubmitting(true);
 
         try {
-            console.log('Uploading logo to Firebase Storage...');
-            const logoUrl = await uploadDataUriToStorageClient(previewUrl, user.uid, storage);
-            console.log('Logo uploaded successfully:', logoUrl);
+            console.log('Uploading logo to R2...');
+            const logoUrl = await uploadDataUriToR2Client(previewUrl, user.uid, 'logos');
+            console.log('Logo uploaded successfully to R2:', logoUrl);
 
             const brandId = await brandService.createBrand(user.uid, {
                 latestName: brandName.trim(),

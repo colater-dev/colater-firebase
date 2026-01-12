@@ -1,1 +1,8 @@
-Remove the "Generating your logo..." text and the circular loader from when a logo is generating
+
+
+Security
+- [ ] Upgrade nextjs version to latest. There is a security vulnerability affecting Next.js versions 15.0.0 through 16.0.6. 
+
+Logo generation
+- [ ] The color logo generation flow right now returns odd results - I want the logo to be as close to the current one, but with colors being used like a designer may create color and black and white versions of a logo. 
+- [ ] Does the prompt used for the logo generation get saved to Firebase? If not, save it to Firebase. Stop showing it on the UI in the textbox.

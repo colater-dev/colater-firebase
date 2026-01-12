@@ -8,7 +8,7 @@ import { useRequireAuth } from '@/features/auth/hooks';
 import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Presentation } from 'lucide-react';
 import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
 import type { Brand } from '@/lib/types';
@@ -50,48 +50,58 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontSize = 18 * (0.5 + (balance / 100)) * sizeMultiplier;
 
     return (
-        <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
-            <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
-                <CardContent className="flex-grow flex flex-col p-6 gap-4">
-                    <div className="flex items-center">
-                        <div
-                            className="flex-shrink-0 flex items-center justify-center relative"
-                            style={{ width: logoSize, height: logoSize }}
-                        >
-                            {displayLogoUrl ? (
-                                <Image
-                                    src={displayLogoUrl}
-                                    alt={`${brand.latestName} logo`}
-                                    fill
-                                    className="object-contain rounded-md"
-                                    unoptimized={displayLogoUrl.startsWith('data:')}
+        <div className="relative group">
+            <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all">
+                <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
+                    <CardContent className="flex-grow flex flex-col p-6 gap-4">
+                        <div className="flex items-center">
+                            <div
+                                className="flex-shrink-0 flex items-center justify-center relative"
+                                style={{ width: logoSize, height: logoSize }}
+                            >
+                                {displayLogoUrl ? (
+                                    <Image
+                                        src={displayLogoUrl}
+                                        alt={`${brand.latestName} logo`}
+                                        fill
+                                        className="object-contain rounded-md"
+                                        unoptimized={displayLogoUrl.startsWith('data:')}
+                                        style={{
+                                            filter: `contrast(${contrast}%)${invert ? ' invert(1)' : ''}`
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-muted rounded-md" />
+                                )}
+                            </div>
+                            {showBrandName && (
+                                <CardTitle
+                                    className="leading-none"
                                     style={{
-                                        filter: `contrast(${contrast}%)${invert ? ' invert(1)' : ''}`
+                                        marginLeft: `${gap}px`,
+                                        fontFamily: `var(${fontVariable}), sans-serif`,
+                                        fontSize: `${fontSize}px`,
+                                        textTransform: textTransform as any,
+                                        fontWeight: 700
                                     }}
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-muted rounded-md" />
+                                >
+                                    {brand.latestName}
+                                </CardTitle>
                             )}
                         </div>
-                        {showBrandName && (
-                            <CardTitle
-                                className="leading-none"
-                                style={{
-                                    marginLeft: `${gap}px`,
-                                    fontFamily: `var(${fontVariable}), sans-serif`,
-                                    fontSize: `${fontSize}px`,
-                                    textTransform: textTransform as any,
-                                    fontWeight: 700
-                                }}
-                            >
-                                {brand.latestName}
-                            </CardTitle>
-                        )}
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
-                </CardContent>
-            </Card>
-        </Link>
+                        <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button asChild size="sm" variant="secondary" className="shadow-sm">
+                    <Link href={`/brands/${brand.id}/presentation`}>
+                        <Presentation className="mr-2 h-4 w-4" />
+                        Presentation
+                    </Link>
+                </Button>
+            </div>
+        </div>
     );
 };
 

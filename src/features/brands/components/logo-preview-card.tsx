@@ -36,7 +36,7 @@ interface LogoPreviewCardProps {
     triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
     animationKey: number;
 
-    onDownload: (ref: React.RefObject<HTMLDivElement>) => void;
+    onDownload: (ref: React.RefObject<HTMLDivElement | null>) => void;
     onDownloadSvg?: () => void;
     shouldInvertLogo: (backgroundType: 'light' | 'dark') => boolean;
 }

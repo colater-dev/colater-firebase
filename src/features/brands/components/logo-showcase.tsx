@@ -271,7 +271,7 @@ export const LogoShowcase = memo(function LogoShowcase({
         }
     }, [currentLogo?.colorLogoUrl, currentLogo?.colorVersions, currentLogo?.logoUrl]);
 
-    const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement> | { current: HTMLDivElement | null }, suffix: string) => {
+    const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, suffix: string) => {
         if (!ref.current) {
             return;
         }

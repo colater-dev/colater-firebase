@@ -5,13 +5,13 @@ import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
 import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
 import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
-import { uploadDataUriToStorage } from "@/lib/storage";
 import { generateLogoOpenAI } from "@/ai/flows/generate-logo-openai";
 import { generateLogoFal } from "@/ai/flows/generate-logo-fal";
 import { completeBrandDetails } from "@/ai/flows/complete-brand-details";
 import { generateLogoConcept } from "@/ai/flows/generate-logo-concept";
 import { critiqueLogo, CritiqueLogoInput, Critique } from "@/ai/flows/critique-logo";
 import { vectoriseLogo } from "@/ai/flows/vectorise-logo";
+import { generateStories, GenerateStoriesInput } from "@/ai/flows/generate-stories";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -281,6 +281,25 @@ export async function getVectorizedLogo(
     return {
       success: false,
       error: `An unexpected error occurred while vectorizing the logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getGeneratedStories(
+  input: GenerateStoriesInput
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    if (!input.name || !input.elevatorPitch) {
+      return { success: false, error: "Name and elevator pitch are required." };
+    }
+    const result = await generateStories(input);
+    return { success: true, data: result.stories };
+  } catch (error) {
+    console.error("Error generating stories:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while generating stories: ${errorMessage}`,
     };
   }
 }
