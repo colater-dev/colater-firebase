@@ -117,14 +117,15 @@ export function HomeClient() {
                             transition={{ duration: 0.5, delay: 0.2 }}
                             className="flex flex-col sm:flex-row gap-4"
                         >
-                            <Button onClick={handleSignIn} size="lg" className="h-12 px-8 text-lg gap-2">
-                                Start Creating <ArrowRight className="w-4 h-4" />
-                            </Button>
                             <Button variant="outline" size="lg" className="h-12 px-8 text-lg" onClick={() => {
                                 document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
                             }}>
                                 View Features
                             </Button>
+                            <Button onClick={handleSignIn} size="lg" className="h-12 px-8 text-lg gap-2">
+                                Start Creating <ArrowRight className="w-4 h-4" />
+                            </Button>
+
                         </motion.div>
 
                         {/* Hero Image / Preview */}

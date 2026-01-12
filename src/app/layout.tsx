@@ -77,6 +77,27 @@ export const metadata: Metadata = {
     template: '%s | Colater'
   },
   description: 'AI-powered brand identity design platform',
+  openGraph: {
+    title: 'Colater',
+    description: 'AI-powered brand identity design platform',
+    url: 'https://colater.ai',
+    siteName: 'Colater',
+    images: [
+      {
+        url: 'https://colater.ai/og-image.png', // Placeholder for actual OG image
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Colater',
+    description: 'AI-powered brand identity design platform',
+    images: ['https://colater.ai/og-image.png'],
+  },
 };
 
 export default function RootLayout({

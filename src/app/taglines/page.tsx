@@ -6,7 +6,17 @@ import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Generate Taglines',
-  description: 'Generate and manage taglines for your brands',
+  description: 'Generate and manage creative taglines for your brands using AI',
+  openGraph: {
+    title: 'Generate Taglines | Colater',
+    description: 'Generate and manage creative taglines for your brands using AI',
+    images: ['https://colater.ai/og-image.png'],
+  },
+  twitter: {
+    title: 'Generate Taglines | Colater',
+    description: 'Generate and manage creative taglines for your brands using AI',
+    images: ['https://colater.ai/og-image.png'],
+  },
 };
 
 export default function TaglinesPage() {
