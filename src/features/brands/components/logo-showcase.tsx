@@ -17,6 +17,7 @@ import { MockupPreview } from './mockup-preview';
 
 import { LogoPreviewCard } from './logo-preview-card';
 import { cropImageToContent, createStickerEffect, getProxyUrl } from '@/lib/image-utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface LogoShowcaseProps {
     currentLogo: Logo;
@@ -314,21 +315,56 @@ export const LogoShowcase = memo(function LogoShowcase({
         return isDark !== invertLogo;
     }, [invertLogo]);
 
+    const { toast } = useToast();
+    const [isWaitingForVector, setIsWaitingForVector] = useState(false);
+
+    const downloadVector = useCallback(async (url: string) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-logo.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Failed to download SVG:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Download Failed',
+                description: 'Could not download the SVG file.',
+            });
+        }
+    }, [brandName, toast]);
+
+    // Effect to handle auto-download when vector url becomes available
+    useEffect(() => {
+        if (isWaitingForVector && currentLogo?.vectorLogoUrl) {
+            downloadVector(currentLogo.vectorLogoUrl);
+            setIsWaitingForVector(false);
+        }
+    }, [isWaitingForVector, currentLogo?.vectorLogoUrl, downloadVector]);
+
     const handleDownloadSvg = useCallback(async () => {
         if (!currentLogo?.logoUrl || !onVectorizeLogo) return;
 
         // If we already have a vector URL, download it directly
         if (currentLogo.vectorLogoUrl) {
-            const link = document.createElement('a');
-            link.href = currentLogo.vectorLogoUrl;
-            link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-logo.svg`;
-            link.click();
+            downloadVector(currentLogo.vectorLogoUrl);
         } else {
-            // Otherwise trigger vectorization
+            // Show toast and trigger vectorization
+            toast({
+                title: 'Preparing SVG',
+                description: 'This could take a few seconds...',
+            });
+            setIsWaitingForVector(true);
             // Use cropped URL if available, otherwise original
             onVectorizeLogo(croppedLogoUrl || currentLogo.logoUrl);
         }
-    }, [currentLogo, onVectorizeLogo, croppedLogoUrl, brandName]);
+    }, [currentLogo, onVectorizeLogo, croppedLogoUrl, downloadVector, toast]);
 
     return (
         <div className="w-full mt-8">
@@ -498,6 +534,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                     mockupImage="/t-shirt-mockup.png"
                     brandName={brandName}
                     label="T-Shirt"
+                    invert={invertLogo}
                 />
 
                 {/* Light Logo (On Gray) */}

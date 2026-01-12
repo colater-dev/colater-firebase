@@ -1,0 +1,161 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { useMemo, useState, useEffect } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useRequireAuth } from '@/features/auth/hooks';
+import { createBrandService } from '@/services';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { Loader2, Plus } from 'lucide-react';
+import { CreateProjectCard } from '@/components/dashboard/create-project-card';
+import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
+import type { Brand } from '@/lib/types';
+import { BRAND_FONTS } from '@/config/brand-fonts';
+
+const BrandListItem = ({ brand }: { brand: Brand }) => {
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
+    const displayLogoUrl = croppedLogoUrl || brand.logoUrl;
+
+    useEffect(() => {
+        if (brand.logoUrl) {
+            import('@/lib/image-utils').then(({ cropImageToContent }) => {
+                if (brand.logoUrl) {
+                    cropImageToContent(brand.logoUrl).then(setCroppedLogoUrl);
+                }
+            });
+        }
+    }, [brand.logoUrl]);
+
+    // Display settings
+    const settings = brand.displaySettings;
+    const gap = (settings?.horizontalLogoTextGap ?? settings?.logoTextGap ?? 50) * 0.5; // Scale 0.5
+    const balance = settings?.horizontalLogoTextBalance ?? settings?.logoTextBalance ?? 50;
+    const contrast = settings?.logoContrast ?? 120;
+    const invert = settings?.invertLogo ?? false;
+    const textTransform = settings?.textTransform || 'none';
+    const showBrandName = settings?.showBrandName ?? true;
+
+    // Font configuration
+    const fontConfig = BRAND_FONTS.find(f => f.name === brand.font) || BRAND_FONTS[0];
+    const fontVariable = fontConfig.variable;
+    const sizeMultiplier = fontConfig.sizeMultiplier || 1.0;
+
+    // Calculate sizes (Scale 0.5 relative to LogoPreviewCard)
+    // Base logo size 128 * 0.5 = 64
+    const logoSize = 64 * (1.5 - (balance / 100));
+
+    // Base font size 36 * 0.5 = 18
+    const fontSize = 18 * (0.5 + (balance / 100)) * sizeMultiplier;
+
+    return (
+        <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all group">
+            <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
+                <CardContent className="flex-grow flex flex-col p-6 gap-4">
+                    <div className="flex items-center">
+                        <div
+                            className="flex-shrink-0 flex items-center justify-center relative"
+                            style={{ width: logoSize, height: logoSize }}
+                        >
+                            {displayLogoUrl ? (
+                                <Image
+                                    src={displayLogoUrl}
+                                    alt={`${brand.latestName} logo`}
+                                    fill
+                                    className="object-contain rounded-md"
+                                    unoptimized={displayLogoUrl.startsWith('data:')}
+                                    style={{
+                                        filter: `contrast(${contrast}%)${invert ? ' invert(1)' : ''}`
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-muted rounded-md" />
+                            )}
+                        </div>
+                        {showBrandName && (
+                            <CardTitle
+                                className="leading-none"
+                                style={{
+                                    marginLeft: `${gap}px`,
+                                    fontFamily: `var(${fontVariable}), sans-serif`,
+                                    fontSize: `${fontSize}px`,
+                                    textTransform: textTransform as any,
+                                    fontWeight: 700
+                                }}
+                            >
+                                {brand.latestName}
+                            </CardTitle>
+                        )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
+                </CardContent>
+            </Card>
+        </Link>
+    );
+};
+
+export function DashboardClient() {
+    const { user, isLoading } = useRequireAuth();
+    const firestore = useFirestore();
+    const brandService = useMemo(() => createBrandService(firestore), [firestore]);
+
+    const brandsQuery = useMemoFirebase(
+        () => user ? brandService.getBrandsQuery(user.uid) : null,
+        [user, brandService]
+    );
+
+    const { data: brands, isLoading: isLoadingBrands } = useCollection<Brand>(brandsQuery);
+
+    if (isLoading || !user) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen pt-[72px] p-4 md:p-8 mt-[60px]">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
+                <h1 className="text-2xl font-bold">My Brands</h1>
+                <Button asChild>
+                    <Link href="/brands/new">
+                        <Plus className="mr-2" />
+                        Create New Brand
+                    </Link>
+                </Button>
+            </div>
+
+            {isLoadingBrands && (
+                <div className="text-center">
+                    <Loader2 className="mx-auto w-8 h-8 animate-spin text-primary" />
+                    <p className="text-muted-foreground mt-2">Loading your brands...</p>
+                </div>
+            )}
+
+            {!isLoadingBrands && brands && brands.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <CreateProjectCard />
+                    <UploadLogoCard />
+                    {brands.map((brand) => (
+                        <BrandListItem key={brand.id} brand={brand} />
+                    ))}
+                </div>
+            )}
+
+            {!isLoadingBrands && (!brands || brands.length === 0) && (
+                <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                    <h2 className="text-xl font-semibold">No Brands Yet</h2>
+                    <p className="text-muted-foreground mt-2 mb-4">Start by creating your first brand identity.</p>
+                    <Button asChild>
+                        <Link href="/brands/new">
+                            <Plus className="mr-2" />
+                            Create New Brand
+                        </Link>
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}

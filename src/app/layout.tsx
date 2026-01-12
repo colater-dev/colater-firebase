@@ -1,6 +1,3 @@
-'use client';
-
-import { useState } from 'react';
 import localFont from "next/font/local";
 import {
   Aboreto,
@@ -31,10 +28,8 @@ import {
   Tilt_Warp
 } from 'next/font/google';
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { FirebaseClientProvider } from "@/firebase";
-import { AppHeader, AppSidebar } from "@/components/layout";
-import { SidebarProvider } from "@/components/layout/sidebar-context";
+import { ClientLayout } from "@/components/layout";
+import { Metadata } from 'next';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -76,13 +71,19 @@ const saira = Saira({ subsets: ['latin'], variable: '--font-saira', weight: ['40
 const tektur = Tektur({ subsets: ['latin'], variable: '--font-tektur', weight: ['400', '500', '600', '700', '800', '900'] });
 const tiltWarp = Tilt_Warp({ subsets: ['latin'], variable: '--font-tilt-warp', weight: ['400'] });
 
+export const metadata: Metadata = {
+  title: {
+    default: 'Colater',
+    template: '%s | Colater'
+  },
+  description: 'AI-powered brand identity design platform',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   return (
     <html lang="en">
       <body className={`
@@ -116,14 +117,9 @@ export default function RootLayout({
         ${tiltWarp.variable}
         font-sans antialiased
       `}>
-        <FirebaseClientProvider>
-          <SidebarProvider isOpen={isSidebarOpen}>
-            <AppHeader onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
-            <AppSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-            {children}
-            <Toaster />
-          </SidebarProvider>
-        </FirebaseClientProvider>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );

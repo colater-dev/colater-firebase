@@ -7,6 +7,7 @@ interface MockupPreviewProps {
     brandName: string;
     label: string;
     className?: string;
+    invert?: boolean;
 }
 
 export const MockupPreview = memo(function MockupPreview({
@@ -14,29 +15,13 @@ export const MockupPreview = memo(function MockupPreview({
     mockupImage,
     brandName,
     label,
-    className
+    className,
+    invert = false
 }: MockupPreviewProps) {
     const handleDownload = () => {
         if (!logoUrl) return;
         const link = document.createElement('a');
         link.download = `${brandName.replace(/\s+/g, '-').toLowerCase()}-${label.toLowerCase().replace(/\s+/g, '-')}.png`;
-        // Note: This only downloads the logo URL, not the composed mockup. 
-        // To download the mockup, we'd need to use html-to-image on the ref, similar to LogoShowcase.
-        // For now, I'll just link the logoUrl as per StickerPreview (which actually downloads the stickerUrl).
-        // Wait, StickerPreview downloads the stickerUrl which IS the image.
-        // Here we are composing it.
-        // If the user wants to download the MOCKUP, we need to capture the div.
-        // But StickerPreview just downloads the stickerUrl.
-        // Let's stick to the pattern. If I can't easily download the composed image without a ref and html-to-image in the parent or here, 
-        // I might just disable download or try to implement it.
-        // StickerPreview has `stickerUrl` which is a generated image.
-        // Here we are just overlaying.
-        // I'll leave the download button out for now or make it download the logo?
-        // Actually, let's include the DownloadButton but maybe it needs to be handled by the parent if we want to download the composition.
-        // Re-reading StickerPreview: it downloads `stickerUrl`.
-        // Here we don't have a `mockupUrl`.
-        // So I will NOT include a download button inside this component for now, 
-        // OR I will accept an `onDownload` prop.
         link.href = logoUrl;
         link.click();
     };
@@ -67,6 +52,7 @@ export const MockupPreview = memo(function MockupPreview({
                         mixBlendMode: 'color-dodge',
                         transform: 'rotate(-8deg)',
                         opacity: 0.5,
+                        filter: invert ? 'invert(1)' : 'none'
                     }}
                 />
             ) : (
