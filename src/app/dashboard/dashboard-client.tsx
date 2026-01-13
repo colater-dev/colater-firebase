@@ -8,6 +8,7 @@ import { useRequireAuth } from '@/features/auth/hooks';
 import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { motion } from 'framer-motion';
 import { Loader2, Plus, Presentation, Star } from 'lucide-react';
 import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
@@ -42,25 +43,28 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontVariable = fontConfig.variable;
     const sizeMultiplier = fontConfig.sizeMultiplier || 1.0;
 
-    // Calculate sizes (Scale 0.75 relative to LogoPreviewCard - 1.5x from previous 0.5)
-    // Base logo size 128 * 0.75 = 96
-    const logoSize = 96 * (1.5 - (balance / 100));
-
-    // Base font size 36 * 0.75 = 27
-    const fontSize = 27 * (0.5 + (balance / 100)) * sizeMultiplier;
+    // Base scaling for dashboard relative to editor (keeping the 1.5x scale boost)
+    const cardScale = 1.2;
+    const logoSize = 64 * cardScale * (1.5 - (balance / 100));
+    const fontSize = 18 * cardScale * (0.5 + (balance / 100)) * sizeMultiplier;
+    const logoGap = gap * 0.4 * cardScale;
 
     return (
-        <div className="relative group h-full">
-            <Link href={`/brands/${brand.id}`} className="block h-full transition-all">
+        <motion.div
+            className="relative group h-full"
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+            <Link href={`/brands/${brand.id}/presentation`} className="block h-full transition-all">
                 <Card className="h-full aspect-video flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow overflow-hidden">
                     <CardContent className="h-full flex flex-col items-center justify-center p-4">
                         <div className="flex flex-col items-center justify-center">
                             <div
-                                className="flex-shrink-0 flex items-center justify-center relative"
+                                className="flex-shrink-0 flex items-center justify-center relative z-0"
                                 style={{
                                     width: logoSize,
                                     height: logoSize,
-                                    marginBottom: showBrandName ? `${gap}px` : 0
+                                    marginBottom: showBrandName ? `${logoGap}px` : 0
                                 }}
                             >
                                 {displayLogoUrl ? (
@@ -80,11 +84,11 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                             </div>
                             {showBrandName && (
                                 <CardTitle
-                                    className="leading-none text-center"
+                                    className="leading-none text-center relative z-10"
                                     style={{
                                         fontFamily: `var(${fontVariable}), sans-serif`,
                                         fontSize: `${fontSize}px`,
-                                        textTransform: textTransform as any,
+                                        textTransform: textTransform === 'none' ? 'none' : textTransform === 'capitalize' ? 'capitalize' : textTransform as any,
                                         fontWeight: 700
                                     }}
                                 >
@@ -97,13 +101,13 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
             </Link>
             <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button asChild size="sm" variant="secondary" className="shadow-sm">
-                    <Link href={`/brands/${brand.id}/presentation`}>
-                        <Presentation className="mr-2 h-4 w-4" />
-                        Presentation
+                    <Link href={`/brands/${brand.id}`}>
+                        <Plus className="mr-2 h-4 w-4 rotate-45" />
+                        Editor
                     </Link>
                 </Button>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

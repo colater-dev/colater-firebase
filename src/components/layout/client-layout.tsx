@@ -11,7 +11,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <FirebaseClientProvider>
-            <SidebarProvider isOpen={isSidebarOpen}>
+            <SidebarProvider isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <AppHeader onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
                 <AppSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
                 {children}

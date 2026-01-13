@@ -29,7 +29,7 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     return (
         <aside
             className={cn(
-                'fixed left-0 top-[56px] h-[calc(100vh-56px)] w-[240px] bg-[#f9f9f9] z-40 transition-transform duration-300 ease-in-out',
+                'fixed left-0 top-0 h-screen w-[240px] bg-white z-[150] transition-transform duration-300 ease-in-out border-r shadow-2xl',
                 isOpen ? 'translate-x-0' : '-translate-x-full'
             )}
         >

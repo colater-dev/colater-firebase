@@ -49,7 +49,8 @@ export interface Logo {
     };
     colorLogoUrl?: string; // Deprecated: kept for backward compatibility
     palette?: string[]; // Deprecated: kept for backward compatibility
-    colorVersions?: Array<{ colorLogoUrl: string; palette: string[] }>; // Array of color versions with their palettes
+    colorNames?: string[]; // Deprecated: kept for backward compatibility
+    colorVersions?: Array<{ colorLogoUrl: string; palette: string[]; colorNames?: string[] }>; // Array of color versions with their palettes
     critique?: Critique;
     critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
     externalMediaUrl?: string;

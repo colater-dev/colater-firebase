@@ -41,6 +41,9 @@ const ColorizeLogoOutputSchema = z.object({
     .describe(
       'An array of 2-3 hex color codes extracted from the color logo.'
     ),
+  colorNames: z
+    .array(z.string())
+    .describe('Brand-compliant names for each color in the palette.'),
 });
 export type ColorizeLogoOutput = z.infer<typeof ColorizeLogoOutputSchema>;
 
@@ -83,7 +86,7 @@ const colorizeLogoFlow = ai.defineFlow(
       const colorLogoUrl = result.data.images[0].url;
       console.log('Color logo URL received:', colorLogoUrl);
 
-      // Fetch the image and convert to data URI (similar to generate-logo-fal.ts)
+      // Fetch the image and convert to data URI
       const imageResponse = await fetch(colorLogoUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch generated color logo: ${imageResponse.statusText}`);
@@ -94,15 +97,36 @@ const colorizeLogoFlow = ai.defineFlow(
       const imageBase64 = imageBuffer.toString('base64');
       const colorLogoDataUri = `data:${imageContentType};base64,${imageBase64}`;
 
-      console.log('Color logo converted to data URI, size:', imageBuffer.byteLength, 'bytes');
-
       // Extract colors using get-image-colors
       const colors = await getColors(imageBuffer, imageContentType);
       const palette = colors.map(color => color.hex()).slice(0, 3);
 
+      // Generate brand-compliant names for the colors
+      const namingPrompt = `
+        You are a brand naming expert. Given a brand context and a set of hex codes, generate creative, brand-compliant names for each color.
+        
+        Brand Name: ${input.name}
+        Elevator Pitch: ${input.elevatorPitch}
+        Target Audience: ${input.audience}
+        
+        Colors to name: ${palette.join(', ')}
+        
+        Return exactly ${palette.length} names in order, as a JSON array of strings. 
+        Example names: "Everest White", "Deep Space", "Electric Coral", "Nebula Violet".
+        The names should feel premium and aligned with the brand's personality.
+      `;
+
+      const namingResult = await ai.generate({
+        prompt: namingPrompt,
+        output: { schema: z.array(z.string()) }
+      });
+
+      const colorNames = namingResult.output || palette.map((_, i) => `Brand Color ${i + 1}`);
+
       return {
         colorLogoUrl: colorLogoDataUri,
         palette,
+        colorNames,
       };
     } catch (error) {
       console.error('Fal AI generation failed:', error);

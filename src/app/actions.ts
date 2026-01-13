@@ -205,7 +205,7 @@ export async function convertUrlToDataUri(url: string): Promise<{ success: boole
 
 export async function getColorizedLogo(
   input: ColorizeLogoInput,
-): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[] }; error?: string }> {
+): Promise<{ success: boolean; data?: { colorLogoUrl: string; palette: string[]; colorNames: string[] }; error?: string }> {
   try {
     if (!input.logoUrl || !input.name || !input.elevatorPitch || !input.audience) {
       return { success: false, error: "A logo and brand details are required to generate a color logo." };
