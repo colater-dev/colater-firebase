@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { CardHeader } from '@/components/ui/card';
 import {
   Select,
@@ -19,12 +20,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Type, Share2, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquare, Type, Share2, Trash2, Presentation } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Logo } from '@/lib/types';
 import { useState } from 'react';
 
 interface BrandIdentityHeaderProps {
+  brandId: string;
   isGeneratingConcept: boolean;
   onGenerateConcept: () => void;
   logoConcept: string | null;
@@ -45,6 +47,7 @@ interface BrandIdentityHeaderProps {
 }
 
 export function BrandIdentityHeader({
+  brandId,
   isGeneratingConcept,
   onGenerateConcept,
   logoConcept,
@@ -140,6 +143,12 @@ export function BrandIdentityHeader({
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </Button>
+            <Link href={`/brands/${brandId}/presentation`}>
+              <Button variant="outline">
+                <Presentation className="mr-2 h-4 w-4" />
+                Present
+              </Button>
+            </Link>
 
             {onDeleteLogo && currentLogo && (
               <AlertDialog>

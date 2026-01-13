@@ -19,6 +19,7 @@ import { LogoNavigationDock } from './logo-navigation-dock';
 import { useToast } from '@/hooks/use-toast';
 
 interface BrandIdentityCardProps {
+  brandId: string;
   brandName: string;
   primaryTagline: string;
   logos: Logo[] | null;
@@ -53,6 +54,7 @@ interface BrandIdentityCardProps {
 }
 
 export function BrandIdentityCard({
+  brandId,
   brandName,
   primaryTagline,
   logos,
@@ -302,6 +304,7 @@ export function BrandIdentityCard({
       </CardHeader>
       {!readOnly && (
         <BrandIdentityHeader
+          brandId={brandId}
           isGeneratingConcept={isGeneratingConcept}
           onGenerateConcept={onGenerateConcept}
           logoConcept={logoConcept}

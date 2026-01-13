@@ -113,7 +113,7 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
 
             <motion.div
                 key={`logo-${animationKey}`}
-                initial={false}
+                initial="hidden"
                 animate={croppedLogoUrl ? "visible" : "loading"}
                 variants={{
                     loading: { scale: 1.1, filter: 'blur(8px)', opacity: 0.8 },
@@ -124,7 +124,7 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
                         y: 0,
                         transition: { duration: 0.5, ease: "easeOut" }
                     },
-                    hidden: animationType ? animationVariants[animationType].hidden : {}
+                    hidden: animationType ? animationVariants[animationType].hidden : { opacity: 0, scale: 0.8 }
                 }}
                 className="relative z-0"
                 style={{

@@ -121,6 +121,7 @@ export function LogoDetailClient() {
             <div className="max-w-[1600px] mx-auto">
                 <div className="bg-white rounded-xl shadow-[0px_0px_8px_-4px_rgba(0,0,0,0.25),0px_0px_0px_1px_rgba(0,0,0,0.02)] p-4 md:p-8">
                     <BrandIdentityCard
+                        brandId={brandId as string}
                         brandName={brand.latestName}
                         primaryTagline=""
                         logos={[logo]}

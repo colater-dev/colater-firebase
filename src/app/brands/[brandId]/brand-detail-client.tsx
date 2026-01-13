@@ -635,6 +635,7 @@ export function BrandDetailClient() {
                     {brand && (
                         <div className="space-y-8">
                             <BrandIdentityCard
+                                brandId={brandId as string}
                                 brandName={brand.latestName}
                                 primaryTagline={primaryTagline}
                                 logos={filteredLogos}
