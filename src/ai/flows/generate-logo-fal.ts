@@ -87,8 +87,9 @@ ${cleanUndesirableCues ? `Undesirable Visual Cues: ${cleanUndesirableCues}` : ''
 Describe the logo concept as a brand designer would, focusing on:
 - Simple white logo on plain black background
 - Visual style and aesthetic appropriate for the brand
-- Symbolic elements to use
-- How to combine the visual elements that would best represent the brand
+- Each logo compresses a concept into a single, graspable form
+- Symbolic elements to use - abstract enough to feel timeless, concrete enough to feel intentional
+- How to combine the visual elements that would best represent the brand. Avoid explanatory clutter while still signaling category or values
 
 Then, return ONLY a concise Prompt (4-5 sentences) that can be directly used for image generation. It should be specific, actionable, and focused on visual design elements without any abstract concepts. Do not include the brand name or pitch in the Prompt - focus purely on the visual style and design characteristics.`;
 

@@ -60,6 +60,36 @@ const nextConfig: NextConfig = {
         hostname: 'pub-3cb2c9b025f644669c496b633a36faba.r2.dev',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.r2.dev',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.fal.media',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.fal.ai',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.replicate.delivery',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.replicate.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

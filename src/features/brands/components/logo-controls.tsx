@@ -23,8 +23,8 @@ import { BRAND_FONTS } from '@/config/brand-fonts';
 interface LogoControlsProps {
     textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
     setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
-    animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
-    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
+    animationType: 'fade' | 'slide' | 'scale' | 'logoAnimation' | null;
+    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'logoAnimation') => void;
     showBrandName: boolean;
     setShowBrandName: (show: boolean) => void;
     invertLogo: boolean;
@@ -138,9 +138,9 @@ export const LogoControls = memo(function LogoControls({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className={`flex-1 h-6 px-0 ${animationType === 'blur' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
-                        onClick={() => triggerAnimation('blur')}
-                        title="Blur"
+                        className={`flex-1 h-6 px-0 ${animationType === 'logoAnimation' ? 'bg-[#f9f9f9] shadow-sm text-black' : 'text-muted-foreground hover:bg-transparent'}`}
+                        onClick={() => triggerAnimation('logoAnimation')}
+                        title="Logo Animation"
                     >
                         <Sparkles className="h-3 w-3" />
                     </Button>

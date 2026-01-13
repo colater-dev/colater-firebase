@@ -46,6 +46,7 @@ interface BrandIdentityCardProps {
   onSaveExternalMedia?: (logoId: string, url: string) => void;
   onDeleteColorVersion?: (index: number) => void;
   onVectorizeLogo?: (croppedLogoUrl: string) => void;
+  animationType?: 'fade' | 'slide' | 'scale' | 'logoAnimation' | null;
   isVectorizing?: boolean;
   onBrandNameChange?: (name: string, elevatorPitch: string) => Promise<void>;
   onDeleteLogo?: () => Promise<void>;
@@ -121,10 +122,10 @@ export function BrandIdentityCard({
   }, [isGeneratingLogo]);
 
 
-  const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'blur' | null>(null);
+  const [animationType, setAnimationType] = useState<'fade' | 'slide' | 'scale' | 'logoAnimation' | null>('logoAnimation');
   const [animationKey, setAnimationKey] = useState(0);
 
-  const triggerAnimation = (type: 'fade' | 'slide' | 'scale' | 'blur') => {
+  const triggerAnimation = (type: 'fade' | 'slide' | 'scale' | 'logoAnimation') => {
     setAnimationType(type);
     setAnimationKey(prev => prev + 1);
   };
@@ -154,7 +155,7 @@ export function BrandIdentityCard({
 
   const currentLogo = logos?.[currentLogoIndex];
 
-  // Track slide direction synchronously
+  // Track slide direction synchronously during render to avoid AnimatePresence glitches
   const prevLogoIndexRef = useRef(currentLogoIndex);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
@@ -163,6 +164,14 @@ export function BrandIdentityCard({
     setSlideDirection(direction);
     prevLogoIndexRef.current = currentLogoIndex;
   }
+
+  // Pick a random animation type for the reveal on logo switch
+  useEffect(() => {
+    // We already updated prevLogoIndexRef.current above, so we need another way to detect change or just use currentLogoIndex
+    const animationTypes: ('fade' | 'slide' | 'scale' | 'logoAnimation')[] = ['fade', 'slide', 'scale', 'logoAnimation'];
+    const randomType = animationTypes[Math.floor(Math.random() * animationTypes.length)];
+    triggerAnimation(randomType);
+  }, [currentLogoIndex]);
 
   const slideVariants = {
     enter: (direction: 'left' | 'right') => ({
@@ -323,7 +332,7 @@ export function BrandIdentityCard({
       <CardContent className="flex flex-col items-center justify-center text-center space-y-6 p-0">
         <div className="w-full space-y-4 pt-6 flex flex-col items-center overflow-hidden relative">
           {/* Logo Applications Showcase */}
-          <AnimatePresence mode="wait" custom={slideDirection}>
+          <AnimatePresence custom={slideDirection}>
             {isGeneratingLogo && viewingGeneration ? (
               <motion.div
                 key="generating"
@@ -338,7 +347,7 @@ export function BrandIdentityCard({
               </motion.div>
             ) : currentLogo?.logoUrl ? (
               <motion.div
-                key={currentLogoIndex}
+                key={currentLogo.id}
                 custom={slideDirection}
                 variants={slideVariants}
                 initial="enter"
@@ -453,7 +462,7 @@ export function BrandIdentityCard({
           <AnimatePresence mode="wait" custom={slideDirection}>
             {(!isGeneratingLogo || !viewingGeneration) && currentLogo?.logoUrl && (
               <motion.div
-                key={`applications-${currentLogoIndex}`}
+                key={`applications-${currentLogo.id}`}
                 custom={slideDirection}
                 variants={slideVariants}
                 initial="enter"

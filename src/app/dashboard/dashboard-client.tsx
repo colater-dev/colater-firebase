@@ -8,7 +8,7 @@ import { useRequireAuth } from '@/features/auth/hooks';
 import { createBrandService } from '@/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Presentation } from 'lucide-react';
+import { Loader2, Plus, Presentation, Star } from 'lucide-react';
 import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
 import type { Brand } from '@/lib/types';
@@ -129,12 +129,20 @@ export function DashboardClient() {
         <div className="min-h-screen pt-[72px] p-4 md:p-8 mt-[60px]">
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                 <h1 className="text-2xl font-bold">My Brands</h1>
-                <Button asChild>
-                    <Link href="/brands/new">
-                        <Plus className="mr-2" />
-                        Create New Brand
-                    </Link>
-                </Button>
+                <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                        <Link href="/ranker">
+                            <Star className="mr-2 h-4 w-4" />
+                            Logo Ranker
+                        </Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/brands/new">
+                            <Plus className="mr-2" />
+                            Create New Brand
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {isLoadingBrands && (

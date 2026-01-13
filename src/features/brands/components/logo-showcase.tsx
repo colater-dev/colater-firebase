@@ -40,8 +40,8 @@ interface LogoShowcaseProps {
     // Control Props
     textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
     setTextTransform: (transform: 'none' | 'lowercase' | 'capitalize' | 'uppercase') => void;
-    animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
-    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
+    animationType: 'fade' | 'slide' | 'scale' | 'logoAnimation' | null;
+    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'logoAnimation') => void;
     animationKey: number;
     showBrandName: boolean;
     setShowBrandName: (show: boolean) => void;

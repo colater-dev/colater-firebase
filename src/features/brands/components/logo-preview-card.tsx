@@ -32,8 +32,8 @@ interface LogoPreviewCardProps {
     setLogoContrast: (contrast: number) => void;
 
     // Animation
-    animationType: 'fade' | 'slide' | 'scale' | 'blur' | null;
-    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'blur') => void;
+    animationType: 'fade' | 'slide' | 'scale' | 'logoAnimation' | null;
+    triggerAnimation: (type: 'fade' | 'slide' | 'scale' | 'logoAnimation') => void;
     animationKey: number;
 
     onDownload: (ref: React.RefObject<HTMLDivElement | null>) => void;
@@ -79,7 +79,20 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
         fade: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
         slide: { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } },
         scale: { hidden: { scale: 0.5, opacity: 0 }, visible: { scale: 1, opacity: 1 } },
-        blur: { hidden: { filter: 'blur(10px)', opacity: 0 }, visible: { filter: 'blur(0px)', opacity: 1 } },
+        logoAnimation: {
+            hidden: { scale: 0.8, y: 10, opacity: 0 },
+            visible: {
+                scale: 1,
+                y: 0,
+                opacity: 1,
+                transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                    mass: 1
+                }
+            }
+        },
     };
 
     return (
@@ -120,10 +133,9 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
                 initial="hidden"
                 animate={croppedLogoUrl ? "visible" : "loading"}
                 variants={{
-                    loading: { scale: 1.1, filter: 'blur(8px)', opacity: 0.8 },
-                    visible: {
+                    loading: { scale: 1.05, opacity: 0.8 },
+                    visible: animationType === 'logoAnimation' ? animationVariants.logoAnimation.visible : {
                         scale: 1,
-                        filter: 'blur(0px)',
                         opacity: 1,
                         y: 0,
                         transition: { duration: 0.5, ease: "easeOut" }
@@ -178,7 +190,7 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
                                 transition={{
                                     duration: 0.3,
                                     ease: "easeOut",
-                                    delay: animationType ? 0.5 + (index * 0.03) : 0
+                                    delay: animationType ? 0.8 + (index * 0.03) : 0
                                 }}
                                 style={{ display: 'inline-block' }}
                             >

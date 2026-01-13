@@ -120,6 +120,24 @@ export class LogoService {
       isDeleted: true
     });
   }
+
+  /**
+   * Update logo rating and feedback
+   */
+  async updateLogoRating(
+    userId: string,
+    brandId: string,
+    logoId: string,
+    rating: number,
+    feedback?: string
+  ): Promise<void> {
+    const logoDoc = this.getLogoDoc(userId, brandId, logoId);
+    const updates: Partial<Logo> = { rating };
+    if (feedback !== undefined) {
+      updates.feedback = feedback;
+    }
+    await updateDoc(logoDoc, updates);
+  }
 }
 
 /**

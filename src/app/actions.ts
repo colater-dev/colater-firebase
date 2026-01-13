@@ -13,6 +13,7 @@ import { critiqueLogo, CritiqueLogoInput, Critique } from "@/ai/flows/critique-l
 import { vectoriseLogo } from "@/ai/flows/vectorise-logo";
 import { generateStories, GenerateStoriesInput } from "@/ai/flows/generate-stories";
 import { generatePresentationData, GeneratePresentationDataInput } from "@/ai/flows/generate-presentation-data";
+import { justifyLogo, JustifyLogoInput, Justification } from "@/ai/flows/justify-logo";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -323,3 +324,23 @@ export async function getPresentationData(
     };
   }
 }
+
+export async function getLogoJustification(
+  input: JustifyLogoInput
+): Promise<{ success: boolean; data?: Justification; error?: string }> {
+  try {
+    if (!input.logoUrl || !input.brandName) {
+      return { success: false, error: "Logo URL and brand name are required." };
+    }
+    const result = await justifyLogo(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error justifying logo:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while justifying the logo: ${errorMessage}`,
+    };
+  }
+}
+

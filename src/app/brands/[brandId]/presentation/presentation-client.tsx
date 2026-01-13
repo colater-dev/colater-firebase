@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X, Loader2, Smartphone, Send } from 'lucide-react';
 import Image from 'next/image';
 import { BRAND_FONTS } from '@/config/brand-fonts';
-import { getGeneratedStories, getPresentationData } from '@/app/actions';
+import { getGeneratedStories, getPresentationData, getLogoJustification } from '@/app/actions';
+import type { Justification } from '@/ai/flows/justify-logo';
 import { shiftHue, darkenColor, isLightColor, lightenColor } from '@/lib/color-utils';
 
 // --- Sub-components for Slides ---
@@ -21,7 +22,7 @@ const BrandCoverSlide = ({ brand, logo, aiData }: { brand: Brand; logo?: Logo; a
     const bgColor = isLightColor(primaryColor) ? primaryColor : lightenColor(primaryColor, 0.9);
 
     return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-12 space-y-12" style={{ backgroundColor: bgColor }}>
+        <div className="flex flex-col items-center justify-center h-full text-center p-12 space-y-12" style={{ backgroundColor: 'white' }}>
             {logo?.logoUrl && (
                 <div className="relative w-72 h-72">
                     <Image
@@ -139,6 +140,118 @@ const LogoSystemSlide = ({ brand, logo }: { brand: Brand; logo?: Logo }) => {
                     <span className="text-2xl font-bold" style={{ fontFamily: `var(${font.variable})`, textTransform: logo?.displaySettings?.textTransform || 'none' }}>
                         {brand.latestName}
                     </span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const TypographySlide = ({ brand }: { brand: Brand }) => {
+    const font = BRAND_FONTS.find(f => f.name === brand.font) || BRAND_FONTS[0];
+
+    return (
+        <div className="p-24 h-full flex flex-col justify-center space-y-20">
+            <h2 className="text-sm font-mono uppercase tracking-[0.3em] text-center text-muted-foreground">Typography</h2>
+
+            <div className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-24 items-center">
+                <div className="space-y-12">
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-mono uppercase tracking-widest text-primary/60">Selected Typeface</h3>
+                        <p className="text-7xl font-black tracking-tighter" style={{ fontFamily: `var(${font.variable})` }}>
+                            {font.name}
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <p className="text-xl text-muted-foreground leading-relaxed">
+                            {font.name} was selected for its {font.name.includes('Mono') ? 'precise, technical' : 'clean, modern'} aesthetic, perfectly balancing readability with a distinct brand personality.
+                        </p>
+
+                        <div className="flex flex-wrap gap-4">
+                            {['Regular', 'Medium', 'Bold', 'Black'].map(weight => (
+                                <div key={weight} className="px-6 py-2 rounded-full border border-gray-100 text-sm font-medium">
+                                    {weight}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-3xl p-16 flex flex-col items-center justify-center space-y-8 aspect-square">
+                    <div className="text-9xl font-black leading-none" style={{ fontFamily: `var(${font.variable})` }}>
+                        Aa
+                    </div>
+                    <div className="w-full h-px bg-gray-200" />
+                    <div className="grid grid-cols-6 gap-4 text-2xl font-bold opacity-20" style={{ fontFamily: `var(${font.variable})` }}>
+                        {['A', 'B', 'C', 'D', 'E', 'F'].map(l => <span key={l}>{l}</span>)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DesignRationaleSlide = ({ logo, justification }: { logo?: Logo; justification?: Justification }) => {
+    return (
+        <div className="p-24 h-full flex flex-col justify-center space-y-16">
+            <h2 className="text-sm font-mono uppercase tracking-[0.3em] text-center text-muted-foreground">Design Rationale</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-24 items-center max-w-6xl mx-auto w-full">
+                {/* Logo with Annotations */}
+                <div className="relative aspect-square bg-gray-50 rounded-3xl border border-gray-100 flex items-center justify-center p-16">
+                    <div className="relative w-full h-full">
+                        <Image
+                            src={logo?.logoUrl || ''}
+                            alt="Logo Rationale"
+                            fill
+                            className="object-contain"
+                            style={{ filter: `contrast(${logo?.displaySettings?.logoContrast || 100}%)${logo?.displaySettings?.invertLogo ? ' invert(1)' : ''}` }}
+                        />
+
+                        {/* Annotation Points */}
+                        {justification?.points.map((point, i) => (
+                            <motion.div
+                                key={point.id}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.8 + (i * 0.2), type: 'spring' }}
+                                className="absolute w-8 h-8 -ml-4 -mt-4 flex items-center justify-center"
+                                style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                            >
+                                <div className="absolute inset-0 bg-primary rounded-full animate-ping opacity-20" />
+                                <div className="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[10px] text-white font-bold">
+                                    {i + 1}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Justification Text */}
+                <div className="space-y-12">
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-mono uppercase tracking-widest text-primary/60">Strategic Fit</h3>
+                        <p className="text-3xl font-bold leading-tight">
+                            {justification?.overallSummary || "Strategic alignment through visual metaphors and precise execution."}
+                        </p>
+                    </div>
+
+                    <div className="space-y-8">
+                        {justification?.points.map((point, i) => (
+                            <motion.div
+                                key={point.id}
+                                initial={{ x: 20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                transition={{ delay: 1 + (i * 0.3) }}
+                                className="flex gap-6"
+                            >
+                                <span className="text-4xl font-black text-primary/10 italic leading-none">{i + 1}</span>
+                                <p className="text-xl font-medium text-muted-foreground border-l-2 pl-6 border-primary/10 py-1">
+                                    {point.comment}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
@@ -275,6 +388,7 @@ export function PresentationClient() {
 
     const [currentSlide, setCurrentSlide] = useState(0);
     const [aiData, setAiData] = useState<any>(null);
+    const [justification, setJustification] = useState<Justification | null>(null);
     const [isAiLoading, setIsAiLoading] = useState(true);
 
     const primaryLogo = logos?.[0];
@@ -284,18 +398,33 @@ export function PresentationClient() {
         const fetchAiData = async () => {
             if (!brand || !primaryLogo) return;
 
-            const result = await getPresentationData({
-                name: brand.latestName,
-                elevatorPitch: brand.latestElevatorPitch,
-                concept: primaryLogo.concept || brand.latestConcept || '',
-                prompt: primaryLogo.prompt,
-                critiqueSummary: primaryLogo.critique?.overallSummary,
-                critiquePoints: primaryLogo.critique?.points.map(p => p.comment)
-            });
+            const [presentationResult, justificationResult] = await Promise.all([
+                getPresentationData({
+                    name: brand.latestName,
+                    elevatorPitch: brand.latestElevatorPitch,
+                    concept: primaryLogo.concept || brand.latestConcept || '',
+                    prompt: primaryLogo.prompt,
+                    critiqueSummary: primaryLogo.critique?.overallSummary,
+                    critiquePoints: primaryLogo.critique?.points.map(p => p.comment)
+                }),
+                getLogoJustification({
+                    logoUrl: primaryLogo.logoUrl,
+                    brandName: brand.latestName,
+                    elevatorPitch: brand.latestElevatorPitch,
+                    audience: brand.latestAudience,
+                    desirableCues: brand.latestDesirableCues,
+                    undesirableCues: brand.latestUndesirableCues
+                })
+            ]);
 
-            if (result.success && result.data) {
-                setAiData(result.data);
+            if (presentationResult.success && presentationResult.data) {
+                setAiData(presentationResult.data);
             }
+
+            if (justificationResult.success && justificationResult.data) {
+                setJustification(justificationResult.data);
+            }
+
             setIsAiLoading(false);
         };
 
@@ -309,6 +438,8 @@ export function PresentationClient() {
             { id: 'idea', component: <BrandIdeaSlide aiData={aiData} palette={palette} /> },
             { id: 'intent', component: <VisualIntentSlide aiData={aiData} palette={palette} /> },
             { id: 'system', component: <LogoSystemSlide brand={brand} logo={primaryLogo} /> },
+            { id: 'typography', component: <TypographySlide brand={brand} /> },
+            { id: 'rationale', component: <DesignRationaleSlide logo={primaryLogo} justification={justification || undefined} /> },
             { id: 'colors', component: <ColorWorldSlide palette={palette} aiData={aiData} /> },
             { id: 'snapshot', component: <DesignSystemSnapshotSlide logo={primaryLogo} palette={palette} /> },
             { id: 'action', component: <BrandInActionSlide logo={primaryLogo} brand={brand} /> },

@@ -128,15 +128,18 @@ export async function cropImageToContent(
         };
 
         img.onerror = (err) => {
-            console.error("Error loading image for cropping:", err);
+            console.error(`Error loading image for cropping [${imageUrl}]:`, err);
             // Fallback to original URL if proxy fails, though it might fail again if CORS is the issue
             if (img.src.includes('/_next/image')) {
-                console.warn("Proxy failed, falling back to original URL (might fail CORS)");
+                console.warn(`Proxy failed for ${imageUrl}, falling back to original URL (might fail CORS)`);
                 // Avoid infinite loop if original also fails
                 const originalImg = new Image();
                 originalImg.crossOrigin = "Anonymous";
                 originalImg.onload = img.onload;
-                originalImg.onerror = () => resolve(imageUrl);
+                originalImg.onerror = () => {
+                    console.error(`Final fallback failed for ${imageUrl}`);
+                    resolve(imageUrl);
+                };
                 originalImg.src = imageUrl;
             } else {
                 resolve(imageUrl);
@@ -145,6 +148,17 @@ export async function cropImageToContent(
 
         // Use proxy URL
         img.src = getProxyUrl(imageUrl);
+
+        // Safety timeout to ensure promise always resolves
+        setTimeout(() => {
+            if (!img.complete || img.naturalWidth === 0) {
+                console.warn(`Crop timeout for ${imageUrl}, resolving with original`);
+                resolve(imageUrl);
+                // Clean up to prevent further callbacks if possible (at least resolve happened)
+                img.onload = null;
+                img.onerror = null;
+            }
+        }, 5000);
     });
 }
 

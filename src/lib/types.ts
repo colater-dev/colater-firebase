@@ -57,6 +57,8 @@ export interface Logo {
     isDeleted?: boolean;
     cropDetails?: { x: number; y: number; width: number; height: number };
     font?: string;
+    rating?: number; // 1-5 stars ranking
+    feedback?: string; // qualitative feedback for prompt improvement
 }
 
 export interface CritiquePoint {
