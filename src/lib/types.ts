@@ -59,6 +59,8 @@ export interface Logo {
     font?: string;
     rating?: number; // 1-5 stars ranking
     feedback?: string; // qualitative feedback for prompt improvement
+    presentationData?: any;
+    justification?: any;
 }
 
 export interface CritiquePoint {

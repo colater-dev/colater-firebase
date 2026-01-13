@@ -389,50 +389,77 @@ export function PresentationClient() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [aiData, setAiData] = useState<any>(null);
     const [justification, setJustification] = useState<Justification | null>(null);
-    const [isAiLoading, setIsAiLoading] = useState(true);
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     const primaryLogo = logos?.[0];
     const palette = primaryLogo?.palette || ['#000000', '#ffffff', '#cccccc'];
 
     useEffect(() => {
         const fetchAiData = async () => {
-            if (!brand || !primaryLogo) return;
+            if (!brand || !primaryLogo || !user) return;
 
-            const [presentationResult, justificationResult] = await Promise.all([
-                getPresentationData({
-                    name: brand.latestName,
-                    elevatorPitch: brand.latestElevatorPitch,
-                    concept: primaryLogo.concept || brand.latestConcept || '',
-                    prompt: primaryLogo.prompt,
-                    critiqueSummary: primaryLogo.critique?.overallSummary,
-                    critiquePoints: primaryLogo.critique?.points.map(p => p.comment)
-                }),
-                getLogoJustification({
-                    logoUrl: primaryLogo.logoUrl,
-                    brandName: brand.latestName,
-                    elevatorPitch: brand.latestElevatorPitch,
-                    audience: brand.latestAudience,
-                    desirableCues: brand.latestDesirableCues,
-                    undesirableCues: brand.latestUndesirableCues
-                })
-            ]);
-
-            if (presentationResult.success && presentationResult.data) {
-                setAiData(presentationResult.data);
+            // Check if we already have cached data
+            if (primaryLogo.presentationData && primaryLogo.justification) {
+                setAiData(primaryLogo.presentationData);
+                setJustification(primaryLogo.justification);
+                return;
             }
 
-            if (justificationResult.success && justificationResult.data) {
-                setJustification(justificationResult.data);
-            }
+            setIsAiLoading(true);
+            try {
+                const [presentationResult, justificationResult] = await Promise.all([
+                    !primaryLogo.presentationData ? getPresentationData({
+                        name: brand.latestName,
+                        elevatorPitch: brand.latestElevatorPitch,
+                        concept: primaryLogo.concept || brand.latestConcept || '',
+                        prompt: primaryLogo.prompt,
+                        critiqueSummary: primaryLogo.critique?.overallSummary,
+                        critiquePoints: primaryLogo.critique?.points.map(p => p.comment)
+                    }) : Promise.resolve({ success: true, data: primaryLogo.presentationData }),
+                    !primaryLogo.justification ? getLogoJustification({
+                        logoUrl: primaryLogo.logoUrl,
+                        brandName: brand.latestName,
+                        elevatorPitch: brand.latestElevatorPitch,
+                        audience: brand.latestAudience,
+                        desirableCues: brand.latestDesirableCues,
+                        undesirableCues: brand.latestUndesirableCues
+                    }) : Promise.resolve({ success: true, data: primaryLogo.justification })
+                ]);
 
-            setIsAiLoading(false);
+                let updatedAiData = primaryLogo.presentationData;
+                let updatedJustification = primaryLogo.justification;
+
+                if (presentationResult.success && presentationResult.data) {
+                    updatedAiData = presentationResult.data;
+                    setAiData(updatedAiData);
+                }
+
+                if (justificationResult.success && justificationResult.data) {
+                    updatedJustification = justificationResult.data;
+                    setJustification(updatedJustification);
+                }
+
+                // Cache the results back to Firestore
+                if (user && (presentationResult.success || justificationResult.success)) {
+                    const { doc, updateDoc } = await import('firebase/firestore');
+                    const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${primaryLogo.id}`);
+                    await updateDoc(logoRef, {
+                        presentationData: updatedAiData,
+                        justification: updatedJustification
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching/caching AI data:", error);
+            } finally {
+                setIsAiLoading(false);
+            }
         };
 
         fetchAiData();
-    }, [brand, primaryLogo]);
+    }, [brand, primaryLogo, user, firestore, brandId]);
 
     const slides = useMemo(() => {
-        if (!brand || isAiLoading) return [];
+        if (!brand) return [];
         return [
             { id: 'cover', component: <BrandCoverSlide brand={brand} logo={primaryLogo} aiData={aiData} /> },
             { id: 'idea', component: <BrandIdeaSlide aiData={aiData} palette={palette} /> },
@@ -445,7 +472,7 @@ export function PresentationClient() {
             { id: 'action', component: <BrandInActionSlide logo={primaryLogo} brand={brand} /> },
             { id: 'takeaway', component: <BrandTakeawaySlide aiData={aiData} brand={brand} logo={primaryLogo} /> },
         ];
-    }, [brand, primaryLogo, aiData, palette, isAiLoading]);
+    }, [brand, primaryLogo, aiData, palette, justification]);
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(0, prev - 1));
@@ -461,12 +488,12 @@ export function PresentationClient() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [slides.length]);
 
-    if (isBrandLoading || isLogosLoading || isAiLoading) {
+    if (isBrandLoading || isLogosLoading) {
         return (
             <div className="fixed inset-0 bg-white flex items-center justify-center z-[100]">
                 <div className="flex flex-col items-center space-y-4">
                     <Loader2 className="animate-spin h-12 w-12 text-primary" />
-                    <p className="text-sm font-mono text-muted-foreground animate-pulse">Generating your brand presentation...</p>
+                    <p className="text-sm font-mono text-muted-foreground animate-pulse">Loading Presentation...</p>
                 </div>
             </div>
         );

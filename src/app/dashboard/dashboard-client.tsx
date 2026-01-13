@@ -30,7 +30,7 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
 
     // Display settings
     const settings = brand.displaySettings;
-    const gap = (settings?.horizontalLogoTextGap ?? settings?.logoTextGap ?? 50) * 0.5; // Scale 0.5
+    const gap = (settings?.horizontalLogoTextGap ?? settings?.logoTextGap ?? 50) * 0.75; // Scale up: 0.5 * 1.5 = 0.75
     const balance = settings?.horizontalLogoTextBalance ?? settings?.logoTextBalance ?? 50;
     const contrast = settings?.logoContrast ?? 120;
     const invert = settings?.invertLogo ?? false;
@@ -42,29 +42,33 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
     const fontVariable = fontConfig.variable;
     const sizeMultiplier = fontConfig.sizeMultiplier || 1.0;
 
-    // Calculate sizes (Scale 0.5 relative to LogoPreviewCard)
-    // Base logo size 128 * 0.5 = 64
-    const logoSize = 64 * (1.5 - (balance / 100));
+    // Calculate sizes (Scale 0.75 relative to LogoPreviewCard - 1.5x from previous 0.5)
+    // Base logo size 128 * 0.75 = 96
+    const logoSize = 96 * (1.5 - (balance / 100));
 
-    // Base font size 36 * 0.5 = 18
-    const fontSize = 18 * (0.5 + (balance / 100)) * sizeMultiplier;
+    // Base font size 36 * 0.75 = 27
+    const fontSize = 27 * (0.5 + (balance / 100)) * sizeMultiplier;
 
     return (
-        <div className="relative group">
-            <Link href={`/brands/${brand.id}`} className="block rounded-lg transition-all">
-                <Card className="h-full flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow">
-                    <CardContent className="flex-grow flex flex-col p-6 gap-4">
-                        <div className="flex items-center">
+        <div className="relative group h-full">
+            <Link href={`/brands/${brand.id}`} className="block h-full transition-all">
+                <Card className="h-full aspect-video flex flex-col shadow-[0px_2px_8px_-2px_rgba(0,0,0,0.15),0px_0px_0px_1px_rgba(0,0,0,0.05)] hover:shadow-[0px_4px_12px_-2px_rgba(0,0,0,0.2),0px_0px_0px_1px_rgba(0,0,0,0.08)] transition-shadow overflow-hidden">
+                    <CardContent className="h-full flex flex-col items-center justify-center p-4">
+                        <div className="flex flex-col items-center justify-center">
                             <div
                                 className="flex-shrink-0 flex items-center justify-center relative"
-                                style={{ width: logoSize, height: logoSize }}
+                                style={{
+                                    width: logoSize,
+                                    height: logoSize,
+                                    marginBottom: showBrandName ? `${gap}px` : 0
+                                }}
                             >
                                 {displayLogoUrl ? (
                                     <Image
                                         src={displayLogoUrl}
                                         alt={`${brand.latestName} logo`}
                                         fill
-                                        className="object-contain rounded-md"
+                                        className="object-contain"
                                         unoptimized={displayLogoUrl.startsWith('data:')}
                                         style={{
                                             filter: `contrast(${contrast}%)${invert ? ' invert(1)' : ''}`
@@ -76,9 +80,8 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                             </div>
                             {showBrandName && (
                                 <CardTitle
-                                    className="leading-none"
+                                    className="leading-none text-center"
                                     style={{
-                                        marginLeft: `${gap}px`,
                                         fontFamily: `var(${fontVariable}), sans-serif`,
                                         fontSize: `${fontSize}px`,
                                         textTransform: textTransform as any,
@@ -89,7 +92,6 @@ const BrandListItem = ({ brand }: { brand: Brand }) => {
                                 </CardTitle>
                             )}
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-3">{brand.latestElevatorPitch}</p>
                     </CardContent>
                 </Card>
             </Link>
