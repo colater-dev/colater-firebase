@@ -758,29 +758,51 @@ export function PresentationClient() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [router, isSizingMode, isEditingColors]);
 
-    // Intersection Observer for Slide Tracking
+    // Scroll-based Slide Tracking - finds slide closest to viewport center
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const visible = entries
-                    .filter((e) => e.isIntersecting)
-                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        const handleScroll = () => {
+            const slideElements = document.querySelectorAll('[data-slide-id]');
+            const viewportCenter = window.innerHeight / 2;
 
-                if (visible) {
-                    const slideId = visible.target.getAttribute('data-slide-id');
-                    if (slideId) setActiveSlideId(slideId);
+            let closestSlideId: string | null = null;
+            let minDistance = Infinity;
+
+            slideElements.forEach((el) => {
+                const rect = el.getBoundingClientRect();
+                const slideCenter = rect.top + rect.height / 2;
+                const distanceFromCenter = Math.abs(slideCenter - viewportCenter);
+
+                if (distanceFromCenter < minDistance) {
+                    const slideId = el.getAttribute('data-slide-id');
+                    if (slideId) {
+                        closestSlideId = slideId;
+                        minDistance = distanceFromCenter;
+                    }
                 }
-            },
-            {
-                threshold: [0, 0.1, 0.5],
-                rootMargin: '-15% 0px -70% 0px', // Focus on the top area
+            });
+
+            if (closestSlideId) {
+                setActiveSlideId(closestSlideId);
             }
-        );
+        };
 
-        const slideElements = document.querySelectorAll('[data-slide-id]');
-        slideElements.forEach((el) => observer.observe(el));
+        // Initial check
+        handleScroll();
 
-        return () => observer.disconnect();
+        // Listen to scroll events with throttling
+        let ticking = false;
+        const onScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    handleScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
     }, [slides]);
 
     return (
@@ -838,7 +860,7 @@ export function PresentationClient() {
                             key={slide.id}
                             data-slide-id={slide.id}
                             className={cn(
-                                "w-full max-w-[160vh] aspect-video bg-white shadow-xl relative overflow-hidden transition-all duration-500",
+                                "w-full max-w-[900px] aspect-video bg-white shadow-xl relative overflow-hidden transition-all duration-500",
                                 activeSlideId === slide.id ? "ring-4 ring-black shadow-2xl" : "ring-1 ring-black/5",
                                 isSizingMode && slide.id === 'cover' ? "cursor-nwse-resize" : ""
                             )}
@@ -851,7 +873,25 @@ export function PresentationClient() {
                                     handleSizingMove(x, y);
                                 }
                             }}
-                            onClick={async () => {
+                            onClick={async (e) => {
+                                // Tap to select slide (if not in sizing mode)
+                                if (!isSizingMode) {
+                                    setActiveSlideId(slide.id);
+                                    // Scroll slide to center of viewport
+                                    const slideElement = e.currentTarget;
+                                    const rect = slideElement.getBoundingClientRect();
+                                    const slideCenter = rect.top + rect.height / 2;
+                                    const viewportCenter = window.innerHeight / 2;
+                                    const scrollOffset = slideCenter - viewportCenter;
+
+                                    window.scrollBy({
+                                        top: scrollOffset,
+                                        behavior: 'smooth'
+                                    });
+                                    return;
+                                }
+
+                                // Sizing mode click handler
                                 if (isSizingMode && slide.id === 'cover' && user && primaryLogo) {
                                     // Exit sizing mode immediately to stop mouse tracking
                                     setIsSizingMode(false);
@@ -1104,7 +1144,7 @@ export function PresentationClient() {
                                         transition: { duration: 0.4 }
                                     }}
                                     onClick={() => setSelectedLogoId(logo.id)}
-                                    className={`relative h-10 w-10 rounded-lg overflow-hidden transition-all hover:scale-105 active:scale-95 ${selectedLogoId === logo.id
+                                    className={`relative h-10 w-10 rounded-sm overflow-hidden transition-all hover:scale-105 active:scale-95 ${selectedLogoId === logo.id
                                         ? 'ring-4 ring-black shadow-lg'
                                         : 'ring-1 ring-gray-200 opacity-50 hover:opacity-100'
                                         }`}
@@ -1113,7 +1153,7 @@ export function PresentationClient() {
                                         src={logo.logoUrl}
                                         alt={`Logo ${idx + 1}`}
                                         fill
-                                        className="object-contain p-1.5"
+                                        className="object-contain contrast-[1.5]"
                                     />
                                 </motion.button>
                             ))}
