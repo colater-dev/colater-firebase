@@ -56,6 +56,7 @@ export interface Logo {
     vectorLogoUrl?: string;
     isDeleted?: boolean;
     cropDetails?: { x: number; y: number; width: number; height: number };
+    font?: string;
 }
 
 export interface CritiquePoint {

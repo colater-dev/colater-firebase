@@ -139,8 +139,7 @@ export function LogoDetailClient() {
                         onLogoIndexChange={() => { }}
                         onCritiqueLogo={() => { }}
                         isCritiquing={false}
-                        selectedBrandFont={brand.font || 'Inter'}
-                        onFontChange={() => { }}
+                        onLogoFontChange={() => { }}
                         readOnly={true}
                         selectedProvider="ideogram"
                         setSelectedProvider={() => { }}

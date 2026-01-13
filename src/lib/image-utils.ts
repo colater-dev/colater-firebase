@@ -162,7 +162,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 export async function createStickerEffect(imageUrl: string, maskSourceUrl?: string): Promise<string> {
     try {
         // Load target image
-        const targetImg = await loadImage(getProxyUrl(imageUrl));
+        let targetImg = await loadImage(getProxyUrl(imageUrl));
 
         // Load mask source if different
         let maskImg = targetImg;
@@ -174,46 +174,26 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
             }
         }
 
+        // Optimization: Determine processing size (Limit to 1024px)
+        const MAX_SIZE = 1024;
+        let scale = 1;
+        if (targetImg.width > MAX_SIZE || targetImg.height > MAX_SIZE) {
+            scale = Math.min(MAX_SIZE / targetImg.width, MAX_SIZE / targetImg.height);
+        }
+
+        const width = Math.floor(targetImg.width * scale);
+        const height = Math.floor(targetImg.height * scale);
+
         const canvas = document.createElement('canvas');
-        canvas.width = targetImg.width;
-        canvas.height = targetImg.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return imageUrl;
 
-        // Draw target to get data
-        ctx.drawImage(targetImg, 0, 0);
-        const targetImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const targetData = targetImageData.data;
-
-        // Get mask data
-        let maskData = targetData;
-        let maskWidth = canvas.width;
-        let maskHeight = canvas.height;
-
-        if (maskImg !== targetImg) {
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = maskImg.width;
-            maskCanvas.height = maskImg.height;
-            const maskCtx = maskCanvas.getContext('2d');
-            if (maskCtx) {
-                maskCtx.drawImage(maskImg, 0, 0);
-                const maskImageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
-                maskData = maskImageData.data;
-                maskWidth = maskCanvas.width;
-                maskHeight = maskCanvas.height;
-            }
-        }
-
-        // Verify dimensions
-        if (maskWidth !== canvas.width || maskHeight !== canvas.height) {
-            console.warn('Mask source dimensions do not match target image dimensions. Using target for mask.');
-            maskData = targetData;
-            maskWidth = canvas.width;
-            maskHeight = canvas.height;
-        }
-
-        const width = canvas.width;
-        const height = canvas.height;
+        // Draw mask source to get analysis data
+        ctx.drawImage(maskImg, 0, 0, width, height);
+        const maskImageData = ctx.getImageData(0, 0, width, height);
+        const maskData = maskImageData.data;
 
         // 1. Identify background color (from mask data)
         const bgR = maskData[0];
@@ -224,7 +204,9 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
 
         // 2. Flood fill to identify true background on mask
         const isBackground = new Uint8Array(width * height);
-        const queue: number[] = [];
+        const queue = new Int32Array(width * height);
+        let qHead = 0;
+        let qTail = 0;
 
         const isBgColor = (idx: number) => {
             const i = idx * 4;
@@ -233,50 +215,33 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
             const b = maskData[i + 2];
             const a = maskData[i + 3];
 
-            if (bgA === 0) {
-                return a === 0;
-            }
+            if (bgA === 0) return a === 0;
             const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
             return diff <= threshold;
         };
 
-        // Add all border pixels that match background color to queue
+        // Seed queue with border pixels
         for (let x = 0; x < width; x++) {
-            if (isBgColor(x)) { // Top row
-                queue.push(x);
-                isBackground[x] = 1;
-            }
+            if (isBgColor(x)) { queue[qTail++] = x; isBackground[x] = 1; }
             const bottomIdx = (height - 1) * width + x;
-            if (isBgColor(bottomIdx)) { // Bottom row
-                queue.push(bottomIdx);
-                isBackground[bottomIdx] = 1;
-            }
+            if (isBgColor(bottomIdx)) { queue[qTail++] = bottomIdx; isBackground[bottomIdx] = 1; }
         }
         for (let y = 1; y < height - 1; y++) {
             const leftIdx = y * width;
-            if (isBgColor(leftIdx)) { // Left col
-                queue.push(leftIdx);
-                isBackground[leftIdx] = 1;
-            }
+            if (isBgColor(leftIdx)) { queue[qTail++] = leftIdx; isBackground[leftIdx] = 1; }
             const rightIdx = y * width + (width - 1);
-            if (isBgColor(rightIdx)) { // Right col
-                queue.push(rightIdx);
-                isBackground[rightIdx] = 1;
-            }
+            if (isBgColor(rightIdx)) { queue[qTail++] = rightIdx; isBackground[rightIdx] = 1; }
         }
 
-        // BFS
-        let head = 0;
-        while (head < queue.length) {
-            const idx = queue[head++];
+        // BFS to fill background
+        while (qHead < qTail) {
+            const idx = queue[qHead++];
             const x = idx % width;
             const y = Math.floor(idx / width);
 
             const neighbors = [
-                { nx: x, ny: y - 1 },
-                { nx: x, ny: y + 1 },
-                { nx: x - 1, ny: y },
-                { nx: x + 1, ny: y }
+                { nx: x, ny: y - 1 }, { nx: x, ny: y + 1 },
+                { nx: x - 1, ny: y }, { nx: x + 1, ny: y }
             ];
 
             for (const { nx, ny } of neighbors) {
@@ -284,7 +249,7 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
                     const nIdx = ny * width + nx;
                     if (isBackground[nIdx] === 0 && isBgColor(nIdx)) {
                         isBackground[nIdx] = 1;
-                        queue.push(nIdx);
+                        queue[qTail++] = nIdx;
                     }
                 }
             }
@@ -293,17 +258,13 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
         // 3. Chamfer Distance Transform
         const dist = new Float32Array(width * height);
         const maxDist = (width + height) * 4;
-
-        for (let i = 0; i < width * height; i++) {
-            dist[i] = isBackground[i] === 1 ? maxDist : 0;
-        }
+        for (let i = 0; i < width * height; i++) dist[i] = isBackground[i] === 1 ? maxDist : 0;
 
         // Forward Pass
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const idx = y * width + x;
                 if (dist[idx] === 0) continue;
-
                 let minVal = dist[idx];
                 if (x > 0) minVal = Math.min(minVal, dist[idx - 1] + 3);
                 if (y > 0) {
@@ -320,7 +281,6 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
             for (let x = width - 1; x >= 0; x--) {
                 const idx = y * width + x;
                 if (dist[idx] === 0) continue;
-
                 let minVal = dist[idx];
                 if (x < width - 1) minVal = Math.min(minVal, dist[idx + 1] + 3);
                 if (y < height - 1) {
@@ -332,26 +292,47 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
             }
         }
 
-        // 4. Apply Mask to TARGET data
-        const borderSize = 30;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const idx = y * width + x;
-                const i = idx * 4;
+        // 4. Create the sticker composition
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = width;
+        finalCanvas.height = height;
+        const finalCtx = finalCanvas.getContext('2d');
+        if (!finalCtx) return imageUrl;
 
-                const actualDist = dist[idx] / 3.0;
+        // Draw White Border Shape
+        const borderImageData = finalCtx.createImageData(width, height);
+        const borderData = borderImageData.data;
+        const borderSize = 30; // Constant size at processed resolution
 
-                if (actualDist > borderSize + 1) {
-                    targetData[i + 3] = 0;
-                } else if (actualDist > borderSize) {
-                    const alpha = Math.max(0, Math.min(255, (borderSize + 1 - actualDist) * 255));
-                    targetData[i + 3] = Math.floor((targetData[i + 3] * alpha) / 255);
-                }
+        for (let i = 0; i < width * height; i++) {
+            const actualDist = dist[i] / 3.0;
+            const idx = i * 4;
+            if (actualDist <= borderSize) {
+                borderData[idx] = 255; borderData[idx + 1] = 255; borderData[idx + 2] = 255; borderData[idx + 3] = 255;
+            } else if (actualDist < borderSize + 1) {
+                const alpha = Math.max(0, Math.min(255, (borderSize + 1 - actualDist) * 255));
+                borderData[idx] = 255; borderData[idx + 1] = 255; borderData[idx + 2] = 255; borderData[idx + 3] = Math.floor(alpha);
             }
         }
+        finalCtx.putImageData(borderImageData, 0, 0);
 
-        ctx.putImageData(targetImageData, 0, 0);
-        return canvas.toDataURL();
+        // Draw Logo Content (Masked)
+        const logoCanvas = document.createElement('canvas');
+        logoCanvas.width = width;
+        logoCanvas.height = height;
+        const logoCtx = logoCanvas.getContext('2d');
+        if (logoCtx) {
+            logoCtx.drawImage(targetImg, 0, 0, width, height);
+            const logoImageData = logoCtx.getImageData(0, 0, width, height);
+            const logoData = logoImageData.data;
+            for (let i = 0; i < width * height; i++) {
+                if (isBackground[i] === 1) logoData[i * 4 + 3] = 0;
+            }
+            logoCtx.putImageData(logoImageData, 0, 0);
+            finalCtx.drawImage(logoCanvas, 0, 0);
+        }
+
+        return finalCanvas.toDataURL();
 
     } catch (e) {
         console.error('Error creating sticker effect:', e);

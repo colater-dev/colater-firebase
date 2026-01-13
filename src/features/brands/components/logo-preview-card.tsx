@@ -39,6 +39,7 @@ interface LogoPreviewCardProps {
     onDownload: (ref: React.RefObject<HTMLDivElement | null>) => void;
     onDownloadSvg?: () => void;
     shouldInvertLogo: (backgroundType: 'light' | 'dark') => boolean;
+    onFontChange: (font: string) => void;
 }
 
 export const LogoPreviewCard = memo(function LogoPreviewCard({
@@ -68,7 +69,8 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
     animationKey,
     onDownload,
     onDownloadSvg,
-    shouldInvertLogo
+    shouldInvertLogo,
+    onFontChange
 }: LogoPreviewCardProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const logoImageRef = useRef<HTMLImageElement | null>(null);
@@ -108,6 +110,8 @@ export const LogoPreviewCard = memo(function LogoPreviewCard({
                     setLogoContrast={setLogoContrast}
                     onDownload={() => onDownload(containerRef)}
                     onDownloadSvg={onDownloadSvg}
+                    selectedFont={selectedBrandFont}
+                    onFontChange={onFontChange}
                 />
             )}
 

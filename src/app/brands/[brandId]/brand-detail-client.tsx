@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createBrandService, createLogoService } from '@/services';
 import { BrandIdentityCard } from '@/features/brands/components';
 import { ContentCard } from '@/components/layout';
+import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Brand, Logo } from '@/lib/types';
 
 export function BrandDetailClient() {
@@ -64,20 +65,15 @@ export function BrandDetailClient() {
         }
     }, [brand?.latestConcept]);
 
-    const [selectedBrandFont, setSelectedBrandFont] = useState<string>('Inter');
-
-    useEffect(() => {
-        if (brand?.font) {
-            setSelectedBrandFont(brand.font);
+    const handleLogoFontChange = useCallback(async (logoId: string, font: string) => {
+        if (!user || !brandId) return;
+        try {
+            const logoRef = doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`);
+            await updateDoc(logoRef, { font });
+        } catch (error) {
+            console.error('Error updating logo font:', error);
         }
-    }, [brand?.font]);
-
-    const handleFontChange = useCallback(async (font: string) => {
-        setSelectedBrandFont(font);
-        if (brandRef) {
-            await updateDoc(brandRef, { font });
-        }
-    }, [brandRef]);
+    }, [user, brandId, firestore]);
 
     const logosQuery = useMemoFirebase(
         () =>
@@ -201,6 +197,7 @@ export function BrandDetailClient() {
                     concept: logoConcept,
                     createdAt: serverTimestamp(),
                     isPublic: false,
+                    font: BRAND_FONTS[Math.floor(Math.random() * BRAND_FONTS.length)].name,
                 };
 
                 const logosCollection = collection(
@@ -653,8 +650,7 @@ export function BrandDetailClient() {
                                 onLogoIndexChange={setCurrentLogoIndex}
                                 onCritiqueLogo={handleCritiqueLogo}
                                 isCritiquing={isCritiquing}
-                                selectedBrandFont={selectedBrandFont}
-                                onFontChange={handleFontChange}
+                                onLogoFontChange={handleLogoFontChange}
                                 onSaveDisplaySettings={handleSaveDisplaySettings}
                                 onMakeLogoPublic={handleMakeLogoPublic}
                                 selectedProvider={provider}

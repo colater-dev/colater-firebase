@@ -40,8 +40,6 @@ interface BrandIdentityHeaderProps {
   isCritiquing: boolean;
   onCritiqueLogo: () => void;
   currentLogo: Logo | undefined;
-  selectedBrandFont: string;
-  onFontChange: (font: string) => void;
   onShareLogo: () => void;
   onDeleteLogo?: () => Promise<void>;
 }
@@ -61,8 +59,6 @@ export function BrandIdentityHeader({
   isCritiquing,
   onCritiqueLogo,
   currentLogo,
-  selectedBrandFont,
-  onFontChange,
   onShareLogo,
   onDeleteLogo,
 }: BrandIdentityHeaderProps) {
@@ -184,24 +180,6 @@ export function BrandIdentityHeader({
           </>
         )}
       </div>
-
-      {/* Font Selector */}
-      <div className="flex items-center gap-2">
-        <Select value={selectedBrandFont} onValueChange={onFontChange}>
-          <SelectTrigger className="w-[180px]">
-            <Type className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Select Font" />
-          </SelectTrigger>
-          <SelectContent>
-            {BRAND_FONTS.map((font) => (
-              <SelectItem key={font.name} value={font.name} style={{ fontFamily: `var(${font.variable})`, fontSize: `${font.sizeMultiplier}em` }}>
-                {font.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
     </CardHeader>
   );
 }

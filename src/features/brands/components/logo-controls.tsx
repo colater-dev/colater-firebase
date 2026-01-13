@@ -4,14 +4,21 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from "@/components/ui/switch";
 import {
-    ArrowRight,
-    ArrowDown,
     Activity,
     ArrowUp,
     Maximize,
     Sparkles,
     Download,
+    Type,
 } from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { BRAND_FONTS } from '@/config/brand-fonts';
 
 interface LogoControlsProps {
     textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
@@ -28,6 +35,8 @@ interface LogoControlsProps {
     setLogoTextBalance: (balance: number) => void;
     logoContrast: number;
     setLogoContrast: (contrast: number) => void;
+    selectedFont: string;
+    onFontChange: (font: string) => void;
     onDownload?: () => void;
     onDownloadSvg?: () => void;
 }
@@ -47,6 +56,8 @@ export const LogoControls = memo(function LogoControls({
     setLogoTextBalance,
     logoContrast,
     setLogoContrast,
+    selectedFont,
+    onFontChange,
     onDownload,
     onDownloadSvg,
 }: LogoControlsProps) {
@@ -185,6 +196,31 @@ export const LogoControls = memo(function LogoControls({
                     max={300}
                     step={1}
                 />
+            </div>
+            <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Type className="w-3 h-3" />
+                    Brand Font
+                </Label>
+                <Select
+                    value={selectedFont}
+                    onValueChange={onFontChange}
+                >
+                    <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {BRAND_FONTS.map((font) => (
+                            <SelectItem
+                                key={font.name}
+                                value={font.name}
+                                className="text-xs"
+                            >
+                                <span style={{ fontFamily: `var(${font.variable})` }}>{font.name}</span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
             {onDownload && (
                 <div className="pt-2 border-t flex gap-2">

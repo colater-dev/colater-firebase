@@ -22,12 +22,13 @@ import { useToast } from '@/hooks/use-toast';
 interface LogoShowcaseProps {
     currentLogo: Logo;
     brandName: string;
-    selectedBrandFont: string;
     showCritique: boolean;
     expandedPointId: string | null;
     setExpandedPointId: (id: string | null) => void;
     hueShifts: Record<number, number>;
     setHueShifts: React.Dispatch<React.SetStateAction<Record<number, number>>>;
+    selectedBrandFont: string;
+    onFontChange: (font: string) => void;
     cardModes: Record<string, number>;
     cycleCardMode: (key: string, defaultInvert: boolean) => void;
     getCardMode: (key: string, defaultInvert: boolean) => number;
@@ -77,12 +78,13 @@ interface LogoShowcaseProps {
 export const LogoShowcase = memo(function LogoShowcase({
     currentLogo,
     brandName,
-    selectedBrandFont,
     showCritique,
     expandedPointId,
     setExpandedPointId,
     hueShifts,
     setHueShifts,
+    selectedBrandFont,
+    onFontChange,
     cardModes,
     cycleCardMode,
     getCardMode,
@@ -398,6 +400,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                     onDownload={(ref) => handleDownload(ref, 'horizontal-preview')}
                     onDownloadSvg={handleDownloadSvg}
                     shouldInvertLogo={shouldInvertLogo}
+                    onFontChange={onFontChange}
                 />
 
                 {/* Vertical Preview */}
@@ -429,6 +432,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                     onDownload={(ref) => handleDownload(ref, 'vertical-preview')}
                     onDownloadSvg={handleDownloadSvg}
                     shouldInvertLogo={shouldInvertLogo}
+                    onFontChange={onFontChange}
                 />
 
                 {/* External Media Section - Spans full width */}

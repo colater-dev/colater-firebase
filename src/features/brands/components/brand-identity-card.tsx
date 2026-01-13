@@ -37,8 +37,7 @@ interface BrandIdentityCardProps {
   onLogoIndexChange: (index: number) => void;
   onCritiqueLogo: () => void;
   isCritiquing: boolean;
-  selectedBrandFont: string;
-  onFontChange: (font: string) => void;
+  onLogoFontChange: (logoId: string, font: string) => void;
   onSaveDisplaySettings?: (logoId: string, settings: Logo['displaySettings']) => void;
   onMakeLogoPublic?: (logoId: string) => Promise<void>;
   readOnly?: boolean;
@@ -72,8 +71,7 @@ export function BrandIdentityCard({
   onLogoIndexChange,
   onCritiqueLogo,
   isCritiquing,
-  selectedBrandFont,
-  onFontChange,
+  onLogoFontChange,
   onSaveDisplaySettings,
   onMakeLogoPublic,
   readOnly = false,
@@ -318,8 +316,6 @@ export function BrandIdentityCard({
           isCritiquing={isCritiquing}
           onCritiqueLogo={onCritiqueLogo}
           currentLogo={currentLogo}
-          selectedBrandFont={selectedBrandFont}
-          onFontChange={onFontChange}
           onShareLogo={handleShareLogo}
           onDeleteLogo={onDeleteLogo}
         />
@@ -354,7 +350,8 @@ export function BrandIdentityCard({
                 <LogoShowcase
                   currentLogo={currentLogo}
                   brandName={brandName}
-                  selectedBrandFont={selectedBrandFont}
+                  selectedBrandFont={currentLogo.font || 'Inter'}
+                  onFontChange={(font: string) => onLogoFontChange(currentLogo.id, font)}
                   showCritique={showCritique}
                   expandedPointId={expandedPointId}
                   setExpandedPointId={setExpandedPointId}
@@ -402,7 +399,7 @@ export function BrandIdentityCard({
                       setTimeout(() => setIsSavingMedia(false), 1000);
                     }
                   }}
-                  onFileUpload={async (file) => {
+                  onFileUpload={async (file: File) => {
                     if (!file || !onSaveExternalMedia) return;
 
                     try {
@@ -500,7 +497,7 @@ export function BrandIdentityCard({
                         brandName={brandName}
                         tagline={primaryTagline}
                         primaryColor={primaryColor}
-                        fontVariable={BRAND_FONTS.find(f => f.name === selectedBrandFont)?.variable || 'sans-serif'}
+                        fontVariable={BRAND_FONTS.find(f => f.name === (currentLogo.font || 'Inter'))?.variable || 'sans-serif'}
                         palette={colorVersions.length > 0 ? colorVersions[0].palette : currentLogo.palette || []}
                         logoScale={logoScale}
                         contrast={logoContrast / 100}
