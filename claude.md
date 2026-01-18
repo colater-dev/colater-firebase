@@ -1,29 +1,48 @@
-# Brand Canvas
+# Brand Canvas (Colater)
 
-A Next.js application for creating and managing brand identities with AI-powered assistance. Users can generate brand details, taglines, and logos using Firebase and Google's Genkit AI.
+A comprehensive Next.js application for creating and managing professional brand identities with AI-powered assistance. Generate logos, taglines, visual presentations, and complete brand guidelines using Firebase and multiple AI providers.
 
 ## Overview
 
-Brand Canvas helps users craft their brand identity effortlessly by providing:
+Brand Canvas (Colater) helps users craft their brand identity effortlessly by providing:
+
 - Google Sign-in authentication with redirect flow
 - Brand creation and management with real-time updates
-- AI-powered brand detail suggestions (name, pitch, audience, cues)
+- AI-powered brand detail suggestions (name, pitch, audience, cues, concepts)
+- Multiple AI providers for logo generation (OpenAI DALL-E, Fal.ai, Google Imagen)
 - AI-generated taglines (3 per generation)
-- AI-generated logos with colorization and hue shifting
+- Logo colorization with automatic palette extraction
+- Logo critique and feedback system with visual annotations
+- Logo vectorization capabilities
+- Brand presentation mode with animated slides
+- Logo detail pages with mockup previews
+- Image-based brand creation (start from existing logo)
+- Moodboard creation with Unsplash integration
+- Logo ranking and feedback system for prompt improvement
+- Customizable brand fonts with Google Fonts integration
+- Real-time collaborative features
 - Firebase Firestore for data persistence
-- Firebase Storage for asset management
-- Real-time color palette manipulation
+- Cloudflare R2 for optimized media storage
+- Firebase Storage for legacy support
 
 ## Tech Stack
 
-- **Framework**: Next.js 15.3.3 (App Router, Turbopack)
+- **Framework**: Next.js 16.1.1 (App Router, Turbopack)
 - **Language**: TypeScript 5+ (strict mode enabled)
-- **UI Library**: React 18
+- **UI Library**: React 19
 - **Styling**: Tailwind CSS 3.4 with shadcn/ui components
+- **Animation**: Framer Motion 11.3, Motion 12.23
 - **Backend**: Firebase (Firestore, Auth, Storage)
-- **AI**: Google Genkit 1.20 with Google Generative AI
+- **Storage**: Cloudflare R2 (primary), Firebase Storage (legacy)
+- **AI Providers**:
+  - Google Genkit 1.27 with Google Generative AI
+  - OpenAI API (DALL-E 3)
+  - Fal.ai (Flux models)
 - **Forms**: React Hook Form 7.54 with Zod 3.24 validation
 - **State Management**: React Context (Firebase Provider)
+- **Auth**: NextAuth 5.0 (beta)
+- **Image Processing**: html-to-image, get-image-colors
+- **Utilities**: date-fns, uuid, p5.js (generative art)
 - **Build Tool**: Next.js with Turbopack
 
 ## Architecture
@@ -35,8 +54,10 @@ The codebase follows a feature-based architecture with clear separation of conce
 - **`features/`** - Feature modules with co-located components and hooks
 - **`services/`** - Business logic and data access layer
 - **`app/`** - Next.js app router pages (thin presentation layer)
-- **`components/`** - Shared UI components
+- **`components/`** - Shared UI components with sub-organization
 - **`lib/`** - Shared utilities and type definitions
+- **`ai/`** - AI flow definitions and prompt management
+- **`config/`** - Configuration files (fonts, etc.)
 
 ### Key Architectural Decisions
 
@@ -45,6 +66,9 @@ The codebase follows a feature-based architecture with clear separation of conce
 3. **Component Extraction**: Large pages broken into focused, testable components
 4. **Type Safety**: Full TypeScript coverage with no ignored errors
 5. **Memoization**: Firebase queries and service instances memoized for performance
+6. **Client-Server Split**: Pages use server components with client components for interactivity
+7. **Multi-Provider AI**: Support for multiple logo generation providers with unified interface
+8. **Structured Prompts**: AI prompts managed in separate directory for maintainability
 
 ## Project Structure
 
@@ -52,80 +76,155 @@ The codebase follows a feature-based architecture with clear separation of conce
 src/
 ├── ai/                          # AI flow definitions using Genkit
 │   ├── flows/
-│   │   ├── colorize-logo.ts     # Logo colorization flow
-│   │   ├── generate-brand-details.ts  # Brand detail generation
-│   │   ├── generate-logo.ts     # Logo generation flow
-│   │   └── generate-tagline.ts  # Tagline generation flow
-│   ├── dev.ts                   # Genkit development server
-│   └── genkit.ts                # Genkit configuration
+│   │   ├── colorize-logo.ts              # Logo colorization flow
+│   │   ├── complete-brand-details.ts     # Complete partial brand details
+│   │   ├── critique-logo.ts              # Generate visual logo critiques
+│   │   ├── generate-brand-details.ts     # Brand detail generation
+│   │   ├── generate-logo-concept.ts      # Generate logo concept before image
+│   │   ├── generate-logo-fal.ts          # Fal.ai logo generation
+│   │   ├── generate-logo-openai.ts       # OpenAI DALL-E logo generation
+│   │   ├── generate-logo.ts              # Google Imagen logo generation
+│   │   ├── generate-presentation-data.ts # Presentation slide data
+│   │   ├── generate-stories.ts           # Brand stories generation
+│   │   ├── generate-tagline.ts           # Tagline generation flow
+│   │   ├── justify-logo.ts               # Justify logo design decisions
+│   │   └── vectorise-logo.ts             # Convert raster to vector
+│   ├── prompts/
+│   │   └── generate-logo/                # Logo generation prompts
+│   ├── dev.ts                            # Genkit development server
+│   └── genkit.ts                         # Genkit configuration
 │
 ├── app/                         # Next.js app router pages (presentation layer)
 │   ├── brands/
 │   │   ├── [brandId]/
-│   │   │   └── page.tsx         # Brand detail page (365 lines - refactored!)
+│   │   │   ├── logos/
+│   │   │   │   └── [logoId]/
+│   │   │   │       ├── logo-detail-client.tsx    # Logo detail page client
+│   │   │   │       └── page.tsx                  # Logo detail page
+│   │   │   ├── presentation/
+│   │   │   │   ├── presentation-client.tsx       # Presentation mode client
+│   │   │   │   └── page.tsx                      # Presentation mode page
+│   │   │   ├── brand-detail-client.tsx           # Brand detail page client (672 lines)
+│   │   │   └── page.tsx                          # Brand detail page
 │   │   └── new/
-│   │       └── page.tsx         # New brand creation form
+│   │       ├── new-brand-client.tsx              # New brand form client
+│   │       └── page.tsx                          # New brand creation form
 │   ├── dashboard/
-│   │   └── page.tsx             # User dashboard with brand list
-│   ├── actions.ts               # Server actions for AI operations
-│   ├── layout.tsx               # Root layout with Firebase provider
-│   ├── page.tsx                 # Landing page with Google sign-in
-│   ├── globals.css              # Global styles
-│   └── favicon.ico
+│   │   ├── dashboard-client.tsx                  # Dashboard client
+│   │   └── page.tsx                              # User dashboard with brand list
+│   ├── ranker/
+│   │   ├── ranker-client.tsx                     # Logo ranking interface client
+│   │   └── page.tsx                              # Logo ranking page
+│   ├── start-from-image/
+│   │   ├── start-from-image-client.tsx           # Upload logo to start client
+│   │   └── page.tsx                              # Start from existing image
+│   ├── taglines/
+│   │   ├── taglines-client.tsx                   # Taglines page client
+│   │   └── page.tsx                              # Standalone taglines page
+│   ├── actions/
+│   │   └── upload-media.ts                       # Media upload server action
+│   ├── api/
+│   │   └── images/
+│   │       └── search/
+│   │           └── route.ts                      # Unsplash image search API
+│   ├── fonts/                                    # Font files
+│   ├── actions.ts                                # Server actions for AI operations
+│   ├── layout.tsx                                # Root layout with Firebase provider
+│   ├── page.tsx                                  # Landing page
+│   ├── home-client.tsx                           # Landing page client component
+│   └── globals.css                               # Global styles
 │
 ├── features/                    # Feature-based modules
 │   ├── auth/
 │   │   └── hooks/
-│   │       ├── use-require-auth.tsx  # Auth guard hook
+│   │       ├── use-require-auth.tsx              # Auth guard hook
 │   │       └── index.ts
-│   └── brands/
-│       └── components/
-│           ├── brand-header.tsx        # Brand info display
-│           ├── brand-identity-card.tsx # Logo & tagline card (178 lines)
-│           ├── taglines-list.tsx       # Taglines management (84 lines)
-│           └── index.ts
+│   ├── brands/
+│   │   └── components/
+│   │       ├── brand-applications.tsx            # Logo mockup applications
+│   │       ├── brand-header.tsx                  # Brand info display
+│   │       ├── brand-identity-card.tsx           # Logo & tagline card (666 lines)
+│   │       ├── brand-identity-header.tsx         # Identity section header
+│   │       ├── critique-point.tsx                # Visual critique annotation
+│   │       ├── download-button.tsx               # Download logo button
+│   │       ├── logo-controls.tsx                 # Logo display controls
+│   │       ├── logo-feedback-form.tsx            # Logo feedback form
+│   │       ├── logo-navigation-dock.tsx          # Logo pagination dock
+│   │       ├── logo-preview-card.tsx             # Logo preview with actions
+│   │       ├── logo-showcase.tsx                 # Main logo display (51k+ chars)
+│   │       ├── mockup-preview.tsx                # Mockup template preview
+│   │       ├── palette-dots.tsx                  # Color palette display
+│   │       ├── sticker-preview.tsx               # Sticker mockup preview
+│   │       ├── taglines-list.tsx                 # Taglines management
+│   │       └── index.ts
+│   └── moodboard/
+│       ├── components/
+│       │   ├── moodboard.tsx                     # Moodboard grid
+│       │   └── moodboard-card.tsx                # Moodboard image card
+│       └── types.ts                              # Unsplash API types
 │
 ├── services/                    # Business logic / data access layer
-│   ├── brand.service.ts         # Brand CRUD operations (114 lines)
-│   ├── tagline.service.ts       # Tagline operations (118 lines)
-│   ├── logo.service.ts          # Logo operations (101 lines)
+│   ├── brand.service.ts                          # Brand CRUD operations
+│   ├── tagline.service.ts                        # Tagline operations
+│   ├── logo.service.ts                           # Logo operations
 │   └── index.ts
 │
 ├── components/
-│   ├── ui/                      # shadcn/ui components (35+ components)
+│   ├── ui/                                       # shadcn/ui components (40+ components)
 │   │   ├── button.tsx
 │   │   ├── card.tsx
 │   │   ├── input.tsx
 │   │   ├── form.tsx
 │   │   ├── toast.tsx
-│   │   └── ... (30+ more)
-│   ├── FirebaseErrorListener.tsx  # Error handling component
-│   └── user-chip.tsx            # User profile chip
+│   │   ├── pill-input.tsx                        # Custom pill input component
+│   │   └── ... (35+ more)
+│   ├── animate-ui/                               # Animation components
+│   │   ├── icons/                                # Animated icon components
+│   │   └── primitives/                           # Animation primitives
+│   ├── dashboard/                                # Dashboard-specific components
+│   │   ├── create-project-card.tsx               # Create new project card
+│   │   └── upload-logo-card.tsx                  # Upload logo card
+│   ├── layout/                                   # Layout components
+│   │   ├── app-header.tsx                        # Application header
+│   │   ├── app-sidebar.tsx                       # Application sidebar
+│   │   ├── client-layout.tsx                     # Client-side layout wrapper
+│   │   ├── content-card.tsx                      # Content card wrapper
+│   │   ├── sidebar-context.tsx                   # Sidebar state context
+│   │   └── index.ts
+│   ├── FirebaseErrorListener.tsx                 # Error handling component
+│   └── user-chip.tsx                             # User profile chip
 │
 ├── firebase/                    # Firebase configuration and utilities
 │   ├── firestore/
-│   │   ├── use-collection.tsx   # Firestore collection hook
-│   │   └── use-doc.tsx          # Firestore document hook
-│   ├── client-provider.tsx      # Client-side Firebase initialization
-│   ├── config.ts                # Firebase configuration
-│   ├── error-emitter.ts         # Error event emitter
-│   ├── errors.ts                # Custom error classes
-│   ├── index.ts                 # Public Firebase API exports
-│   ├── non-blocking-login.tsx   # Non-blocking login component
-│   ├── non-blocking-updates.tsx # Non-blocking updates component
-│   ├── provider.tsx             # Firebase context provider (190 lines)
-│   └── server.ts                # Server-side Firebase utilities
+│   │   ├── use-collection.tsx                    # Firestore collection hook
+│   │   └── use-doc.tsx                           # Firestore document hook
+│   ├── client-provider.tsx                       # Client-side Firebase initialization
+│   ├── config.ts                                 # Firebase configuration
+│   ├── error-emitter.ts                          # Error event emitter
+│   ├── errors.ts                                 # Custom error classes
+│   ├── index.ts                                  # Public Firebase API exports
+│   ├── non-blocking-login.tsx                    # Non-blocking login component
+│   ├── non-blocking-updates.tsx                  # Non-blocking updates component
+│   ├── provider.tsx                              # Firebase context provider
+│   └── server.ts                                 # Server-side Firebase utilities
 │
 ├── hooks/
-│   ├── use-mobile.tsx           # Mobile detection hook
-│   └── use-toast.ts             # Toast notification hook
+│   ├── use-mobile.tsx                            # Mobile detection hook
+│   └── use-toast.ts                              # Toast notification hook
+│
+├── config/
+│   └── brand-fonts.ts                            # Google Fonts configuration (27 fonts)
 │
 └── lib/
-    ├── color-utils.ts           # Color conversion utilities (HSL, RGB, HEX)
-    ├── placeholder-images.ts    # Placeholder image utilities
-    ├── storage.ts               # Firebase Storage utilities
-    ├── types.ts                 # TypeScript type definitions
-    └── utils.ts                 # Utility functions (cn, etc.)
+    ├── color-utils.ts                            # Color conversion utilities
+    ├── image-utils.ts                            # Image processing utilities
+    ├── placeholder-images.ts                     # Placeholder image utilities
+    ├── r2-upload-client.ts                       # R2 client-side upload
+    ├── r2-upload.ts                              # R2 server-side upload
+    ├── r2.ts                                     # R2 configuration
+    ├── storage-utils.ts                          # Storage utilities
+    ├── types.ts                                  # TypeScript type definitions
+    └── utils.ts                                  # Utility functions (cn, etc.)
 ```
 
 ## Core Concepts
@@ -150,6 +249,7 @@ const brandId = await brandService.createBrand(userId, {
   latestAudience: 'Tech-savvy millennials',
   latestDesirableCues: 'modern, sleek, professional',
   latestUndesirableCues: 'dated, cluttered',
+  latestConcept: 'A minimalist tech-forward identity',
 });
 
 // Get brands collection reference
@@ -163,7 +263,8 @@ const brandDoc = brandService.getBrandDoc(userId, brandId);
 
 // Update brand
 await brandService.updateBrand(userId, brandId, {
-  latestName: 'New Name'
+  latestName: 'New Name',
+  font: 'Jost'
 });
 
 // Update logo
@@ -227,16 +328,42 @@ await taglineService.deleteTagline(userId, brandId, taglineId);
 const logoService = useMemo(() => createLogoService(firestore), [firestore]);
 
 // Create logo
-const logoId = await logoService.createLogo(userId, brandId, logoUrl);
+const logoId = await logoService.createLogo(userId, brandId, {
+  logoUrl,
+  prompt: 'Generated with DALL-E',
+  concept: 'Minimalist geometric shape',
+});
 
 // Add colorized version with palette
 await logoService.updateLogoWithColor(
   userId,
   brandId,
   logoId,
-  colorLogoUrl,
-  ['#FF5733', '#33FF57', '#3357FF']
+  {
+    colorLogoUrl,
+    palette: ['#FF5733', '#33FF57', '#3357FF'],
+    colorNames: ['Vibrant Red', 'Fresh Green', 'Ocean Blue']
+  }
 );
+
+// Update display settings
+await logoService.updateLogoDisplaySettings(
+  userId,
+  brandId,
+  logoId,
+  {
+    showBrandName: true,
+    textTransform: 'uppercase',
+    invertLogo: false,
+    logoContrast: 100,
+  }
+);
+
+// Add critique
+await logoService.updateLogoCritique(userId, brandId, logoId, critique);
+
+// Add rating and feedback
+await logoService.updateLogoRating(userId, brandId, logoId, 5, 'Great logo!');
 
 // Get logos query
 const logosQuery = logoService.getLogosQuery(userId, brandId);
@@ -278,109 +405,77 @@ function ProtectedPage() {
 - Single source of truth for auth requirements
 - Cleaner component code
 
-**Before**:
-```typescript
-const { user, isUserLoading } = useUser();
-const router = useRouter();
-
-useEffect(() => {
-  if (!isUserLoading && !user) {
-    router.push('/');
-  }
-}, [user, isUserLoading, router]);
-
-if (isUserLoading) return <LoadingSpinner />;
-```
-
-**After**:
-```typescript
-const { user, isLoading } = useRequireAuth();
-
-if (isLoading) return <LoadingSpinner />;
-```
-
 ### 3. Component Extraction
 
-The brand detail page was refactored from 599 lines to 365 lines by extracting three focused components.
+The brand detail page has been extensively refactored with numerous extracted components for better maintainability.
 
-#### BrandHeader
+#### Key Components
 
-**Location**: `src/features/brands/components/brand-header.tsx`
+**BrandHeader** (`src/features/brands/components/brand-header.tsx`)
+- Displays brand name, elevator pitch, target audience, and visual cues
 
-Displays brand name, elevator pitch, target audience, and visual cues.
+**BrandIdentityCard** (`src/features/brands/components/brand-identity-card.tsx` - 666 lines)
+- Manages logo display, colorization, hue shifting, and logo pagination
+- Handles logo generation with multiple AI providers
+- Display settings (show brand name, text transform, invert, contrast)
+- Sticker and mockup previews
 
-```typescript
-<BrandHeader brand={brand} />
-```
+**LogoShowcase** (`src/features/brands/components/logo-showcase.tsx` - 51k+ characters)
+- Advanced logo display with SVG rendering
+- Horizontal and vertical layout support
+- Font selection and customization
+- Real-time cropping and adjustments
+- Export to various formats
 
-#### BrandIdentityCard
-
-**Location**: `src/features/brands/components/brand-identity-card.tsx` (178 lines)
-
-Manages logo display, colorization, hue shifting, and logo pagination.
-
-```typescript
-<BrandIdentityCard
-  brandName={brand.latestName}
-  primaryTagline={primaryTagline}
-  logos={logos}
-  currentLogoIndex={currentLogoIndex}
-  isLoadingLogos={isLoadingLogos}
-  isGeneratingLogo={isGeneratingLogo}
-  isColorizing={isColorizing}
-  isLoadingTaglines={isLoadingTaglines}
-  onGenerateLogo={handleGenerateLogo}
-  onColorizeLogo={handleColorizeLogo}
-  onLogoIndexChange={setCurrentLogoIndex}
-/>
-```
-
-**Features**:
-- Logo display with B&W/Color toggle
-- Hue shifting with slider (0-360 degrees)
-- Real-time color palette display
-- Logo pagination (previous/next)
-- Self-contained state management
-
-#### TaglinesList
-
-**Location**: `src/features/brands/components/taglines-list.tsx` (84 lines)
-
-Displays taglines with like/dislike actions and generation UI.
-
-```typescript
-<TaglinesList
-  taglines={visibleTaglines}
-  isLoading={isLoadingTaglines}
-  isGenerating={isGeneratingTaglines}
-  onGenerate={handleGenerateTaglines}
-  onStatusUpdate={handleTaglineStatusUpdate}
-/>
-```
-
-**Features**:
-- Tagline list with hover actions
-- Like (star) / Dislike (trash) buttons
+**TaglinesList** (`src/features/brands/components/taglines-list.tsx`)
+- Displays taglines with like/dislike actions
 - Generate new taglines button
 - Loading and empty states
 
-### 4. Color Utilities
+**BrandApplications** (`src/features/brands/components/brand-applications.tsx`)
+- Shows logo applied to various mockups (business cards, t-shirts, etc.)
+- Multiple mockup templates
 
-**Location**: `src/lib/color-utils.ts`
+**LogoControls** (`src/features/brands/components/logo-controls.tsx`)
+- UI controls for logo display settings
+- Layout toggles, text transforms, invert, contrast
 
-Extracted color conversion functions for reusability:
+**CritiquePoint** (`src/features/brands/components/critique-point.tsx`)
+- Visual annotation component for logo critiques
+- Shows positive/negative feedback points with coordinates
+
+### 4. Multi-Provider AI System
+
+The application supports multiple AI providers for different tasks:
+
+**Logo Generation Providers**:
+1. **Google Imagen** (generate-logo.ts) - Default provider
+2. **OpenAI DALL-E 3** (generate-logo-openai.ts) - High quality, various sizes
+3. **Fal.ai Flux** (generate-logo-fal.ts) - Fast generation, multiple models
+
+**Provider Selection**:
+- Each provider has specific strengths
+- Unified interface through server actions
+- Prompt engineering specific to each provider
+
+### 5. Font System
+
+**Location**: `src/config/brand-fonts.ts`
+
+- 27 Google Fonts categorized by style (Formal, Rounded, Stylish, Cute, Modern)
+- Each font includes multiple weights
+- Size multipliers for visual balance
+- Consistent font selection based on brand ID
+- Random font selection by category
 
 ```typescript
-import { hslToRgb, rgbToHsl, hexToRgb, rgbToHex, shiftHue } from '@/lib/color-utils';
+import { getBrandFontStyle, getRandomFontByCategory } from '@/config/brand-fonts';
 
-// Convert HEX to RGB
-const rgb = hexToRgb('#FF5733'); // { r: 255, g: 87, b: 51 }
+// Get consistent font for a brand
+const { fontFamily, fontWeight } = getBrandFontStyle(brandId, 'Modern');
 
-// Convert RGB to HSL
-const [h, s, l] = rgbToHsl(255, 87, 51); // [0.03, 1, 0.6]
-
-// Shift hue by 120 degrees
-const newColor = shiftHue('#FF5733', 120); // '#33FF57'
+// Get random font from category
+const font = getRandomFontByCategory('Stylish');
 ```
 
 ## Data Models
@@ -393,14 +488,17 @@ const newColor = shiftHue('#FF5733', 120); // '#33FF57'
 interface Brand {
   id: string;                      // Document ID
   userId: string;                  // Owner's user ID
-  createdAt: Timestamp;            // Creation timestamp
+  createdAt: any;                  // Firestore Timestamp
   latestName: string;              // Brand name
   latestElevatorPitch: string;     // Brand description
   latestAudience: string;          // Target audience
   latestDesirableCues: string;     // Desired visual cues
   latestUndesirableCues: string;   // Undesired visual cues
+  latestConcept?: string;          // AI-generated logo concept
   logoUrl?: string;                // Current logo URL
   primaryTagline?: string;         // Selected tagline
+  font?: string;                   // Selected font name
+  displaySettings?: Logo['displaySettings']; // Logo display settings
 }
 ```
 
@@ -412,7 +510,7 @@ interface Tagline {
   brandId: string;
   userId: string;
   tagline: string;
-  createdAt: Timestamp;
+  createdAt: any; // Firestore Timestamp
   status?: 'generated' | 'liked' | 'disliked';
 }
 ```
@@ -424,10 +522,86 @@ interface Logo {
   id: string;
   brandId: string;
   userId: string;
-  logoUrl: string;                 // Original/B&W logo URL
-  createdAt: Timestamp;
-  colorLogoUrl?: string;           // Colorized logo URL
-  palette?: string[];              // Color palette (HEX codes)
+  logoUrl: string;                 // Original logo URL
+  prompt?: string;                 // Generation prompt
+  concept?: string;                // Logo concept description
+  createdAt: any;                  // Firestore Timestamp
+  isPublic?: boolean;              // Public sharing enabled
+
+  // Display settings
+  displaySettings?: {
+    textTransform: 'none' | 'lowercase' | 'capitalize' | 'uppercase';
+    showBrandName: boolean;
+    invertLogo: boolean;
+    logoContrast: number;
+    horizontalLogoTextGap?: number;
+    horizontalLogoTextBalance?: number;
+    verticalLogoTextGap?: number;
+    verticalLogoTextBalance?: number;
+  };
+
+  // Color versions (deprecated single version, now array)
+  colorLogoUrl?: string;           // Deprecated
+  palette?: string[];              // Deprecated
+  colorNames?: string[];           // Deprecated
+  colorVersions?: Array<{          // New: multiple color versions
+    colorLogoUrl: string;
+    palette: string[];
+    colorNames?: string[];
+  }>;
+
+  // AI critique and feedback
+  critique?: Critique;
+  critiqueFeedback?: Record<string, 'agree' | 'disagree'>;
+
+  // Additional metadata
+  externalMediaUrl?: string;       // Original uploaded image
+  vectorLogoUrl?: string;          // Vectorized version
+  isDeleted?: boolean;             // Soft delete flag
+  cropDetails?: {                  // Cropping information
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  font?: string;                   // Selected font
+  rating?: number;                 // 1-5 star ranking
+  feedback?: string;               // Qualitative feedback
+  presentationData?: any;          // Presentation slide data
+  justification?: any;             // Design justification
+}
+```
+
+### Critique
+
+```typescript
+interface CritiquePoint {
+  id: string;
+  x: number;                       // X coordinate percentage (0-100)
+  y: number;                       // Y coordinate percentage (0-100)
+  comment: string;
+  sentiment: 'positive' | 'negative';
+}
+
+interface Critique {
+  overallSummary: string;
+  points: CritiquePoint[];         // Visual annotation points
+}
+```
+
+### LogoFeedback
+
+```typescript
+interface LogoFeedback {
+  id: string;
+  logoId: string;
+  brandId: string;
+  rating: number;                  // 1-5 stars
+  comment: string;
+  authorName?: string;             // Present if user was logged in
+  authorId?: string;               // Present if user was logged in
+  isAnonymous: boolean;
+  createdAt: any;                  // Firestore Timestamp
 }
 ```
 
@@ -445,7 +619,7 @@ interface Logo {
 
 ### Firestore Security Rules
 
-**Location**: `firestore.rules` (145 lines)
+**Location**: `firestore.rules`
 
 The application uses a strict user-ownership model:
 
@@ -459,26 +633,6 @@ The application uses a strict user-ownership model:
 3. **`userId` field denormalized across all documents**
    - Enables efficient authorization checks
    - No need for extra `get()` calls in security rules
-
-4. **Security rule hierarchy**:
-   ```
-   /users/{userId}                    ← User profile
-     └── /brands/{brandId}            ← Brand documents
-         ├── /inputVersions/...       ← Brand input versions
-         ├── /taglineGenerations/...  ← AI-generated taglines
-         └── /logoGenerations/...     ← AI-generated logos
-   ```
-
-**Example Rules**:
-```javascript
-match /users/{userId}/brands/{brandId} {
-  allow get: if isOwner(userId);
-  allow list: if isOwner(userId);
-  allow create: if isOwner(userId) && request.resource.data.userId == userId;
-  allow update: if isExistingOwner(userId) && resource.data.userId == userId;
-  allow delete: if isExistingOwner(userId);
-}
-```
 
 ## Firebase Integration
 
@@ -495,60 +649,6 @@ match /users/{userId}/brands/{brandId} {
 - **`useDoc<T>(docRef)`** - Real-time Firestore document listener
 - **`useMemoFirebase<T>(factory, deps)`** - Memoized Firebase objects (queries, refs)
 
-### Firebase Provider Architecture
-
-**Location**: `src/firebase/provider.tsx` (190 lines)
-
-The Firebase context provider manages:
-
-1. **Service Availability**: Tracks if Firebase services are initialized
-2. **Auth State**: Real-time user authentication listener (`onAuthStateChanged`)
-3. **Loading States**: Separate loading state for user authentication
-4. **Error Handling**: Captures and propagates auth errors
-5. **Memoization**: Optimized re-renders with `useMemo`
-
-**Provider Setup** (`src/app/layout.tsx`):
-```typescript
-import { FirebaseProvider } from '@/firebase/provider';
-import { firebaseApp, firestore, auth, storage } from '@/firebase/client-provider';
-
-<FirebaseProvider
-  firebaseApp={firebaseApp}
-  firestore={firestore}
-  auth={auth}
-  storage={storage}
->
-  {children}
-</FirebaseProvider>
-```
-
-### Error Handling
-
-**Sophisticated error handling system**:
-
-- **`FirebaseErrorListener`** component listens for permission errors
-- **`errorEmitter`** broadcasts Firebase errors
-- **`FirestorePermissionError`** class for debugging permission issues
-- **Non-blocking operations** to prevent UI freezes
-
-**Example Usage**:
-```typescript
-import { FirestorePermissionError, errorEmitter } from '@/firebase';
-
-try {
-  await addDoc(collection, data);
-} catch (error) {
-  if (error.code === 'permission-denied') {
-    const permissionError = new FirestorePermissionError({
-      path: collection.path,
-      operation: 'create',
-      requestResourceData: data,
-    });
-    errorEmitter.emit('permission-error', permissionError);
-  }
-}
-```
-
 ## AI Flows (Genkit)
 
 All AI flows are located in `src/ai/flows/` and use Google Genkit with structured outputs (Zod schemas).
@@ -562,136 +662,184 @@ All AI flows are located in `src/ai/flows/` and use Google Genkit with structure
 - **Usage**: "Fill for me" button on brand creation form
 - **Model**: Google Generative AI
 
-**Example**:
-```typescript
-const result = await generateBrandDetails({
-  topic: 'A coffee shop for developers'
-});
-// Result: {
-//   name: 'DevBrew',
-//   elevatorPitch: 'A cozy coffee shop designed for developers...',
-//   audience: 'Software developers, tech enthusiasts...',
-//   desirableCues: 'modern, tech-inspired, minimalist',
-//   undesirableCues: 'corporate, stuffy, traditional'
-// }
-```
+### 2. Complete Brand Details
 
-### 2. Generate Taglines
+**File**: `src/ai/flows/complete-brand-details.ts`
+
+- **Input**: Partial brand details
+- **Output**: Complete brand details with missing fields filled
+- **Usage**: Smart completion of partially filled forms
+
+### 3. Generate Logo Concept
+
+**File**: `src/ai/flows/generate-logo-concept.ts`
+
+- **Input**: Brand details
+- **Output**: `{ concept: string }` - Detailed logo concept description
+- **Usage**: Pre-generation step to create better prompts
+
+### 4. Generate Logo (Multiple Providers)
+
+**Files**:
+- `generate-logo.ts` (Google Imagen)
+- `generate-logo-openai.ts` (DALL-E 3)
+- `generate-logo-fal.ts` (Fal.ai Flux)
+
+- **Input**: `{ name, elevatorPitch, audience, desirableCues, undesirableCues, concept? }`
+- **Output**: `{ logoUrl: string, prompt: string }` (data URI + prompt used)
+- **Post-processing**: Data URI uploaded to Cloudflare R2 or Firebase Storage
+- **Models**: Google Imagen / OpenAI DALL-E 3 / Fal.ai Flux
+
+### 5. Colorize Logo
+
+**File**: `src/ai/flows/colorize-logo.ts`
+
+- **Input**: `{ logoUrl, name, elevatorPitch, audience, desirableCues, undesirableCues }`
+- **Output**: `{ colorLogoUrl: string, palette: string[], colorNames?: string[] }`
+- **Pre-processing**: Storage URL converted to data URI
+- **Post-processing**: Colorized logo uploaded to storage
+- **Model**: Google Generative AI
+
+### 6. Critique Logo
+
+**File**: `src/ai/flows/critique-logo.ts`
+
+- **Input**: `{ logoUrl, brandName, elevatorPitch, audience, desirableCues, undesirableCues }`
+- **Output**: `{ overallSummary: string, points: CritiquePoint[] }`
+- **Usage**: Visual annotation of logo with positive/negative feedback
+- **Model**: Google Generative AI with vision
+
+### 7. Vectorise Logo
+
+**File**: `src/ai/flows/vectorise-logo.ts`
+
+- **Input**: Raster logo URL
+- **Output**: Vector logo URL (SVG)
+- **Usage**: Convert raster logos to scalable vector format
+
+### 8. Generate Taglines
 
 **File**: `src/ai/flows/generate-tagline.ts`
 
 - **Input**: `{ name, elevatorPitch, audience, desirableCues?, undesirableCues? }`
 - **Output**: `{ taglines: string[] }` (array of 3 taglines)
-- **Note**: Taglines don't repeat brand name at start
 - **Model**: Google Generative AI
 
-**Example**:
-```typescript
-const result = await generateTaglines({
-  name: 'DevBrew',
-  elevatorPitch: 'A cozy coffee shop...',
-  audience: 'Software developers...',
-  desirableCues: 'modern, tech-inspired',
-  undesirableCues: 'corporate, stuffy',
-});
-// Result: {
-//   taglines: [
-//     'Fuel your code, one cup at a time',
-//     'Where great code meets great coffee',
-//     'Debug life with caffeine'
-//   ]
-// }
-```
+### 9. Generate Presentation Data
 
-### 3. Generate Logo
+**File**: `src/ai/flows/generate-presentation-data.ts`
 
-**File**: `src/ai/flows/generate-logo.ts`
+- **Input**: Brand details
+- **Output**: Structured presentation slide data
+- **Usage**: Create professional brand presentation slides
 
-- **Input**: `{ name, elevatorPitch, audience, desirableCues?, undesirableCues? }`
-- **Output**: `{ logoUrl: string }` (data URI)
-- **Post-processing**: Data URI uploaded to Firebase Storage
-- **Model**: Google Generative AI (Imagen)
+### 10. Justify Logo
 
-**Flow**:
-1. AI generates logo as data URI (base64-encoded PNG)
-2. Server action uploads to Firebase Storage
-3. Public URL returned and saved to Firestore
+**File**: `src/ai/flows/justify-logo.ts`
 
-### 4. Colorize Logo
+- **Input**: Logo and brand details
+- **Output**: Design justification explaining logo choices
+- **Usage**: Explain design decisions to clients
 
-**File**: `src/ai/flows/colorize-logo.ts`
+### 11. Generate Stories
 
-- **Input**: `{ logoUrl, name, elevatorPitch, audience, desirableCues?, undesirableCues? }`
-- **Output**: `{ colorLogoUrl: string, palette: string[] }`
-- **Pre-processing**: Firebase Storage URL converted to data URI
-- **Post-processing**: Colorized logo uploaded to Firebase Storage
-- **Model**: Google Generative AI
+**File**: `src/ai/flows/generate-stories.ts`
 
-**Flow**:
-1. Original logo URL converted to data URI
-2. AI generates colorized version with brand-appropriate colors
-3. AI provides color palette (3-5 HEX codes)
-4. Colorized logo uploaded to Firebase Storage
-5. Public URL and palette saved to Firestore
+- **Input**: Brand details
+- **Output**: Brand storytelling content
+- **Usage**: Create compelling brand narratives
 
 ## Server Actions
 
 **Location**: `src/app/actions.ts`
 
-All server actions for AI operations:
+All server actions for AI operations with consistent error handling.
 
-### `getTaglineSuggestions()`
-```typescript
-const result = await getTaglineSuggestions(
-  name,
-  elevatorPitch,
-  audience,
-  desirableCues,
-  undesirableCues
-);
-// Returns: { success: boolean, data?: string[], error?: string }
-```
+### Key Server Actions
 
-### `getLogoSuggestion()`
-```typescript
-const result = await getLogoSuggestion(
-  name,
-  elevatorPitch,
-  audience,
-  desirableCues,
-  undesirableCues,
-  userId
-);
-// Returns: { success: boolean, data?: string (URL), error?: string }
-```
+- `getTaglineSuggestions()` - Generate taglines
+- `getLogoSuggestion()` - Generate logo (default provider)
+- `getLogoSuggestionOpenAI()` - Generate logo with DALL-E
+- `getLogoSuggestionFal()` - Generate logo with Fal.ai
+- `getBrandSuggestions()` - Generate brand details from topic
+- `convertUrlToDataUri()` - Convert storage URL to data URI
+- `getColorizedLogo()` - Colorize existing logo
+- `getCritiqueLogo()` - Get AI critique with visual annotations
+- `getVectorisedLogo()` - Convert to vector format
+- `generatePresentationData()` - Generate presentation slides
 
-### `getBrandSuggestions()`
-```typescript
-const result = await getBrandSuggestions(topic);
-// Returns: { success: boolean, data?: BrandDetails, error?: string }
-```
+## Storage Strategy
 
-### `convertUrlToDataUri()`
-```typescript
-const result = await convertUrlToDataUri(storageUrl);
-// Returns: { success: boolean, data?: string (data URI), error?: string }
-```
+### Cloudflare R2 (Primary)
 
-### `getColorizedLogo()`
-```typescript
-const result = await getColorizedLogo(
-  {
-    logoUrl,      // data URI
-    name,
-    elevatorPitch,
-    audience,
-    desirableCues,
-    undesirableCues
-  },
-  userId
-);
-// Returns: { success: boolean, data?: { colorLogoUrl, palette }, error?: string }
-```
+**Files**: `src/lib/r2.ts`, `src/lib/r2-upload.ts`, `src/lib/r2-upload-client.ts`
+
+- Primary storage for media assets
+- Cost-effective and fast global delivery
+- S3-compatible API
+- Environment variables: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
+
+### Firebase Storage (Legacy)
+
+- Legacy support for existing assets
+- Gradual migration to R2
+- Used for backward compatibility
+
+## New Features
+
+### 1. Logo Detail Page
+
+**Route**: `/brands/[brandId]/logos/[logoId]`
+
+- Full-screen logo display
+- Critique annotations
+- Mockup previews
+- Download options
+- Sharing capabilities
+
+### 2. Presentation Mode
+
+**Route**: `/brands/[brandId]/presentation`
+
+- Animated slide presentation of brand identity
+- Professional layout with transitions
+- Logo applications showcase
+- Export to PDF/images
+
+### 3. Start from Image
+
+**Route**: `/start-from-image`
+
+- Upload existing logo image
+- Automatically extract colors
+- Generate brand details from image
+- Create complete brand identity
+
+### 4. Logo Ranker
+
+**Route**: `/ranker`
+
+- Rate and review generated logos
+- Provide qualitative feedback
+- Improve AI prompts based on ratings
+- Track logo quality over time
+
+### 5. Moodboard
+
+**Feature**: Integrated Unsplash image search
+- Search and collect inspiration images
+- Visual moodboard creation
+- Color palette extraction from images
+
+### 6. Advanced Logo Controls
+
+- Horizontal/vertical layout toggle
+- Text transform options (uppercase, lowercase, capitalize)
+- Show/hide brand name
+- Invert logo colors
+- Contrast adjustment
+- Font selection with live preview
+- Precise cropping tools
 
 ## Scripts
 
@@ -725,15 +873,30 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 
 # Google Generative AI
 GOOGLE_GENAI_API_KEY=...
+
+# OpenAI
+OPENAI_API_KEY=...
+
+# Fal.ai
+FAL_KEY=...
+
+# Cloudflare R2
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=...
+
+# Unsplash (optional, for moodboard)
+UNSPLASH_ACCESS_KEY=...
 ```
 
 ## UI Components (shadcn/ui)
 
-Using shadcn/ui with Radix UI primitives (35+ components):
+Using shadcn/ui with Radix UI primitives (40+ components):
 
-**Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch, Slider
-**Feedback**: Toast, Dialog, Alert Dialog, Alert
-**Layout**: Card, Tabs, Accordion, Separator, Collapsible
+**Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch, Slider, Pill Input
+**Feedback**: Toast, Dialog, Alert Dialog, Alert, Popover, Tooltip
+**Layout**: Card, Tabs, Accordion, Separator, Collapsible, Scroll Area
 **Navigation**: Button, Dropdown Menu, Menubar, Sidebar
 **Data Display**: Table, Avatar, Badge, Progress, Skeleton
 **Advanced**: Chart (Recharts), Calendar (react-day-picker), Carousel (Embla)
@@ -742,14 +905,13 @@ Using shadcn/ui with Radix UI primitives (35+ components):
 
 ## Design Philosophy
 
-From `docs/blueprint.md`:
-
 - **Primary color**: Soft lavender (#D1C4E9) - creativity and clarity
 - **Background**: Light gray (#F5F5F5) - clean canvas
 - **Accent**: Muted teal (#80CBC4) - interactive elements
-- **Font**: 'PT Sans' humanist sans-serif
+- **Font**: Multiple Google Fonts with categorization
 - **Layout**: Minimalist with clear card-based structure
-- **Interactions**: Smooth transitions, hover states, responsive design
+- **Animations**: Smooth transitions with Framer Motion
+- **Interactions**: Hover states, responsive design, micro-interactions
 
 ## Performance Optimizations
 
@@ -757,6 +919,7 @@ From `docs/blueprint.md`:
    - Firebase queries memoized with `useMemoFirebase`
    - Service instances memoized with `useMemo`
    - Computed values memoized with `useMemo`
+   - Expensive component renders prevented with `React.memo`
 
 2. **Real-time Subscriptions**:
    - Automatic cleanup on unmount
@@ -765,44 +928,23 @@ From `docs/blueprint.md`:
 3. **Image Optimization**:
    - Next.js Image component with automatic optimization
    - Remote patterns configured for CDNs
-   - Unoptimized mode for data URIs
+   - Lazy loading for off-screen images
+   - Cloudflare R2 for global CDN delivery
 
 4. **Code Splitting**:
    - App Router automatic code splitting
    - Dynamic imports for heavy components
+   - Route-based code splitting
 
 5. **Turbopack**:
    - Fast refresh in development
    - Optimized builds
+   - Hot module replacement
 
-## Migration Guide
-
-See `REFACTORING.md` for complete migration guide.
-
-### Quick Reference
-
-**Auth Checks** (Old → New):
-```typescript
-// Old
-const { user, isUserLoading } = useUser();
-useEffect(() => {
-  if (!isUserLoading && !user) router.push('/');
-}, [user, isUserLoading, router]);
-
-// New
-const { user, isLoading } = useRequireAuth();
-```
-
-**Firestore Operations** (Old → New):
-```typescript
-// Old
-const brandsCollection = collection(firestore, `users/${user.uid}/brands`);
-await addDoc(brandsCollection, data);
-
-// New
-const brandService = useMemo(() => createBrandService(firestore), [firestore]);
-const brandId = await brandService.createBrand(user.uid, data);
-```
+6. **Client-Server Separation**:
+   - Server components for static content
+   - Client components only where needed
+   - Reduced JavaScript bundle size
 
 ## Known Considerations
 
@@ -813,6 +955,9 @@ const brandId = await brandService.createBrand(user.uid, data);
 - Firestore queries memoized to prevent unnecessary re-subscriptions
 - Color hue shifting applied via CSS filter (client-side)
 - Firestore serverTimestamp() used for consistent timestamps
+- Multiple AI providers require different API keys
+- R2 storage requires S3-compatible SDK setup
+- Font loading managed through Next.js font optimization
 
 ## Development Tips
 
@@ -823,27 +968,33 @@ const brandId = await brandService.createBrand(user.uid, data);
 5. **Run type checks** before committing: `npm run typecheck`
 6. **Run linter** before committing: `npm run lint`
 7. **Use the Genkit Dev UI** for testing AI flows: `npm run genkit:dev`
+8. **Test with multiple AI providers** to ensure consistent behavior
+9. **Use client components sparingly** - prefer server components
+10. **Test responsive design** at multiple breakpoints
 
 ## Testing Strategy (Recommended)
 
 1. **Unit Tests**:
    - Service layer methods
-   - Utility functions (color-utils)
+   - Utility functions (color-utils, image-utils)
    - Custom hooks (useRequireAuth)
 
 2. **Component Tests**:
-   - BrandHeader
-   - BrandIdentityCard
-   - TaglinesList
+   - Brand components
+   - Logo controls
+   - Form inputs
 
 3. **Integration Tests**:
    - Auth flow (login, redirect, logout)
    - Brand creation flow
-   - AI generation flows
+   - AI generation flows with all providers
+   - Logo manipulation workflows
 
 4. **E2E Tests**:
    - Full user journey
-   - Brand creation to logo generation
+   - Brand creation to presentation
+   - Logo generation and customization
+   - Multi-provider logo generation
 
 ## Contributing
 
@@ -853,20 +1004,27 @@ When contributing to this codebase:
 2. **Type everything**: No `any` types without good reason
 3. **Memoize Firebase objects**: Use `useMemoFirebase` for queries and refs
 4. **Run checks**: `npm run typecheck && npm run lint`
-5. **Update documentation**: Keep claude.md and REFACTORING.md in sync
+5. **Update documentation**: Keep CLAUDE.md in sync with changes
 6. **Write tests**: Add tests for new features
+7. **Consider performance**: Optimize images, minimize client components
+8. **Multi-provider support**: Ensure new AI features work with all providers
 
 ## Resources
 
 - [Next.js Documentation](https://nextjs.org/docs)
+- [React 19 Documentation](https://react.dev/)
 - [Firebase Documentation](https://firebase.google.com/docs)
 - [Google Genkit Documentation](https://firebase.google.com/docs/genkit)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Fal.ai Documentation](https://fal.ai/docs)
 - [shadcn/ui Documentation](https://ui.shadcn.com/)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Framer Motion Documentation](https://www.framer.com/motion/)
+- [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
 
 ## Support
 
 For issues, bugs, or questions:
-- Check `docs/blueprint.md` for design decisions
-- Check `REFACTORING.md` for architectural patterns
-- Review this file for implementation details
+- Review this documentation for implementation details
+- Check the codebase structure for architectural patterns
+- Test with different AI providers to isolate issues
