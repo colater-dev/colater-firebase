@@ -127,6 +127,30 @@ service cloud.firestore {
           allow update: if isExistingOwner(userId) && resource.data.userId == userId;
           allow delete: if isExistingOwner(userId);
         }
+
+        /**
+         * @description Protects presentations, allowing only the owner to read and write.
+         * @path /users/{userId}/brands/{brandId}/presentations/{presentationId}
+         */
+        match /presentations/{presentationId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.userId == userId;
+          allow update: if isExistingOwner(userId) && resource.data.userId == userId;
+          allow delete: if isExistingOwner(userId);
+        }
+
+        /**
+         * @description Protects API keys, allowing only the owner to read and write.
+         * @path /users/{userId}/brands/{brandId}/apiKeys/{keyId}
+         */
+        match /apiKeys/{keyId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.userId == userId;
+          allow update: if isExistingOwner(userId);
+          allow delete: if isExistingOwner(userId);
+        }
     }
 
     /**
@@ -167,6 +191,26 @@ service cloud.firestore {
           allow update, delete: if false; // Prevent modification/deletion
         }
       }
+    }
+
+    /**
+     * @description Lookup for public shared presentations.
+     * @path /public_presentations/{token}
+     */
+    match /public_presentations/{token} {
+      allow get: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Lookup for public shared presentations (alternative name used in service).
+     * @path /public_presentations_lookup/{token}
+     */
+    match /public_presentations_lookup/{token} {
+      allow get: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
   }
 

@@ -53,12 +53,6 @@ export class PresentationService {
     }
 
     async getPresentationByShareToken(token: string): Promise<Presentation | null> {
-        const q = query(collection(this.firestore, "public_presentations_lookup"), where("token", "==", token));
-        // Wait, I need a better way to lookup public presentations without knowing userId/brandId.
-        // I'll use a top-level collection 'public_presentations' which is a mirror or a pointer.
-        // For simplicity, let's assume we can query across all users' presentations if we have a token (requires index and specific security rules).
-        // Or better, just store the lookup in 'public_presentations' collection.
-
         const publicRef = doc(this.firestore, `public_presentations/${token}`);
         const publicSnap = await getDoc(publicRef);
         if (publicSnap.exists()) {

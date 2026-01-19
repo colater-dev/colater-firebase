@@ -74,34 +74,43 @@ export default function PresentationClient() {
         if (!user || !brandId || presentation) return;
 
         const loadPresentation = async () => {
-            const existing = await presentationService.getLatestPresentation(user.uid, brandId);
-            if (existing) {
-                setPresentation(existing);
-            } else if (brand && activeLogo) {
-                // Pre-initialize with brand data if no presentation exists
-                const initialPresentation: Partial<Presentation> = {
-                    brandId,
-                    userId: user.uid,
-                    version: 1,
-                    isPublic: false,
-                    viewCount: 0,
-                    slides: [
-                        { slideId: 'cover', order: 0, isVisible: true, content: { brandName: brand.latestName, tagline: brand.primaryTagline || '', clientName: '' } },
-                        { slideId: 'challenge', order: 1, isVisible: true, content: { challengeTitle: 'The Challenge', problemStatement: brand.latestElevatorPitch, marketContext: '' } },
-                        { slideId: 'solution', order: 2, isVisible: true, content: { solutionStatement: '', keyAttributes: [], targetAudienceStatement: brand.latestAudience } },
-                        { slideId: 'logo-reveal', order: 3, isVisible: true, content: {} },
-                        { slideId: 'visual-identity', order: 4, isVisible: true, content: {} },
-                        { slideId: 'color-story', order: 5, isVisible: true, content: { colorPhilosophy: '', colorUsage: [] } },
-                        { slideId: 'applications', order: 6, isVisible: true, content: {} },
-                        { slideId: 'next-steps', order: 7, isVisible: true, content: { deliverablesList: ['Vector Logo Files', 'Brand Style Guide', 'Social Media Assets'], nextStepsStatement: '', closingMessage: 'Building the future together.' } },
-                    ]
-                };
-                setPresentation(initialPresentation as Presentation);
+            try {
+                const existing = await presentationService.getLatestPresentation(user.uid, brandId);
+                if (existing) {
+                    setPresentation(existing);
+                } else if (brand && activeLogo) {
+                    // Pre-initialize with brand data if no presentation exists
+                    const initialPresentation: Partial<Presentation> = {
+                        brandId,
+                        userId: user.uid,
+                        version: 1,
+                        isPublic: false,
+                        viewCount: 0,
+                        slides: [
+                            { slideId: 'cover', order: 0, isVisible: true, content: { brandName: brand.latestName, tagline: brand.primaryTagline || '', clientName: '' } },
+                            { slideId: 'challenge', order: 1, isVisible: true, content: { challengeTitle: 'The Challenge', problemStatement: brand.latestElevatorPitch, marketContext: '' } },
+                            { slideId: 'solution', order: 2, isVisible: true, content: { solutionStatement: '', keyAttributes: [], targetAudienceStatement: brand.latestAudience } },
+                            { slideId: 'logo-reveal', order: 3, isVisible: true, content: {} },
+                            { slideId: 'visual-identity', order: 4, isVisible: true, content: {} },
+                            { slideId: 'color-story', order: 5, isVisible: true, content: { colorPhilosophy: '', colorUsage: [] } },
+                            { slideId: 'applications', order: 6, isVisible: true, content: {} },
+                            { slideId: 'next-steps', order: 7, isVisible: true, content: { deliverablesList: ['Vector Logo Files', 'Brand Style Guide', 'Social Media Assets'], nextStepsStatement: '', closingMessage: 'Building the future together.' } },
+                        ]
+                    };
+                    setPresentation(initialPresentation as Presentation);
+                }
+            } catch (error) {
+                console.error("Failed to load presentation:", error);
+                toast({
+                    title: "Connection Error",
+                    description: "Failed to load presentation data. Please check your connection and try again.",
+                    variant: "destructive"
+                });
             }
         };
 
         loadPresentation();
-    }, [user, brandId, presentationService, brand, activeLogo]);
+    }, [user, brandId, presentationService, brand, activeLogo, toast]);
 
     // Keyboard Navigation
     useEffect(() => {

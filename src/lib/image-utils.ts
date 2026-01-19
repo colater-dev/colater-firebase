@@ -1,12 +1,14 @@
 
 
-export function getProxyUrl(url: string): string {
+export function getProxyUrl(url: string | undefined | null): string {
+    if (!url) return '';
     if (url.startsWith('data:') || url.startsWith('/')) {
         return url;
     }
     // Use Next.js image optimization as a proxy to avoid CORS issues
-    // We request a high quality, high resolution version
-    return `/_next/image?url=${encodeURIComponent(url)}&w=2048&q=100`;
+    // We request a standard width and high quality
+    // Standard Next.js widths include 1080, 1200, 1920, 2048
+    return `/_next/image?url=${encodeURIComponent(url)}&w=1200&q=80`;
 }
 
 /**
@@ -15,15 +17,27 @@ export function getProxyUrl(url: string): string {
  */
 async function urlToDataUri(url: string): Promise<string> {
     try {
+        if (!url) return '';
         // First try to use the image directly if it's already a data URI
         if (url.startsWith('data:')) {
             return url;
         }
 
-        // Use fetch to get the image data through Next.js proxy
-        const response = await fetch(getProxyUrl(url));
+        const proxyUrl = getProxyUrl(url);
+        if (!proxyUrl) return '';
+
+        // Try to fetch through proxy
+        let response = await fetch(proxyUrl);
+
+        // Fallback: If proxy fails (400), try to fetch directly
+        // Some buckets might have CORS configured, making the proxy unnecessary
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            console.warn(`Proxy fetch failed for ${url} (Status: ${response.status}). Trying direct fetch...`);
+            response = await fetch(url);
+        }
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image data. Status: ${response.status}`);
         }
 
         const blob = await response.blob();
@@ -52,133 +66,133 @@ export async function cropImageToContent(
             // No need for crossOrigin when using data URI
 
             img.onload = () => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    console.error('Could not get canvas context');
-                    resolve(imageUrl);
-                    return;
-                }
-                ctx.drawImage(img, 0, 0);
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        console.error('Could not get canvas context');
+                        resolve(imageUrl);
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0);
 
-                let minX = canvas.width;
-                let minY = canvas.height;
-                let maxX = 0;
-                let maxY = 0;
+                    let minX = canvas.width;
+                    let minY = canvas.height;
+                    let maxX = 0;
+                    let maxY = 0;
 
-                if (cropDetails) {
-                    minX = cropDetails.x;
-                    minY = cropDetails.y;
-                    // maxX and maxY are not needed if we use width/height directly
-                } else {
-                    // Get image data
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
+                    if (cropDetails) {
+                        minX = cropDetails.x;
+                        minY = cropDetails.y;
+                        // maxX and maxY are not needed if we use width/height directly
+                    } else {
+                        // Get image data
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
 
-                    let foundContent = false;
+                        let foundContent = false;
 
-                    // Assume top-left pixel is background color
-                    const bgR = data[0];
-                    const bgG = data[1];
-                    const bgB = data[2];
-                    const bgA = data[3];
+                        // Assume top-left pixel is background color
+                        const bgR = data[0];
+                        const bgG = data[1];
+                        const bgB = data[2];
+                        const bgA = data[3];
 
-                    // Threshold for difference to consider as content
-                    // 30 is a reasonable starting point for "significant difference"
-                    const threshold = 30;
+                        // Threshold for difference to consider as content
+                        // 30 is a reasonable starting point for "significant difference"
+                        const threshold = 30;
 
-                    // Iterate over pixels
-                    for (let y = 0; y < canvas.height; y++) {
-                        for (let x = 0; x < canvas.width; x++) {
-                            const i = (y * canvas.width + x) * 4;
-                            const r = data[i];
-                            const g = data[i + 1];
-                            const b = data[i + 2];
-                            const a = data[i + 3];
+                        // Iterate over pixels
+                        for (let y = 0; y < canvas.height; y++) {
+                            for (let x = 0; x < canvas.width; x++) {
+                                const i = (y * canvas.width + x) * 4;
+                                const r = data[i];
+                                const g = data[i + 1];
+                                const b = data[i + 2];
+                                const a = data[i + 3];
 
-                            // Skip fully transparent pixels if background is transparent
-                            if (bgA === 0 && a === 0) continue;
+                                // Skip fully transparent pixels if background is transparent
+                                if (bgA === 0 && a === 0) continue;
 
-                            // Calculate difference from background
-                            // Using simple Manhattan distance for performance
-                            const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
+                                // Calculate difference from background
+                                // Using simple Manhattan distance for performance
+                                const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) + Math.abs(a - bgA);
 
-                            if (diff > threshold) {
-                                if (x < minX) minX = x;
-                                if (x > maxX) maxX = x;
-                                if (y < minY) minY = y;
-                                if (y > maxY) maxY = y;
-                                foundContent = true;
+                                if (diff > threshold) {
+                                    if (x < minX) minX = x;
+                                    if (x > maxX) maxX = x;
+                                    if (y < minY) minY = y;
+                                    if (y > maxY) maxY = y;
+                                    foundContent = true;
+                                }
                             }
                         }
+
+                        // If no content found, return original
+                        if (!foundContent) {
+                            console.log('No content found to crop (uniform color)');
+                            resolve(imageUrl);
+                            return;
+                        }
+
+                        console.log(`Cropping image: Original ${canvas.width}x${canvas.height}, Bounds: [${minX}, ${minY}, ${maxX}, ${maxY}]`);
+
+                        // Add small padding
+                        const padding = 20;
+                        minX = Math.max(0, minX - padding);
+                        minY = Math.max(0, minY - padding);
+                        maxX = Math.min(canvas.width, maxX + padding);
+                        maxY = Math.min(canvas.height, maxY + padding);
                     }
 
-                    // If no content found, return original
-                    if (!foundContent) {
-                        console.log('No content found to crop (uniform color)');
+                    const width = cropDetails ? cropDetails.width : (maxX - minX);
+                    const height = cropDetails ? cropDetails.height : (maxY - minY);
+
+                    // If the crop is basically the whole image, just return original
+                    if (width >= canvas.width - 2 && height >= canvas.height - 2) {
+                        console.log('Crop is entire image, returning original');
                         resolve(imageUrl);
                         return;
                     }
 
-                    console.log(`Cropping image: Original ${canvas.width}x${canvas.height}, Bounds: [${minX}, ${minY}, ${maxX}, ${maxY}]`);
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = width;
+                    cropCanvas.height = height;
+                    const cropCtx = cropCanvas.getContext('2d');
+                    if (!cropCtx) {
+                        resolve(imageUrl);
+                        return;
+                    }
 
-                    // Add small padding
-                    const padding = 20;
-                    minX = Math.max(0, minX - padding);
-                    minY = Math.max(0, minY - padding);
-                    maxX = Math.min(canvas.width, maxX + padding);
-                    maxY = Math.min(canvas.height, maxY + padding);
-                }
-
-                const width = cropDetails ? cropDetails.width : (maxX - minX);
-                const height = cropDetails ? cropDetails.height : (maxY - minY);
-
-                // If the crop is basically the whole image, just return original
-                if (width >= canvas.width - 2 && height >= canvas.height - 2) {
-                    console.log('Crop is entire image, returning original');
+                    cropCtx.drawImage(canvas, minX, minY, width, height, 0, 0, width, height);
+                    const croppedUrl = cropCanvas.toDataURL();
+                    resolve(croppedUrl);
+                } catch (e) {
+                    console.error('Error during cropping logic:', e);
                     resolve(imageUrl);
-                    return;
                 }
+            };
 
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = width;
-                cropCanvas.height = height;
-                const cropCtx = cropCanvas.getContext('2d');
-                if (!cropCtx) {
+            img.onerror = (err) => {
+                console.error(`Error loading image for cropping [${imageUrl}]:`, err);
+                resolve(imageUrl);
+            };
+
+            // Use data URI (no CORS issues)
+            img.src = dataUri;
+
+            // Safety timeout to ensure promise always resolves
+            setTimeout(() => {
+                if (!img.complete || img.naturalWidth === 0) {
+                    console.warn(`Crop timeout for ${imageUrl}, resolving with original`);
                     resolve(imageUrl);
-                    return;
+                    img.onload = null;
+                    img.onerror = null;
                 }
-
-                cropCtx.drawImage(canvas, minX, minY, width, height, 0, 0, width, height);
-                const croppedUrl = cropCanvas.toDataURL();
-                resolve(croppedUrl);
-            } catch (e) {
-                console.error('Error during cropping logic:', e);
-                resolve(imageUrl);
-            }
-        };
-
-        img.onerror = (err) => {
-            console.error(`Error loading image for cropping [${imageUrl}]:`, err);
-            resolve(imageUrl);
-        };
-
-        // Use data URI (no CORS issues)
-        img.src = dataUri;
-
-        // Safety timeout to ensure promise always resolves
-        setTimeout(() => {
-            if (!img.complete || img.naturalWidth === 0) {
-                console.warn(`Crop timeout for ${imageUrl}, resolving with original`);
-                resolve(imageUrl);
-                img.onload = null;
-                img.onerror = null;
-            }
-        }, 5000);
-    });
+            }, 5000);
+        });
     } catch (error) {
         console.error('Error in cropImageToContent:', error);
         return imageUrl;
