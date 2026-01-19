@@ -381,7 +381,7 @@ export function balanceToDisplaySettings(balance: BalanceResult): {
     // When logoScale is high and wordmarkScale is low → balance should be low (logo dominates)
     // When logoScale is low and wordmarkScale is high → balance should be high (text dominates)
 
-    const ratio = wordmarkScale / logoScale;
+    const ratio = balance.wordmarkScale / balance.logoScale;
     // Map ratio to 0-100 scale
     // ratio of 0.5 (text half of logo) → balance of 25
     // ratio of 1.0 (equal) → balance of 50
