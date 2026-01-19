@@ -193,6 +193,7 @@ export default function PresentationClient() {
     };
 
     const handleExportPDF = async () => {
+        if (!brand) return;
         setIsExporting(true);
         try {
             await generatePresentationPDF(
