@@ -1,0 +1,39 @@
+{
+  "name": "@colater/mcp-server",
+  "version": "1.0.0",
+  "description": "Brand intelligence layer for AI workflows",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "colater-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "brand",
+    "ai",
+    "design",
+    "marketing",
+    "model-context-protocol"
+  ],
+  "author": "Colater",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "chalk": "^5.4.1",
+    "inquirer": "^12.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
