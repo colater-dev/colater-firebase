@@ -1,6 +1,6 @@
 
 import { Metadata } from 'next';
-import { HomeClient } from './home-client';
+import { LandingPageClient } from './landing-page-client';
 
 export const metadata: Metadata = {
   title: 'Design Your Brand Identity in Seconds',
@@ -18,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <HomeClient />;
+  return <LandingPageClient />;
 }

@@ -26,6 +26,17 @@ export async function generateMetadata(
   };
 }
 
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
+
 export default function BrandPage() {
-  return <BrandDetailClient />;
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center p-4 min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <BrandDetailClient />
+    </Suspense>
+  );
 }

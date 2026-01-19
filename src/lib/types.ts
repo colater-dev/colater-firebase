@@ -88,3 +88,28 @@ export interface LogoFeedback {
     isAnonymous: boolean;
     createdAt: any; // Firestore Timestamp
 }
+
+export interface Presentation {
+    id: string;
+    brandId: string;
+    userId: string;
+    createdAt: any;
+    lastEdited: any;
+    version: number;
+    slides: PresentationSlide[];
+    title?: string;
+    clientName?: string;
+    isPublic: boolean;
+    shareToken?: string;
+    sharePassword?: string;
+    expiresAt?: any;
+    viewCount: number;
+    lastViewed?: any;
+}
+
+export interface PresentationSlide {
+    slideId: string;
+    order: number;
+    isVisible: boolean;
+    content: Record<string, any>;
+}

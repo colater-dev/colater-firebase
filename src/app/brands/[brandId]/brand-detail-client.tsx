@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
     collection,
     serverTimestamp,
@@ -30,11 +30,15 @@ import { useToast } from '@/hooks/use-toast';
 import { createBrandService, createLogoService } from '@/services';
 import { BrandIdentityCard } from '@/features/brands/components';
 import { ContentCard } from '@/components/layout';
+import { TutorialModal } from '@/features/onboarding/components';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Brand, Logo } from '@/lib/types';
 
 export function BrandDetailClient() {
     const { brandId } = useParams();
+    const searchParams = useSearchParams();
+    const isNewBrand = searchParams.get('new') === 'true';
+    const [showTutorial, setShowTutorial] = useState(isNewBrand);
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -662,6 +666,11 @@ export function BrandDetailClient() {
                                 onBrandNameChange={handleBrandNameChange}
                                 onDeleteLogo={handleDeleteLogo}
                                 onSaveCropDetails={handleSaveCropDetails}
+                            />
+
+                            <TutorialModal
+                                isOpen={showTutorial}
+                                onClose={() => setShowTutorial(false)}
                             />
                         </div>
                     )}
