@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth, useUser, initiateSmartGoogleSignIn, handleRedirectResult } from '@/firebase';
 import { WelcomeHero } from '@/features/onboarding/components/welcome-hero';
 import { WelcomePreviewCarousel } from '@/features/onboarding/components/welcome-preview-carousel';
+import { FeaturesSection } from '@/features/onboarding/components/features-section';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, Loader2, LayoutDashboard } from "lucide-react";
 import Link from 'next/link';
@@ -19,24 +20,21 @@ export function LandingPageClient() {
 
     // Handle the redirect result from Google Sign-In when the component mounts
     useEffect(() => {
-        if (auth) {
-            setIsProcessingRedirect(true);
+        if (auth && !isUserLoading) {
             handleRedirectResult(auth)
                 .then(result => {
                     if (result) {
                         console.log("Successfully processed redirect result");
+                        setIsProcessingRedirect(true);
                         router.push('/onboarding/steps/name');
                     }
                 })
                 .catch(error => {
                     console.error("Error processing redirect result:", error);
                     setAuthError(error.message || 'Authentication failed');
-                })
-                .finally(() => {
-                    setIsProcessingRedirect(false);
                 });
         }
-    }, [auth, router]);
+    }, [auth, router, isUserLoading]);
 
     const handleGetStarted = () => {
         if (user) {
@@ -46,17 +44,18 @@ export function LandingPageClient() {
         }
     };
 
-    if (isUserLoading || isProcessingRedirect) {
+    // Only show loading during actual redirect processing, not initial auth check
+    if (isProcessingRedirect) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-screen">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground font-medium text-lg">Setting up your experience...</p>
+                <p className="mt-4 text-muted-foreground font-medium text-lg">Redirecting...</p>
             </div>
         );
     }
 
     return (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-x-hidden pt-20">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-x-hidden pt-32 md:pt-24">
             {/* Top Navigation for Landing Page */}
             <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -81,15 +80,18 @@ export function LandingPageClient() {
                 </div>
             </nav>
 
-            <div className="w-full max-w-6xl space-y-12">
+            <div className="w-full max-w-6xl space-y-20">
                 {/* Hero Section */}
                 <WelcomeHero />
 
                 {/* Preview Carousel */}
                 <WelcomePreviewCarousel />
 
+                {/* Features Section */}
+                <FeaturesSection />
+
                 {/* Social Proof & CTA */}
-                <div className="flex flex-col items-center space-y-8">
+                <div className="flex flex-col items-center space-y-8 pb-20">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
