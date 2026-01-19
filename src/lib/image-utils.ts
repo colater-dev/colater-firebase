@@ -6,18 +6,52 @@ export function getProxyUrl(url: string): string {
     }
     // Use Next.js image optimization as a proxy to avoid CORS issues
     // We request a high quality, high resolution version
-    return `/_next/image?url=${encodeURIComponent(url)}&w=1920&q=100`;
+    return `/_next/image?url=${encodeURIComponent(url)}&w=2048&q=100`;
+}
+
+/**
+ * Convert an image URL to a data URI to bypass CORS restrictions
+ * This is more reliable than the Next.js proxy for canvas operations
+ */
+async function urlToDataUri(url: string): Promise<string> {
+    try {
+        // First try to use the image directly if it's already a data URI
+        if (url.startsWith('data:')) {
+            return url;
+        }
+
+        // Use fetch to get the image data through Next.js proxy
+        const response = await fetch(getProxyUrl(url));
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Error converting URL to data URI:', error);
+        throw error;
+    }
 }
 
 export async function cropImageToContent(
     imageUrl: string,
     cropDetails?: { x: number; y: number; width: number; height: number }
 ): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
+    try {
+        // Convert to data URI first to avoid CORS issues
+        const dataUri = await urlToDataUri(imageUrl);
 
-        img.onload = () => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            // No need for crossOrigin when using data URI
+
+            img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
@@ -129,44 +163,36 @@ export async function cropImageToContent(
 
         img.onerror = (err) => {
             console.error(`Error loading image for cropping [${imageUrl}]:`, err);
-            // Fallback to original URL if proxy fails, though it might fail again if CORS is the issue
-            if (img.src.includes('/_next/image')) {
-                console.warn(`Proxy failed for ${imageUrl}, falling back to original URL (might fail CORS)`);
-                // Avoid infinite loop if original also fails
-                const originalImg = new Image();
-                originalImg.crossOrigin = "Anonymous";
-                originalImg.onload = img.onload;
-                originalImg.onerror = () => {
-                    console.error(`Final fallback failed for ${imageUrl}`);
-                    resolve(imageUrl);
-                };
-                originalImg.src = imageUrl;
-            } else {
-                resolve(imageUrl);
-            }
+            resolve(imageUrl);
         };
 
-        // Use proxy URL
-        img.src = getProxyUrl(imageUrl);
+        // Use data URI (no CORS issues)
+        img.src = dataUri;
 
         // Safety timeout to ensure promise always resolves
         setTimeout(() => {
             if (!img.complete || img.naturalWidth === 0) {
                 console.warn(`Crop timeout for ${imageUrl}, resolving with original`);
                 resolve(imageUrl);
-                // Clean up to prevent further callbacks if possible (at least resolve happened)
                 img.onload = null;
                 img.onerror = null;
             }
         }, 5000);
     });
+    } catch (error) {
+        console.error('Error in cropImageToContent:', error);
+        return imageUrl;
+    }
 }
 
 
 function loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "Anonymous";
+        // No crossOrigin for data URIs
+        if (!url.startsWith('data:')) {
+            img.crossOrigin = "Anonymous";
+        }
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
         img.src = url;
@@ -175,14 +201,16 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 
 export async function createStickerEffect(imageUrl: string, maskSourceUrl?: string): Promise<string> {
     try {
-        // Load target image
-        let targetImg = await loadImage(getProxyUrl(imageUrl));
+        // Convert URLs to data URIs to avoid CORS issues
+        const targetDataUri = await urlToDataUri(imageUrl);
+        let targetImg = await loadImage(targetDataUri);
 
         // Load mask source if different
         let maskImg = targetImg;
         if (maskSourceUrl && maskSourceUrl !== imageUrl) {
             try {
-                maskImg = await loadImage(getProxyUrl(maskSourceUrl));
+                const maskDataUri = await urlToDataUri(maskSourceUrl);
+                maskImg = await loadImage(maskDataUri);
             } catch (e) {
                 console.warn('Failed to load mask source, falling back to target image', e);
             }
