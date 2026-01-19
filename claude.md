@@ -20,6 +20,8 @@ Brand Canvas (Colater) helps users craft their brand identity effortlessly by pr
 - Moodboard creation with Unsplash integration
 - Logo ranking and feedback system for prompt improvement
 - Customizable brand fonts with Google Fonts integration
+- **MCP Server integration** for AI agents (Claude Desktop, etc.)
+- **Brand-specific API keys** for secure team sharing
 - Real-time collaborative features
 - Firebase Firestore for data persistence
 - Cloudflare R2 for optimized media storage
@@ -32,16 +34,18 @@ Brand Canvas (Colater) helps users craft their brand identity effortlessly by pr
 - **UI Library**: React 19
 - **Styling**: Tailwind CSS 3.4 with shadcn/ui components
 - **Animation**: Framer Motion 11.3, Motion 12.23
-- **Backend**: Firebase (Firestore, Auth, Storage)
+- **Backend**: Firebase (Firestore, Auth, Storage, Admin SDK)
 - **Storage**: Cloudflare R2 (primary), Firebase Storage (legacy)
 - **AI Providers**:
   - Google Genkit 1.27 with Google Generative AI
   - OpenAI API (DALL-E 3)
   - Fal.ai (Flux models)
+- **MCP Server**: Model Context Protocol server for AI agent integration
 - **Forms**: React Hook Form 7.54 with Zod 3.24 validation
 - **State Management**: React Context (Firebase Provider)
-- **Auth**: NextAuth 5.0 (beta)
+- **Auth**: NextAuth 5.0 (beta), Firebase Admin SDK for API keys
 - **Image Processing**: html-to-image, get-image-colors
+- **PDF Export**: jsPDF for presentation exports
 - **Utilities**: date-fns, uuid, p5.js (generative art)
 - **Build Tool**: Next.js with Turbopack
 
@@ -69,6 +73,8 @@ The codebase follows a feature-based architecture with clear separation of conce
 6. **Client-Server Split**: Pages use server components with client components for interactivity
 7. **Multi-Provider AI**: Support for multiple logo generation providers with unified interface
 8. **Structured Prompts**: AI prompts managed in separate directory for maintainability
+9. **MCP Server Architecture**: Brand-scoped API keys with Model Context Protocol for AI agent integration
+10. **Firebase Admin SDK**: Server-side operations for API routes with graceful credential handling
 
 ## Project Structure
 
@@ -634,6 +640,352 @@ The application uses a strict user-ownership model:
    - Enables efficient authorization checks
    - No need for extra `get()` calls in security rules
 
+## MCP Server Integration
+
+### Overview
+
+The application implements a **Model Context Protocol (MCP) server** that allows AI agents (like Claude Desktop) to access brand data and use brand guidelines directly in their workflows. This enables teams to keep marketing assets and products on-brand by giving AI assistants direct access to brand context.
+
+**Key Features**:
+- Brand-specific API keys with granular permissions
+- Secure authentication using SHA-256 hashed keys
+- RESTful API endpoints for MCP tools
+- Support for brand context, voice validation, and asset retrieval
+
+### Brand-Specific API Keys
+
+**Location**: `src/app/brands/[brandId]/settings/page.tsx`, `src/features/brands/components/brand-api-keys-tab.tsx`
+
+Users can generate brand-scoped API keys from the brand settings page with three permission levels:
+
+#### Permission Levels
+
+1. **Owner** (Full Access)
+   - Read brand data
+   - Validate content against brand voice
+   - Generate new assets
+   - Modify brand settings
+
+2. **Team** (Read + Validate)
+   - Read brand data
+   - Validate content against brand voice
+   - Cannot generate new assets
+   - Cannot modify settings
+
+3. **Developer** (Read + Generate)
+   - Read brand data
+   - Generate new brand assets
+   - Cannot validate voice
+   - Cannot modify settings
+
+#### API Key Format
+
+```
+colater_sk_brand_{brandId}_{random32hex}
+```
+
+Keys are:
+- Generated with 32 bytes of cryptographic randomness
+- Stored as SHA-256 hashes (never stored in plain text)
+- Scoped to a specific brand
+- Revocable at any time
+- Track usage statistics (last used, usage count)
+
+### API Key Management
+
+**Backend Routes**:
+- `POST /api/brands/[brandId]/api-keys` - Create new API key
+- `GET /api/brands/[brandId]/api-keys` - List API keys
+- `DELETE /api/brands/[brandId]/api-keys/[keyId]` - Revoke API key
+
+**Authentication**: `src/lib/mcp-auth.ts`
+
+```typescript
+// Validate brand-scoped API key
+const { userId, brandId, permissions } = await validateMCPApiKey();
+
+// Check if key has required permission
+if (!permissions.read) {
+  throw new Error('Insufficient permissions');
+}
+```
+
+**Key Features**:
+- Collection group queries to find keys across all users
+- Revocation check (soft delete with `revokedAt` timestamp)
+- Expiration check (optional expiry dates)
+- Usage tracking (fire-and-forget updates)
+- Firebase ID token fallback for backward compatibility
+
+### MCP API Endpoints
+
+All MCP endpoints are authenticated with brand-scoped API keys.
+
+#### 1. Get Brand Context
+
+**Endpoint**: `GET /api/mcp/brands/context`
+
+Returns comprehensive brand information including identity, voice, and visual guidelines.
+
+**Query Parameters**:
+- `brandId` - Brand ID (optional if key is brand-scoped)
+- `sections` - Comma-separated list: `identity`, `voice`, `visual`
+
+**Response**:
+```json
+{
+  "brand": {
+    "id": "...",
+    "name": "Brand Name",
+    "tagline": "Brand tagline",
+    "elevatorPitch": "...",
+    "targetAudience": "...",
+    "createdAt": "ISO date",
+    "lastUpdated": "ISO date"
+  },
+  "identity": {
+    "positioning": {
+      "challenge": "Problem statement",
+      "solution": "Solution statement",
+      "keyAttributes": ["modern", "trustworthy"]
+    }
+  },
+  "voice": {
+    "tone": ["professional", "friendly"],
+    "preferWords": ["innovative", "reliable"],
+    "avoidWords": ["cheap", "outdated"],
+    "examples": {
+      "formal": "Example formal tagline",
+      "casual": "Example casual tagline"
+    }
+  },
+  "visual": {
+    "logos": {
+      "primary": "URL",
+      "variations": [...]
+    },
+    "colors": {
+      "palette": ["#hex", "#hex"],
+      "usage": [...]
+    },
+    "typography": {
+      "primary": "Font Name",
+      "weights": [400, 600, 700]
+    }
+  }
+}
+```
+
+#### 2. List Brands
+
+**Endpoint**: `GET /api/mcp/brands/list`
+
+Lists all brands accessible with the API key.
+
+**Query Parameters**:
+- `limit` - Max results (default: 10)
+- `offset` - Pagination offset
+- `filter[hasLogo]` - Only brands with logos
+- `filter[search]` - Search by name
+
+**Response**:
+```json
+{
+  "brands": [
+    {
+      "id": "...",
+      "name": "Brand Name",
+      "tagline": "...",
+      "thumbnailUrl": "URL",
+      "createdAt": "ISO date",
+      "stats": {
+        "logoCount": 5,
+        "taglineCount": 12,
+        "hasGuidelines": true
+      }
+    }
+  ],
+  "pagination": {
+    "total": 42,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+#### 3. Validate Voice
+
+**Endpoint**: `POST /api/mcp/voice/validate`
+
+Validates text against brand voice guidelines using Gemini.
+
+**Request Body**:
+```json
+{
+  "brandId": "brand123",
+  "text": "Content to validate",
+  "context": "Optional context about the content"
+}
+```
+
+**Response**:
+```json
+{
+  "isOnBrand": true,
+  "score": 85,
+  "feedback": "This aligns well with the brand's professional yet approachable tone.",
+  "suggestions": [
+    "Consider using 'innovative' instead of 'new'",
+    "The tone matches the brand guidelines"
+  ]
+}
+```
+
+#### 4. Get Assets
+
+**Endpoint**: `GET /api/mcp/assets/get`
+
+Retrieves brand assets in various formats.
+
+**Query Parameters**:
+- `brandId` - Brand ID
+- `assetTypes` - Comma-separated: `logo`, `colors`, `fonts`
+- `format[colors]` - `hex`, `rgb`, `hsl`, `tailwind`, `css`, `figma`
+- `format[fonts]` - `names`, `google_fonts_url`, `css_imports`
+- `format[logo]` - `url`, `svg`, `png`, `data_uri`
+
+**Response**:
+```json
+{
+  "logos": {
+    "primary": {
+      "url": "URL",
+      "dimensions": { "width": 512, "height": 512 }
+    },
+    "variations": [
+      { "id": "1", "type": "color", "url": "URL" },
+      { "id": "2", "type": "bw", "url": "URL" }
+    ]
+  },
+  "colors": {
+    "hex": ["#FF5733", "#33FF57"],
+    "rgb": [{"r": 255, "g": 87, "b": 51}],
+    "tailwind": {
+      "brand-primary": "#FF5733",
+      "brand-accent-1": "#33FF57"
+    },
+    "usage": [
+      {
+        "color": "#FF5733",
+        "name": "Primary",
+        "usage": "Primary brand color"
+      }
+    ]
+  },
+  "fonts": {
+    "primary": {
+      "name": "Inter",
+      "weights": [400, 600, 700],
+      "googleFontsUrl": "https://fonts.googleapis.com/..."
+    },
+    "fallbacks": ["system-ui", "sans-serif"]
+  }
+}
+```
+
+### MCP Server Package
+
+**Location**: `colater-mcp/` (separate npm package)
+
+A standalone Node.js package that implements the MCP client:
+
+**Key Files**:
+- `src/index.ts` - Main entry point with stdio transport
+- `src/config.ts` - Configuration management
+- `src/api/client.ts` - HTTP client for API calls
+- `src/tools/*.ts` - MCP tool implementations
+- `src/cli/init.ts` - Interactive setup wizard
+
+**Installation**:
+```bash
+npx @colater/mcp-server init
+```
+
+**Usage in Claude Desktop**:
+```json
+{
+  "mcpServers": {
+    "colater-brand-name": {
+      "command": "npx",
+      "args": ["-y", "@colater/mcp-server"],
+      "env": {
+        "COLATER_API_KEY": "colater_sk_brand_xxx_xxx",
+        "COLATER_BRAND_ID": "brand123"
+      }
+    }
+  }
+}
+```
+
+### Firebase Admin SDK
+
+**Location**: `src/firebase/server.ts`
+
+Server-side Firebase operations for API routes:
+
+**Features**:
+- Graceful credential handling (doesn't break build if missing)
+- Environment variable configuration
+- Service account support via JSON or individual env vars
+- Null safety for missing credentials
+
+**Configuration**:
+```env
+# Option 1: Service account JSON
+FIREBASE_SERVICE_ACCOUNT_KEY={"projectId": "...", ...}
+
+# Option 2: Individual credentials
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=...
+```
+
+**Exports**:
+```typescript
+export const adminAuth: admin.auth.Auth | null;
+export const adminDb: admin.firestore.Firestore | null;
+export const adminStorage: admin.storage.Storage | null;
+```
+
+### Security Considerations
+
+1. **API Key Hashing**: Keys stored as SHA-256 hashes, never in plain text
+2. **Brand Scoping**: Keys tied to specific brands, cannot access other brands
+3. **Permission Validation**: Every endpoint checks key permissions
+4. **Usage Tracking**: Fire-and-forget updates don't block requests
+5. **Revocation**: Soft delete allows immediate key invalidation
+6. **Expiration**: Optional expiry dates for time-limited access
+7. **Collection Group Queries**: Efficient key lookup across all users
+
+### Team Sharing Workflow
+
+1. **Brand Owner** creates API key in brand settings
+2. **Copy MCP Config** pre-generated with brand ID and key
+3. **Share Config** with team members via secure channel
+4. **Team Members** add config to Claude Desktop settings
+5. **AI Access** to brand guidelines in all conversations
+6. **Revoke Access** anytime from brand settings
+
+### Future Enhancements
+
+- **Shareable Setup Links**: `/brand/{brandId}/setup` pages with one-click MCP setup
+- **Email Invitations**: Send invites directly to team members
+- **Usage Analytics**: Track which tools are used most
+- **Rate Limiting**: Prevent API abuse
+- **Webhook Support**: Notify on brand updates
+- **Brand Import**: Create brands from existing PDFs/logos
+
 ## Firebase Integration
 
 ### Custom Hooks
@@ -863,13 +1215,18 @@ npm run typecheck        # Run TypeScript compiler check (tsc --noEmit)
 **Required in `.env`**:
 
 ```env
-# Firebase Configuration
+# Firebase Client Configuration
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
+
+# Firebase Admin SDK (for API routes and MCP server)
+FIREBASE_SERVICE_ACCOUNT_KEY=...  # Full service account JSON, OR:
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=...
 
 # Google Generative AI
 GOOGLE_GENAI_API_KEY=...
@@ -958,6 +1315,10 @@ Using shadcn/ui with Radix UI primitives (40+ components):
 - Multiple AI providers require different API keys
 - R2 storage requires S3-compatible SDK setup
 - Font loading managed through Next.js font optimization
+- Firebase Admin SDK credentials optional during build (warnings only)
+- MCP API keys scoped to specific brands for security
+- API key hashes stored in Firestore subcollections under each brand
+- Collection group queries used for efficient API key validation
 
 ## Development Tips
 
@@ -1008,6 +1369,8 @@ When contributing to this codebase:
 6. **Write tests**: Add tests for new features
 7. **Consider performance**: Optimize images, minimize client components
 8. **Multi-provider support**: Ensure new AI features work with all providers
+9. **MCP endpoints**: Add permission checks and validate brand access
+10. **Firebase Admin**: Use `adminDb`, `adminAuth`, `adminStorage` with null checks
 
 ## Resources
 
@@ -1021,6 +1384,8 @@ When contributing to this codebase:
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [Framer Motion Documentation](https://www.framer.com/motion/)
 - [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
+- [Model Context Protocol Specification](https://spec.modelcontextprotocol.io/)
+- [Firebase Admin SDK Documentation](https://firebase.google.com/docs/admin/setup)
 
 ## Support
 
