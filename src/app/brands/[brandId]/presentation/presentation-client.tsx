@@ -96,6 +96,34 @@ export default function PresentationClient() {
         loadPresentation();
     }, [user, brandId, presentationService, brand, activeLogo]);
 
+    // Keyboard Navigation
+    useEffect(() => {
+        if (isEditing) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                setCurrentSlideIndex(prev =>
+                    prev < (presentation?.slides.length || 0) - 1 ? prev + 1 : prev
+                );
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setCurrentSlideIndex(prev => prev > 0 ? prev - 1 : prev);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                setCurrentSlideIndex(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                setCurrentSlideIndex((presentation?.slides.length || 1) - 1);
+            } else if (e.key === 'Escape') {
+                router.back();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isEditing, presentation, router]);
+
     const handleGenerateNarrative = async () => {
         if (!brand || !activeLogo) return;
 
@@ -234,10 +262,10 @@ export default function PresentationClient() {
         const content = currentSlide.content;
 
         switch (currentSlide.slideId) {
-            case 'cover': return <Slides.CoverSlide {...baseProps} content={content as any} />;
+            case 'cover': return <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />;
             case 'challenge': return <Slides.ChallengeSlide {...baseProps} content={content as any} />;
             case 'solution': return <Slides.SolutionSlide {...baseProps} content={content as any} />;
-            case 'logo-reveal': return <Slides.LogoRevealSlide {...baseProps} />;
+            case 'logo-reveal': return <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />;
             case 'visual-identity': return <Slides.VisualIdentitySlide {...baseProps} />;
             case 'color-story': return <Slides.ColorStorySlide {...baseProps} content={content as any} />;
             case 'applications': return <Slides.ApplicationsSlide {...baseProps} />;
@@ -409,10 +437,10 @@ export default function PresentationClient() {
 
                     return (
                         <div key={slide.slideId} data-slide={slide.slideId} className="w-[1200px] aspect-[16/10] bg-white overflow-hidden">
-                            {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} />}
+                            {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />}
                             {slide.slideId === 'challenge' && <Slides.ChallengeSlide {...baseProps} content={content as any} />}
                             {slide.slideId === 'solution' && <Slides.SolutionSlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} />}
+                            {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />}
                             {slide.slideId === 'visual-identity' && <Slides.VisualIdentitySlide {...baseProps} />}
                             {slide.slideId === 'color-story' && <Slides.ColorStorySlide {...baseProps} content={content as any} />}
                             {slide.slideId === 'applications' && <Slides.ApplicationsSlide {...baseProps} />}
