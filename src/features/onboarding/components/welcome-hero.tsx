@@ -2,8 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { Sparkles, Target, Palette } from 'lucide-react';
+import { ReactNode } from 'react';
 
-export function WelcomeHero() {
+interface WelcomeHeroProps {
+    ctaButton?: ReactNode;
+}
+
+export function WelcomeHero({ ctaButton }: WelcomeHeroProps) {
     return (
         <div className="space-y-8 max-w-4xl mx-auto text-center">
             {/* Main Headline */}
@@ -30,12 +35,24 @@ export function WelcomeHero() {
                 and maintain brand consistency across every touchpoint.
             </motion.p>
 
+            {/* CTA Button */}
+            {ctaButton && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2, duration: 0.6, type: "spring" }}
+                    className="pt-2"
+                >
+                    {ctaButton}
+                </motion.div>
+            )}
+
             {/* Value Props */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4"
+                transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8"
             >
                 <div className="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/50 transition-all">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -72,7 +89,7 @@ export function WelcomeHero() {
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
                 className="pt-4"
             >
                 <p className="text-base text-muted-foreground/80 max-w-2xl mx-auto">

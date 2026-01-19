@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
+import { useDoc, useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { createBrandService, createLogoService, createPresentationService } from '@/services';
 import type { Brand, Logo, Presentation } from '@/lib/types';
@@ -41,12 +41,19 @@ export default function PresentationClient() {
     const logoService = useMemo(() => createLogoService(firestore), [firestore]);
     const presentationService = useMemo(() => createPresentationService(firestore), [firestore]);
 
-    const { data: brand, isLoading: brandLoading } = useDoc<Brand>(
-        user && brandId ? doc(firestore, `users/${user.uid}/brands/${brandId}`) : null
+    const brandDocRef = useMemoFirebase(
+        () =>
+            user && brandId ? doc(firestore, `users/${user.uid}/brands/${brandId}`) : null,
+        [firestore, user, brandId]
     );
-    const { data: logos, isLoading: logosLoading } = useCollection<Logo>(
-        user && brandId ? collection(firestore, `users/${user.uid}/brands/${brandId}/logos`) : null
+    const logosColRef = useMemoFirebase(
+        () =>
+            user && brandId ? collection(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations`) : null,
+        [firestore, user, brandId]
     );
+
+    const { data: brand, isLoading: brandLoading } = useDoc<Brand>(brandDocRef);
+    const { data: logos, isLoading: logosLoading } = useCollection<Logo>(logosColRef);
 
     const [presentation, setPresentation] = useState<Presentation | null>(null);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);

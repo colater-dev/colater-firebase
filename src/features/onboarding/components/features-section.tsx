@@ -30,7 +30,7 @@ export function FeaturesSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20"
+                        className="p-8 rounded-2xl bg-white border border-gray-200"
                     >
                         <Zap className="w-12 h-12 text-primary mb-4" />
                         <h3 className="text-2xl font-bold mb-3">AI-Powered Brand Strategy</h3>
@@ -63,9 +63,9 @@ export function FeaturesSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="p-8 rounded-2xl bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20"
+                        className="p-8 rounded-2xl bg-white border border-gray-200"
                     >
-                        <Download className="w-12 h-12 text-purple-600 mb-4" />
+                        <Download className="w-12 h-12 text-primary mb-4" />
                         <h3 className="text-2xl font-bold mb-3">Professional Visual Assets</h3>
                         <p className="text-muted-foreground mb-4">
                             Generate production-ready logos, color palettes, mockups, and presentations.
@@ -73,19 +73,19 @@ export function FeaturesSection() {
                         </p>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-start gap-2">
-                                <span className="text-purple-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Multiple logo variations (color, monochrome, icon)</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-purple-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Harmonious color palettes with hex codes</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-purple-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Business card and mockup previews</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-purple-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Presentation-ready brand guidelines</span>
                             </li>
                         </ul>
@@ -96,9 +96,9 @@ export function FeaturesSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.3 }}
-                        className="p-8 rounded-2xl bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20"
+                        className="p-8 rounded-2xl bg-white border border-gray-200"
                     >
-                        <RefreshCw className="w-12 h-12 text-green-600 mb-4" />
+                        <RefreshCw className="w-12 h-12 text-primary mb-4" />
                         <h3 className="text-2xl font-bold mb-3">Iterate Until It's Perfect</h3>
                         <p className="text-muted-foreground mb-4">
                             Don't settle for the first result. Regenerate assets, adjust colors, and refine your
@@ -106,19 +106,19 @@ export function FeaturesSection() {
                         </p>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-start gap-2">
-                                <span className="text-green-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Unlimited logo generation attempts</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>AI critique and improvement suggestions</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Fine-tune colors, sizing, and layouts</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Save multiple variations for comparison</span>
                             </li>
                         </ul>
@@ -129,9 +129,9 @@ export function FeaturesSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.4 }}
-                        className="p-8 rounded-2xl bg-gradient-to-br from-orange-500/5 to-orange-500/10 border border-orange-500/20"
+                        className="p-8 rounded-2xl bg-white border border-gray-200"
                     >
-                        <Shield className="w-12 h-12 text-orange-600 mb-4" />
+                        <Shield className="w-12 h-12 text-primary mb-4" />
                         <h3 className="text-2xl font-bold mb-3">Maintain Consistency</h3>
                         <p className="text-muted-foreground mb-4">
                             Your brand guidelines stored in one place. Ensure every asset, from website to app to
@@ -139,19 +139,19 @@ export function FeaturesSection() {
                         </p>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-start gap-2">
-                                <span className="text-orange-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Centralized brand asset library</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-orange-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Usage guidelines and best practices</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-orange-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Brand compliance checking</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-orange-600 mt-0.5">✓</span>
+                                <span className="text-primary mt-0.5">✓</span>
                                 <span>Team collaboration and sharing</span>
                             </li>
                         </ul>
@@ -159,15 +159,14 @@ export function FeaturesSection() {
                 </div>
             </div>
 
-            {/* MCP Server Section */}
-            <motion.div
+            {/* MCP Server Section - Commented out for now */}
+            {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
                 className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border-2 border-primary/30 relative overflow-hidden"
             >
-                {/* Background decoration */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
 
@@ -252,7 +251,7 @@ export function FeaturesSection() {
                         </p>
                     </div>
                 </div>
-            </motion.div>
+            </motion.div> */}
         </div>
     );
 }

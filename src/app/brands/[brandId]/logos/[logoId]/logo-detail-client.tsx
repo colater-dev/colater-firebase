@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -20,13 +20,13 @@ export function LogoDetailClient() {
     const { user } = useUser();
 
     // Memoize document references to prevent recreation on every render
-    const publicLogoRef = useMemo(
+    const publicLogoRef = useMemoFirebase(
         () => doc(firestore, `brands/${brandId}/logos/${logoId}`),
         [firestore, brandId, logoId]
     );
     const { data: publicLogo, isLoading: publicLoading } = useDoc<Logo>(publicLogoRef);
 
-    const userLogoRef = useMemo(
+    const userLogoRef = useMemoFirebase(
         () => user && !publicLogo && !publicLoading
             ? doc(firestore, `users/${user.uid}/brands/${brandId}/logoGenerations/${logoId}`)
             : null,
@@ -39,13 +39,13 @@ export function LogoDetailClient() {
     const logoLoading = publicLoading || userLoading;
 
     // Memoize brand document references
-    const publicBrandRef = useMemo(
+    const publicBrandRef = useMemoFirebase(
         () => doc(firestore, `brands/${brandId}`),
         [firestore, brandId]
     );
     const { data: publicBrand, isLoading: publicBrandLoading } = useDoc<Brand>(publicBrandRef);
 
-    const userBrandRef = useMemo(
+    const userBrandRef = useMemoFirebase(
         () => user && !publicBrand && !publicBrandLoading
             ? doc(firestore, `users/${user.uid}/brands/${brandId}`)
             : null,

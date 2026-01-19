@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser, initiateSmartGoogleSignIn, handleRedirectResult } from '@/firebase';
 import { WelcomeHero } from '@/features/onboarding/components/welcome-hero';
-import { WelcomePreviewCarousel } from '@/features/onboarding/components/welcome-preview-carousel';
 import { FeaturesSection } from '@/features/onboarding/components/features-section';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, Loader2, LayoutDashboard } from "lucide-react";
@@ -81,32 +80,9 @@ export function LandingPageClient() {
             </nav>
 
             <div className="w-full max-w-6xl space-y-20">
-                {/* Hero Section */}
-                <WelcomeHero />
-
-                {/* Preview Carousel */}
-                <WelcomePreviewCarousel />
-
-                {/* Features Section */}
-                <FeaturesSection />
-
-                {/* Social Proof & CTA */}
-                <div className="flex flex-col items-center space-y-8 pb-20">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-sm font-medium"
-                    >
-                        <Users className="w-4 h-4 text-primary" />
-                        <span>Join 1,000+ creators building their brands on Colater</span>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.6, type: "spring" }}
-                    >
+                {/* Hero Section with CTA */}
+                <WelcomeHero
+                    ctaButton={
                         <Button
                             onClick={handleGetStarted}
                             size="lg"
@@ -117,8 +93,11 @@ export function LandingPageClient() {
                                 <ArrowRight className="w-5 h-5" />
                             </span>
                         </Button>
-                    </motion.div>
-                </div>
+                    }
+                />
+
+                {/* Features Section */}
+                <FeaturesSection />
             </div>
 
             {authError && (

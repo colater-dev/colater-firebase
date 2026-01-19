@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useDoc, useFirestore, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { createBrandService, createLogoService, createPresentationService } from '@/services';
 import type { Brand, Logo, Presentation } from '@/lib/types';
@@ -71,12 +71,19 @@ export default function PublicPresentationClient({ shareToken }: PublicPresentat
     };
 
     // Fetch Brand and Logos once we have IDs
-    const { data: brand, isLoading: brandLoading } = useDoc<Brand>(
-        presentation ? doc(firestore, `users/${presentation.userId}/brands/${presentation.brandId}`) : null
+    const brandDocRef = useMemoFirebase(
+        () =>
+            presentation ? doc(firestore, `users/${presentation.userId}/brands/${presentation.brandId}`) : null,
+        [firestore, presentation]
     );
-    const { data: logos, isLoading: logosLoading } = useCollection<Logo>(
-        presentation ? collection(firestore, `users/${presentation.userId}/brands/${presentation.brandId}/logos`) : null
+    const logosColRef = useMemoFirebase(
+        () =>
+            presentation ? collection(firestore, `users/${presentation.userId}/brands/${presentation.brandId}/logoGenerations`) : null,
+        [firestore, presentation]
     );
+
+    const { data: brand, isLoading: brandLoading } = useDoc<Brand>(brandDocRef);
+    const { data: logos, isLoading: logosLoading } = useCollection<Logo>(logosColRef);
 
     const activeLogo = useMemo(() => logos?.find(l => l.logoUrl === brand?.logoUrl) || logos?.[0], [logos, brand]);
     const activePalette = useMemo(() => activeLogo?.colorVersions?.[0]?.palette || activeLogo?.palette || ['#000000', '#FFFFFF', '#6366F1'], [activeLogo]);
