@@ -14,6 +14,7 @@ import { vectoriseLogo } from "@/ai/flows/vectorise-logo";
 import { generateStories, GenerateStoriesInput } from "@/ai/flows/generate-stories";
 import { generatePresentationData, GeneratePresentationDataInput } from "@/ai/flows/generate-presentation-data";
 import { justifyLogo, JustifyLogoInput, Justification } from "@/ai/flows/justify-logo";
+import { generatePresentationNarrative, PresentationNarrativeInput, PresentationNarrativeOutput } from "@/ai/flows/generate-presentation-narrative";
 
 export async function getTaglineSuggestions(
   name: string,
@@ -339,7 +340,25 @@ export async function getLogoJustification(
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return {
       success: false,
-      error: `An unexpected error occurred while justifying the logo: ${errorMessage}`,
+    };
+  }
+}
+
+export async function getPresentationNarrative(
+  input: PresentationNarrativeInput
+): Promise<{ success: boolean; data?: PresentationNarrativeOutput; error?: string }> {
+  try {
+    if (!input.brandName || !input.elevatorPitch || !input.targetAudience) {
+      return { success: false, error: "Brand name, elevator pitch, and audience are required." };
+    }
+    const result = await generatePresentationNarrative(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error generating presentation narrative:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return {
+      success: false,
+      error: `An unexpected error occurred while generating presentation narrative: ${errorMessage}`,
     };
   }
 }
