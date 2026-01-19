@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Build response
     const brandsData = await Promise.all(
-      brands.map(async (doc) => {
+      brands.map(async (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
         const brandData = doc.data();
 
         // Get stats

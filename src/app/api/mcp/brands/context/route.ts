@@ -52,15 +52,24 @@ export async function POST(request: NextRequest) {
         .get(),
     ]);
 
-    const logos = logosSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const logos = logosSnapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        logoUrl: data.logoUrl || '',
+        colorVersions: data.colorVersions || [],
+        ...data,
+      };
+    });
 
-    const taglines = taglinesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const taglines = taglinesSnapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        tagline: data.tagline || '',
+        ...data,
+      };
+    });
 
     // Build response based on requested sections
     const response: any = {

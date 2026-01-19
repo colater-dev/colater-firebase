@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/firebase/server';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -100,7 +101,7 @@ export async function POST(
     if (expiresInDays) {
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiresInDays);
-      expiresAt = adminDb.app.firestore.Timestamp.fromDate(expiryDate);
+      expiresAt = Timestamp.fromDate(expiryDate);
     }
 
     // Create API key document
@@ -111,7 +112,7 @@ export async function POST(
       keyHash,
       keyPrefix,
       permissions: DEFAULT_PERMISSIONS[permissionType],
-      createdAt: adminDb.app.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       expiresAt: expiresAt || null,
       usageCount: 0,
       revokedAt: null,
@@ -183,7 +184,7 @@ export async function GET(
     }
 
     const snapshot = await query.get();
-    const apiKeys = snapshot.docs.map((doc) => {
+    const apiKeys = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
       const data = doc.data();
       return {
         id: doc.id,

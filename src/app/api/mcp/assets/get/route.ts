@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         .limit(5)
         .get();
 
-      const logos = logosSnapshot.docs.map((doc) => doc.data());
+      const logos = logosSnapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.data());
       const primaryLogo = logos[0];
 
       response.logos = {

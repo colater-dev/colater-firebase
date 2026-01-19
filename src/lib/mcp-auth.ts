@@ -4,6 +4,7 @@
 
 import { headers } from 'next/headers';
 import { adminAuth, adminDb } from '@/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
 export interface MCPAuthResult {
@@ -103,9 +104,9 @@ export async function validateMCPApiKey(): Promise<MCPAuthResult> {
 
       // Update usage stats (fire and forget)
       keyDoc.ref.update({
-        lastUsedAt: adminDb.app.firestore.FieldValue.serverTimestamp(),
+        lastUsedAt: FieldValue.serverTimestamp(),
         usageCount: (keyData.usageCount || 0) + 1,
-      }).catch((err) => console.error('Failed to update API key usage:', err));
+      }).catch((err: any) => console.error('Failed to update API key usage:', err));
 
       return {
         valid: true,

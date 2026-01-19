@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Authenticate request and return user ID
@@ -56,7 +57,7 @@ export async function DELETE(
     await adminDb
       .doc(`users/${userId}/brands/${brandId}/apiKeys/${keyId}`)
       .update({
-        revokedAt: adminDb.app.firestore.FieldValue.serverTimestamp(),
+        revokedAt: FieldValue.serverTimestamp(),
       });
 
     return NextResponse.json({
