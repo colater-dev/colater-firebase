@@ -42,7 +42,7 @@ export function ChallengeSlide({ content, isEditing, onUpdate, logo }: Challenge
                         onChange={(val) => onUpdate({ challengeTitle: val })}
                         isEditing={isEditing}
                         className="font-mono uppercase tracking-[0.3em] text-primary mb-4"
-                        style={{ fontSize: '1.5cqw' }}
+                        style={{ fontSize: '1.2cqw' }}
                     />
                     <div className="w-20 h-1 bg-primary/20" />
                 </div>
@@ -53,7 +53,7 @@ export function ChallengeSlide({ content, isEditing, onUpdate, logo }: Challenge
                     isEditing={isEditing}
                     multiline
                     className="font-black tracking-tight leading-tight"
-                    style={{ fontSize: '5cqw' }}
+                    style={{ fontSize: '3cqw' }}
                     placeholder="Describe the main problem your brand solves..."
                 />
 
@@ -64,7 +64,7 @@ export function ChallengeSlide({ content, isEditing, onUpdate, logo }: Challenge
                         isEditing={isEditing}
                         multiline
                         className="text-muted-foreground font-medium italic"
-                        style={{ fontSize: '2cqw' }}
+                        style={{ fontSize: '1.5cqw' }}
                         placeholder="Provide more context about the market or pain points..."
                     />
                 </div>

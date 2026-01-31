@@ -282,7 +282,7 @@ export default function PresentationClient() {
                         <ChevronLeft className="w-5 h-5" />
                     </Button>
                     <div className="h-6 w-px bg-border" />
-                    <span className="font-bold tracking-tight">{brand?.latestName} Presentation</span>
+                    <span className="font-bold tracking-tight">{brand?.latestName}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -351,8 +351,8 @@ export default function PresentationClient() {
             </div>
 
             {/* Slide Area */}
-            <div className="flex-1 relative flex items-center justify-center bg-gray-100/50 p-12 overflow-auto">
-                <div className="w-full max-w-6xl aspect-[16/10] bg-white shadow-2xl rounded-2xl overflow-hidden relative group shrink-0">
+            <div className="flex-1 relative flex items-center justify-center bg-gray-100/50 p-0 md:p-12 overflow-auto">
+                <div className="w-full max-w-6xl aspect-[16/10] bg-white shadow-2xl rounded-none md:rounded-2xl overflow-hidden relative group shrink-0">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentSlide.slideId + currentSlideIndex}

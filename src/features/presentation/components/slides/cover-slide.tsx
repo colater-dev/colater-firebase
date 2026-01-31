@@ -27,8 +27,6 @@ export function CoverSlide({ content, isEditing, onUpdate, brand, logo, palette 
     const bgColor = content.backgroundColor || (brand.displaySettings?.invertLogo ? '#000000' : '#ffffff');
     const isDark = !isLightColor(bgColor);
     const textColor = isDark ? 'white' : 'black';
-    const accentColor = palette?.[0] || '#6366F1';
-
     // Auto-calculate optimal balance between logo and text
     const { displaySettings: autoBalance, isAnalyzing } = useLogoBalance(
         logo?.logoUrl,
@@ -50,15 +48,6 @@ export function CoverSlide({ content, isEditing, onUpdate, brand, logo, palette 
             className="flex flex-col items-center justify-center h-full text-center relative overflow-hidden transition-colors duration-700"
             style={{ backgroundColor: bgColor }}
         >
-            {/* Subtle background pattern */}
-            <div
-                className="absolute inset-0 opacity-[0.02]"
-                style={{
-                    backgroundImage: `radial-gradient(circle at 2px 2px, ${textColor} 1px, transparent 0)`,
-                    backgroundSize: '40px 40px'
-                }}
-            />
-
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -155,27 +144,6 @@ export function CoverSlide({ content, isEditing, onUpdate, brand, logo, palette 
                 )}
             </motion.div>
 
-            {/* Corner Decorative Elements */}
-            <motion.div
-                initial={{ opacity: 0, x: -20, y: -20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="absolute top-8 left-8 w-24 h-24 border-t-[3px] border-l-[3px] rounded-tl-lg"
-                style={{ borderColor: `${accentColor}20` }}
-            />
-            <motion.div
-                initial={{ opacity: 0, x: 20, y: 20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="absolute bottom-8 right-8 w-24 h-24 border-b-[3px] border-r-[3px] rounded-br-lg"
-                style={{ borderColor: `${accentColor}20` }}
-            />
-
-            {/* Subtle accent circle */}
-            <div
-                className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-5"
-                style={{ backgroundColor: accentColor }}
-            />
         </div>
     );
 }
