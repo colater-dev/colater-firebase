@@ -488,7 +488,7 @@ const font = getRandomFontByCategory('Stylish');
 interface Brand {
   id: string;                      // Document ID
   userId: string;                  // Owner's user ID
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;   // Firestore Timestamp
   latestName: string;              // Brand name
   latestElevatorPitch: string;     // Brand description
   latestAudience: string;          // Target audience
@@ -510,7 +510,7 @@ interface Tagline {
   brandId: string;
   userId: string;
   tagline: string;
-  createdAt: any; // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
   status?: 'generated' | 'liked' | 'disliked';
 }
 ```
@@ -525,7 +525,7 @@ interface Logo {
   logoUrl: string;                 // Original logo URL
   prompt?: string;                 // Generation prompt
   concept?: string;                // Logo concept description
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
   isPublic?: boolean;              // Public sharing enabled
 
   // Display settings
@@ -567,8 +567,8 @@ interface Logo {
   font?: string;                   // Selected font
   rating?: number;                 // 1-5 star ranking
   feedback?: string;               // Qualitative feedback
-  presentationData?: any;          // Presentation slide data
-  justification?: any;             // Design justification
+  presentationData?: PresentationData;
+  justification?: Justification;
 }
 ```
 
@@ -601,7 +601,7 @@ interface LogoFeedback {
   authorName?: string;             // Present if user was logged in
   authorId?: string;               // Present if user was logged in
   isAnonymous: boolean;
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
 }
 ```
 
@@ -856,7 +856,26 @@ npm run start            # Start production server
 # Code Quality
 npm run lint             # Run ESLint
 npm run typecheck        # Run TypeScript compiler check (tsc --noEmit)
+npm test                 # Run Vitest test suite (117 tests)
+npm run test:watch       # Run Vitest in watch mode
 ```
+
+## Testing
+
+**Test runner**: Vitest (configured in `vitest.config.ts`)
+
+**Test files** (117 tests across 4 files):
+- `src/lib/__tests__/color-utils.test.ts` — hex/rgb/hsl conversion, darken/lighten, shiftHue, isLightColor
+- `src/lib/__tests__/logo-analysis.test.ts` — analyzeLogoImage, calculateBalance, balanceToDisplaySettings
+- `src/lib/__tests__/image-utils.test.ts` — getProxyUrl
+- `src/features/onboarding/utils/__tests__/validation-schemas.test.ts` — all onboarding Zod schemas
+
+## CI
+
+GitHub Actions workflow at `.github/workflows/ci.yml` runs on every push to main and every PR:
+1. `npm run typecheck`
+2. `npm run lint`
+3. `npm test`
 
 ## Environment Variables
 
@@ -972,29 +991,18 @@ Using shadcn/ui with Radix UI primitives (40+ components):
 9. **Use client components sparingly** - prefer server components
 10. **Test responsive design** at multiple breakpoints
 
-## Testing Strategy (Recommended)
+## Testing Strategy
 
-1. **Unit Tests**:
-   - Service layer methods
-   - Utility functions (color-utils, image-utils)
-   - Custom hooks (useRequireAuth)
+**Currently tested** (117 tests, all passing):
+- Color conversion utilities (hex/rgb/hsl roundtrips, darken/lighten/shiftHue)
+- Logo analysis algorithms (visual weight, balance calculation, display settings)
+- Image proxy URL generation
+- Onboarding validation schemas (all 4 steps + merged schema)
 
-2. **Component Tests**:
-   - Brand components
-   - Logo controls
-   - Form inputs
-
-3. **Integration Tests**:
-   - Auth flow (login, redirect, logout)
-   - Brand creation flow
-   - AI generation flows with all providers
-   - Logo manipulation workflows
-
-4. **E2E Tests**:
-   - Full user journey
-   - Brand creation to presentation
-   - Logo generation and customization
-   - Multi-provider logo generation
+**Recommended next areas to add tests**:
+- Service layer methods (brand.service, logo.service, tagline.service) with mocked Firestore
+- API routes (api-key CRUD, image search)
+- AI flow contract tests (validate response shapes, not AI output content)
 
 ## Contributing
 
