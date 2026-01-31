@@ -282,7 +282,7 @@ export default function PresentationClient() {
                         <ChevronLeft className="w-5 h-5" />
                     </Button>
                     <div className="h-6 w-px bg-border" />
-                    <span className="font-bold tracking-tight">{brand?.latestName} Presentation</span>
+                    <span className="font-bold tracking-tight">{brand?.latestName}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
