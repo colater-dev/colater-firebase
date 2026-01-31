@@ -16,7 +16,8 @@ import { StickerPreview } from './sticker-preview';
 import { MockupPreview } from './mockup-preview';
 
 import { LogoPreviewCard } from './logo-preview-card';
-import { cropImageToContent, createStickerEffect, getProxyUrl } from '@/lib/image-utils';
+import { cropImageToContent, getProxyUrl } from '@/lib/image-utils';
+import { createStickerEffect } from '@/lib/sticker-effect';
 import { useToast } from '@/hooks/use-toast';
 
 interface LogoShowcaseProps {
@@ -258,9 +259,16 @@ export const LogoShowcase = memo(function LogoShowcase({
             } else {
                 cropImageToContent(currentLogo.logoUrl).then(setCroppedLogoUrl);
             }
-            createStickerEffect(currentLogo.logoUrl).then(setStickerLogoUrl);
+            // B&W sticker is now generated in a separate effect that depends on croppedLogoUrl
         }
     }, [currentLogo?.logoUrl, currentLogo?.cropDetails, onSaveCropDetails, setInvertLogo]);
+
+    // Generate B&W sticker from cropped logo (once cropped logo is ready)
+    useEffect(() => {
+        if (croppedLogoUrl) {
+            createStickerEffect(croppedLogoUrl).then(setStickerLogoUrl);
+        }
+    }, [croppedLogoUrl]);
 
     // New effect for color sticker (if a color version exists)
     useEffect(() => {
