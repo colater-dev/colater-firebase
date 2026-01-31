@@ -1,8 +1,17 @@
 
+import type { Timestamp } from 'firebase/firestore';
+
+/**
+ * Firestore timestamp type. This is the Firestore `Timestamp` when reading
+ * documents. When writing, services use `serverTimestamp()` which resolves
+ * to a `Timestamp` once persisted.
+ */
+export type FirestoreTimestamp = Timestamp;
+
 export interface Brand {
     id: string;
     userId: string;
-    createdAt: any; // Firestore Timestamp
+    createdAt: FirestoreTimestamp;
     latestName: string;
     latestElevatorPitch: string;
     latestAudience: string;
@@ -20,7 +29,7 @@ export interface Tagline {
     brandId: string;
     userId: string;
     tagline: string;
-    createdAt: any; // Firestore Timestamp
+    createdAt: FirestoreTimestamp;
     status?: 'generated' | 'liked' | 'disliked';
 }
 
@@ -31,7 +40,7 @@ export interface Logo {
     logoUrl: string;
     prompt?: string;
     concept?: string;
-    createdAt: any; // Firestore Timestamp
+    createdAt: FirestoreTimestamp;
     isPublic?: boolean; // Whether the logo can be publicly shared
     displaySettings?: {
         layout?: 'horizontal' | 'vertical'; // Deprecated
@@ -60,8 +69,29 @@ export interface Logo {
     font?: string;
     rating?: number; // 1-5 stars ranking
     feedback?: string; // qualitative feedback for prompt improvement
-    presentationData?: any;
-    justification?: any;
+    presentationData?: PresentationData;
+    justification?: Justification;
+}
+
+export interface JustificationPoint {
+    x: number;
+    y: number;
+    comment: string;
+    id: string;
+}
+
+export interface Justification {
+    overallSummary: string;
+    points: JustificationPoint[];
+}
+
+export interface PresentationData {
+    tagline: string;
+    brandStatement: string;
+    supportingLine: string;
+    visualIntentPhrases: string[];
+    colorPhilosophy: string;
+    closingStatement: string;
 }
 
 export interface CritiquePoint {
@@ -86,15 +116,15 @@ export interface LogoFeedback {
     authorName?: string; // Present if user was logged in
     authorId?: string; // Present if user was logged in
     isAnonymous: boolean;
-    createdAt: any; // Firestore Timestamp
+    createdAt: FirestoreTimestamp;
 }
 
 export interface Presentation {
     id: string;
     brandId: string;
     userId: string;
-    createdAt: any;
-    lastEdited: any;
+    createdAt: FirestoreTimestamp;
+    lastEdited: FirestoreTimestamp;
     version: number;
     slides: PresentationSlide[];
     title?: string;
@@ -102,14 +132,14 @@ export interface Presentation {
     isPublic: boolean;
     shareToken?: string;
     sharePassword?: string;
-    expiresAt?: any;
+    expiresAt?: FirestoreTimestamp;
     viewCount: number;
-    lastViewed?: any;
+    lastViewed?: FirestoreTimestamp;
 }
 
 export interface PresentationSlide {
     slideId: string;
     order: number;
     isVisible: boolean;
-    content: Record<string, any>;
+    content: Record<string, unknown>;
 }

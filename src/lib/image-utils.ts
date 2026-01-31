@@ -15,7 +15,7 @@ export function getProxyUrl(url: string | undefined | null): string {
  * Load an image and convert to data URI using canvas
  * Uses Next.js image proxy for cross-origin images (same-origin, no CORS issues)
  */
-async function loadImageAsDataUri(url: string): Promise<string> {
+export async function loadImageAsDataUri(url: string): Promise<string> {
     if (!url) return '';
     if (url.startsWith('data:')) return url;
 
