@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
@@ -9,7 +9,7 @@ import type { Brand, Logo, Presentation } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
-    X, Loader2, Smartphone, Send, Maximize2, Type, Sparkles,
+    X, Loader2, Smartphone, Send, Maximize2, Type,
     Share2, Edit3, Eye, MoreHorizontal, ChevronLeft, ChevronRight, Save, Link as LinkIcon, Check,
     Download
 } from 'lucide-react';
@@ -69,9 +69,11 @@ export default function PresentationClient() {
     const activeLogo = useMemo(() => logos?.find(l => l.logoUrl === brand?.logoUrl) || logos?.[0], [logos, brand]);
     const activePalette = useMemo(() => activeLogo?.colorVersions?.[0]?.palette || activeLogo?.palette || ['#000000', '#FFFFFF', '#6366F1'], [activeLogo]);
 
-    // Fetch or Initialize Presentation
+    const generatingRef = useRef(false);
+
+    // Fetch or Initialize Presentation (auto-generates narrative if none exists)
     useEffect(() => {
-        if (!user || !brandId || presentation) return;
+        if (!user || !brandId || presentation || generatingRef.current) return;
 
         const loadPresentation = async () => {
             try {
@@ -79,7 +81,22 @@ export default function PresentationClient() {
                 if (existing) {
                     setPresentation(existing);
                 } else if (brand && activeLogo) {
-                    // Pre-initialize with brand data if no presentation exists
+                    generatingRef.current = true;
+                    setIsGenerating(true);
+
+                    // Generate narrative content via AI
+                    const narrativeResult = await getPresentationNarrative({
+                        brandName: brand.latestName,
+                        elevatorPitch: brand.latestElevatorPitch,
+                        targetAudience: brand.latestAudience,
+                        desirableCues: brand.latestDesirableCues,
+                        logoConceptSummary: activeLogo.concept,
+                        palette: activePalette,
+                        colorNames: activeLogo.colorVersions?.[0]?.colorNames || activeLogo.colorNames
+                    });
+
+                    const narrative = narrativeResult.success ? narrativeResult.data : null;
+
                     const initialPresentation: Partial<Presentation> = {
                         brandId,
                         userId: user.uid,
@@ -88,19 +105,25 @@ export default function PresentationClient() {
                         viewCount: 0,
                         slides: [
                             { slideId: 'cover', order: 0, isVisible: true, content: { brandName: brand.latestName, tagline: brand.primaryTagline || '', clientName: '' } },
-                            { slideId: 'challenge', order: 1, isVisible: true, content: { challengeTitle: 'The Challenge', problemStatement: brand.latestElevatorPitch, marketContext: '' } },
-                            { slideId: 'solution', order: 2, isVisible: true, content: { solutionStatement: '', keyAttributes: [], targetAudienceStatement: brand.latestAudience } },
+                            { slideId: 'challenge', order: 1, isVisible: true, content: { challengeTitle: narrative?.challengeTitle || 'The Challenge', problemStatement: narrative?.problemStatement || brand.latestElevatorPitch, marketContext: narrative?.marketContext || '' } },
+                            { slideId: 'solution', order: 2, isVisible: true, content: { solutionStatement: narrative?.solutionStatement || '', keyAttributes: narrative?.keyAttributes || [], targetAudienceStatement: narrative?.targetAudienceStatement || brand.latestAudience } },
                             { slideId: 'logo-reveal', order: 3, isVisible: true, content: {} },
                             { slideId: 'visual-identity', order: 4, isVisible: true, content: {} },
-                            { slideId: 'color-story', order: 5, isVisible: true, content: { colorPhilosophy: '', colorUsage: [] } },
+                            { slideId: 'color-story', order: 5, isVisible: true, content: { colorPhilosophy: narrative?.colorPhilosophy || '', colorUsage: narrative?.colorUsage || [] } },
                             { slideId: 'applications', order: 6, isVisible: true, content: {} },
-                            { slideId: 'next-steps', order: 7, isVisible: true, content: { deliverablesList: ['Vector Logo Files', 'Brand Style Guide', 'Social Media Assets'], nextStepsStatement: '', closingMessage: 'Building the future together.' } },
+                            { slideId: 'next-steps', order: 7, isVisible: true, content: { deliverablesList: narrative?.deliverablesList || ['Vector Logo Files', 'Brand Style Guide', 'Social Media Assets'], nextStepsStatement: narrative?.nextStepsStatement || '', closingMessage: narrative?.closingMessage || 'Building the future together.' } },
                         ]
                     };
-                    setPresentation(initialPresentation as Presentation);
+
+                    // Save to Firebase and set state
+                    const id = await presentationService.savePresentation(user.uid, brandId, initialPresentation);
+                    setPresentation({ ...initialPresentation, id } as Presentation);
+                    setIsGenerating(false);
                 }
             } catch (error) {
                 console.error("Failed to load presentation:", error);
+                setIsGenerating(false);
+                generatingRef.current = false;
                 toast({
                     title: "Connection Error",
                     description: "Failed to load presentation data. Please check your connection and try again.",
@@ -110,7 +133,7 @@ export default function PresentationClient() {
         };
 
         loadPresentation();
-    }, [user, brandId, presentationService, brand, activeLogo, toast]);
+    }, [user, brandId, presentationService, brand, activeLogo, activePalette, toast]);
 
     // Keyboard Navigation
     useEffect(() => {
@@ -139,53 +162,6 @@ export default function PresentationClient() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isEditing, presentation, router]);
-
-    const handleGenerateNarrative = async () => {
-        if (!brand || !activeLogo) return;
-
-        setIsGenerating(true);
-        try {
-            const result = await getPresentationNarrative({
-                brandName: brand.latestName,
-                elevatorPitch: brand.latestElevatorPitch,
-                targetAudience: brand.latestAudience,
-                desirableCues: brand.latestDesirableCues,
-                logoConceptSummary: activeLogo.concept,
-                palette: activePalette,
-                colorNames: activeLogo.colorVersions?.[0]?.colorNames || activeLogo.colorNames
-            });
-
-            if (result.success && result.data && presentation) {
-                const updatedSlides = presentation.slides.map(slide => {
-                    const content = { ...slide.content };
-                    if (slide.slideId === 'challenge') {
-                        content.challengeTitle = result.data!.challengeTitle;
-                        content.problemStatement = result.data!.problemStatement;
-                        content.marketContext = result.data!.marketContext;
-                    } else if (slide.slideId === 'solution') {
-                        content.solutionStatement = result.data!.solutionStatement;
-                        content.keyAttributes = result.data!.keyAttributes;
-                        content.targetAudienceStatement = result.data!.targetAudienceStatement;
-                    } else if (slide.slideId === 'color-story') {
-                        content.colorPhilosophy = result.data!.colorPhilosophy;
-                        content.colorUsage = result.data!.colorUsage;
-                    } else if (slide.slideId === 'next-steps') {
-                        content.deliverablesList = result.data!.deliverablesList;
-                        content.nextStepsStatement = result.data!.nextStepsStatement;
-                        content.closingMessage = result.data!.closingMessage;
-                    }
-                    return { ...slide, content };
-                });
-
-                setPresentation({ ...presentation, slides: updatedSlides });
-                toast({ title: "Narrative Generated", description: "Your presentation story is ready." });
-            }
-        } catch (error) {
-            toast({ title: "Generation Failed", description: "Could not generate AI narrative.", variant: "destructive" });
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     const handleUpdateSlideContent = (slideId: string, updates: any) => {
         if (!presentation) return;
@@ -259,7 +235,12 @@ export default function PresentationClient() {
     if (brandLoading || !presentation || !brand) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    {isGenerating && (
+                        <p className="text-sm text-muted-foreground animate-pulse">Generating your presentation...</p>
+                    )}
+                </div>
             </div>
         );
     }
@@ -314,19 +295,6 @@ export default function PresentationClient() {
                         {isEditing ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
                         {isEditing ? "Preview" : "Edit Mode"}
                     </Button>
-
-                    {isEditing && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
-                            onClick={handleGenerateNarrative}
-                            disabled={isGenerating}
-                        >
-                            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                            AI Narrative
-                        </Button>
-                    )}
 
                     <div className="h-6 w-px bg-border mx-2" />
 
