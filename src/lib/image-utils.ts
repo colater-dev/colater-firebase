@@ -384,6 +384,26 @@ export async function createStickerEffect(imageUrl: string, maskSourceUrl?: stri
             for (let i = 0; i < width * height; i++) {
                 if (isBackground[i] === 1) logoData[i * 4 + 3] = 0;
             }
+
+            // For B&W logos (self-masked) with dark backgrounds, the content is
+            // light/white and invisible against the white sticker border.
+            // Invert content pixels here so the logo is visible, rather than
+            // relying on a CSS invert filter which also inverts the border.
+            const isSelfMasked = !maskSourceUrl || maskSourceUrl === imageUrl;
+            if (isSelfMasked) {
+                const bgLuminance = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
+                if (bgLuminance < 128) {
+                    for (let i = 0; i < width * height; i++) {
+                        if (isBackground[i] === 0) {
+                            const idx = i * 4;
+                            logoData[idx] = 255 - logoData[idx];
+                            logoData[idx + 1] = 255 - logoData[idx + 1];
+                            logoData[idx + 2] = 255 - logoData[idx + 2];
+                        }
+                    }
+                }
+            }
+
             logoCtx.putImageData(logoImageData, 0, 0);
             finalCtx.drawImage(logoCanvas, 0, 0);
         }
