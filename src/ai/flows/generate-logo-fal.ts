@@ -98,7 +98,7 @@ Then, return ONLY a concise Prompt (4-5 sentences) that can be directly used for
         let aiStylePrompt = "";
         try {
             const genkitResponse = await ai.generate({
-                model: 'googleai/gemini-2.5-flash',
+                model: 'googleai/gemini-3-flash-preview',
                 prompt: stylePromptPrompt,
             });
             aiStylePrompt = genkitResponse.text || "";

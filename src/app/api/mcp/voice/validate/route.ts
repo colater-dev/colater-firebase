@@ -92,7 +92,7 @@ Be specific and actionable in your feedback.
     `.trim();
 
     const response = await ai.generate({
-      model: 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-3-flash-preview',
       prompt,
       output: { format: 'json', schema: VoiceValidationOutputSchema },
     });
