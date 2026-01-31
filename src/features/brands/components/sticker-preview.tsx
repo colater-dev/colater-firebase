@@ -6,11 +6,10 @@ interface StickerPreviewProps {
     brandName: string;
     label: string;
     isColor?: boolean;
-    invert?: boolean;
     hueShift?: number;
 }
 
-export const StickerPreview = memo(function StickerPreview({ stickerUrl, brandName, label, isColor = false, invert = false, hueShift = 0 }: StickerPreviewProps) {
+export const StickerPreview = memo(function StickerPreview({ stickerUrl, brandName, label, isColor = false, hueShift = 0 }: StickerPreviewProps) {
     const handleDownload = () => {
         if (!stickerUrl) return;
         const link = document.createElement('a');
@@ -44,7 +43,7 @@ export const StickerPreview = memo(function StickerPreview({ stickerUrl, brandNa
                         maxHeight: isColor ? '50%' : '45%',
                         filter: `${isColor
                             ? 'drop-shadow(1px 0 0 white) drop-shadow(-1px 0 0 white) drop-shadow(0 1px 0 white) drop-shadow(0 -1px 0 white) drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)'
-                            : `${invert ? 'invert(1) ' : ''}drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)`
+                            : 'drop-shadow(rgba(0, 0, 0, 0.3) -1.5px 2px .5px)'
                             } hue-rotate(${hueShift}deg)`,
                         transform: `rotate(${isColor ? '15' : '-12'}deg)`,
                         opacity: 0.8

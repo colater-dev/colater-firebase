@@ -49,7 +49,7 @@ export const MockupPreview = memo(function MockupPreview({
                     style={{
                         width: '12%',
                         height: '12%',
-                        mixBlendMode: 'color-dodge',
+                        mixBlendMode: 'multiply',
                         transform: 'rotate(-8deg)',
                         opacity: 0.5,
                         filter: invert ? 'invert(1)' : 'none'

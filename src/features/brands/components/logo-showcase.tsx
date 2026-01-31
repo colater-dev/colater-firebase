@@ -518,7 +518,6 @@ export const LogoShowcase = memo(function LogoShowcase({
                     stickerUrl={stickerLogoUrl}
                     brandName={brandName}
                     label="Sticker"
-                    invert={invertLogo}
                 />
 
                 {/* Color Sticker Effect - Show color sticker if available */}
