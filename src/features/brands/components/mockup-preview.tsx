@@ -47,9 +47,10 @@ export const MockupPreview = memo(function MockupPreview({
                     alt={`${label} logo`}
                     className="object-contain absolute"
                     style={{
-                        width: '12%',
-                        height: '12%',
-                        mixBlendMode: invert ? 'screen' : 'multiply',
+                        filter: 'invert(1)',
+                        width: '20%',
+                        height: '20%',
+                        mixBlendMode: 'color-dodge',
                         transform: 'rotate(-8deg)',
                         opacity: 0.5,
                     }}
