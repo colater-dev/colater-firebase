@@ -8,6 +8,79 @@
  * - Applies distance transform for smooth white border
  */
 
+import { getProxyUrl } from './image-utils';
+
+/**
+ * Load an image and convert to data URI using canvas
+ * Uses Next.js image proxy for cross-origin images (same-origin, no CORS issues)
+ */
+async function loadImageAsDataUri(url: string): Promise<string> {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+
+    // Use Next.js proxy - this is same-origin so no CORS issues
+    const proxyUrl = getProxyUrl(url);
+    const isProxied = proxyUrl !== url && proxyUrl.startsWith('/');
+
+    return new Promise<string>((resolve) => {
+        const img = new Image();
+        // Only set crossOrigin for direct external URLs, not for same-origin proxy
+        if (!isProxied) {
+            img.crossOrigin = "Anonymous";
+        }
+
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(url);
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            } catch (e) {
+                console.warn('Canvas export failed, falling back to URL:', e);
+                resolve(url);
+            }
+        };
+
+        img.onerror = () => {
+            // If proxy fails, try original URL with crossOrigin
+            if (isProxied) {
+                const fallbackImg = new Image();
+                fallbackImg.crossOrigin = "Anonymous";
+
+                fallbackImg.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = fallbackImg.width;
+                        canvas.height = fallbackImg.height;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            resolve(url);
+                            return;
+                        }
+                        ctx.drawImage(fallbackImg, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    } catch (e) {
+                        resolve(url);
+                    }
+                };
+
+                fallbackImg.onerror = () => resolve(url);
+                fallbackImg.src = url;
+            } else {
+                resolve(url);
+            }
+        };
+
+        img.src = proxyUrl;
+    });
+}
+
 /**
  * Load an image from a URL or data URI
  */
@@ -40,14 +113,16 @@ function getLuminance(r: number, g: number, b: number): number {
  */
 export async function createStickerEffect(imageUrl: string, maskSourceUrl?: string): Promise<string> {
     try {
-        // Load target image (expects data URI or CORS-enabled URL)
-        const targetImg = await loadImage(imageUrl);
+        // Convert URLs to data URIs to avoid CORS issues
+        const targetDataUri = await loadImageAsDataUri(imageUrl);
+        const targetImg = await loadImage(targetDataUri);
 
         // Load mask source (B&W logo) if provided
         let maskImg = targetImg;
         if (maskSourceUrl && maskSourceUrl !== imageUrl) {
             try {
-                maskImg = await loadImage(maskSourceUrl);
+                const maskDataUri = await loadImageAsDataUri(maskSourceUrl);
+                maskImg = await loadImage(maskDataUri);
             } catch (e) {
                 console.warn('Failed to load mask source, falling back to target image', e);
             }

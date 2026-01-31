@@ -135,15 +135,20 @@ export const LogoShowcase = memo(function LogoShowcase({
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
     const [stickerLogoUrl, setStickerLogoUrl] = useState<string | null>(null);
     const [colorStickerUrl, setColorStickerUrl] = useState<string | null>(null);
+    const [directStickerUrl, setDirectStickerUrl] = useState<string | null>(null); // B&W sticker from original URL (bypassing crop)
     const [cropBounds, setCropBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
     // Existing effect for bw sticker and cropped logo
 
     useEffect(() => {
         if (currentLogo?.logoUrl) {
-            // Calculate crop bounds from original image
+            // Calculate crop bounds from original image using proxy to avoid CORS
+            const proxyUrl = getProxyUrl(currentLogo.logoUrl);
             const originalImg = document.createElement('img');
-            originalImg.crossOrigin = "Anonymous";
+            // Don't set crossOrigin for same-origin proxy requests
+            if (!proxyUrl.startsWith('/')) {
+                originalImg.crossOrigin = "Anonymous";
+            }
             originalImg.onload = () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = originalImg.width;
@@ -152,7 +157,13 @@ export const LogoShowcase = memo(function LogoShowcase({
                 if (!ctx) return;
 
                 ctx.drawImage(originalImg, 0, 0);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let imageData: ImageData;
+                try {
+                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                } catch (e) {
+                    console.warn('Could not get image data (CORS), skipping crop detection');
+                    return;
+                }
                 const data = imageData.data;
 
                 // Check corners for background color detection
@@ -252,7 +263,7 @@ export const LogoShowcase = memo(function LogoShowcase({
                 }
             };
             // Use proxy URL to avoid CORS issues
-            originalImg.src = getProxyUrl(currentLogo.logoUrl);
+            originalImg.src = proxyUrl;
 
             if (currentLogo.cropDetails) {
                 cropImageToContent(currentLogo.logoUrl, currentLogo.cropDetails).then(setCroppedLogoUrl);
@@ -280,6 +291,15 @@ export const LogoShowcase = memo(function LogoShowcase({
             setColorStickerUrl(null);
         }
     }, [currentLogo?.colorLogoUrl, currentLogo?.colorVersions, currentLogo?.logoUrl]);
+
+    // Direct B&W sticker effect (bypasses cropping, uses original URL like color sticker)
+    useEffect(() => {
+        if (currentLogo?.logoUrl) {
+            createStickerEffect(currentLogo.logoUrl).then(setDirectStickerUrl);
+        } else {
+            setDirectStickerUrl(null);
+        }
+    }, [currentLogo?.logoUrl]);
 
     const handleDownload = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, suffix: string) => {
         if (!ref.current) {
@@ -538,6 +558,13 @@ export const LogoShowcase = memo(function LogoShowcase({
                         hueShift={hueShifts[0] || 0}
                     />
                 )}
+
+                {/* Direct B&W Sticker Effect - Bypasses cropping, uses original URL */}
+                <StickerPreview
+                    stickerUrl={directStickerUrl}
+                    brandName={brandName}
+                    label="Direct Sticker"
+                />
 
                 {/* T-Shirt Mockup */}
                 <MockupPreview

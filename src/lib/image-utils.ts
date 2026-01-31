@@ -12,55 +12,74 @@ export function getProxyUrl(url: string | undefined | null): string {
 }
 
 /**
- * Convert an image URL to a data URI to bypass CORS restrictions
- * This is more reliable than the Next.js proxy for canvas operations
+ * Load an image and convert to data URI using canvas
+ * Uses Next.js image proxy for cross-origin images (same-origin, no CORS issues)
  */
-async function urlToDataUri(url: string): Promise<string> {
-    try {
-        if (!url) return '';
-        // First try to use the image directly if it's already a data URI
-        if (url.startsWith('data:')) {
-            return url;
+async function loadImageAsDataUri(url: string): Promise<string> {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+
+    // Use Next.js proxy - this is same-origin so no CORS issues
+    const proxyUrl = getProxyUrl(url);
+    const isProxied = proxyUrl !== url && proxyUrl.startsWith('/');
+
+    return new Promise<string>((resolve) => {
+        const img = new Image();
+        // Only set crossOrigin for direct external URLs, not for same-origin proxy
+        if (!isProxied) {
+            img.crossOrigin = "Anonymous";
         }
 
-        const proxyUrl = getProxyUrl(url);
-        if (!proxyUrl) return url; // Return original URL as fallback
-
-        // Try to fetch through proxy
-        let response: Response | null = null;
-        try {
-            response = await fetch(proxyUrl);
-        } catch (e) {
-            console.warn(`Proxy fetch error for ${url}:`, e);
-        }
-
-        // Fallback: If proxy fails, try to fetch directly
-        if (!response?.ok) {
-            console.warn(`Proxy fetch failed for ${url} (Status: ${response?.status}). Trying direct fetch...`);
+        img.onload = () => {
             try {
-                response = await fetch(url);
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(url);
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
             } catch (e) {
-                console.warn(`Direct fetch error for ${url}:`, e);
-                return url; // Return original URL as fallback
+                console.warn('Canvas export failed, falling back to URL:', e);
+                resolve(url);
             }
-        }
+        };
 
-        if (!response?.ok) {
-            console.warn(`Failed to fetch image data. Status: ${response?.status}. Returning original URL.`);
-            return url; // Return original URL as fallback
-        }
+        img.onerror = () => {
+            // If proxy fails, try original URL with crossOrigin
+            if (isProxied) {
+                const fallbackImg = new Image();
+                fallbackImg.crossOrigin = "Anonymous";
 
-        const blob = await response.blob();
-        return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = () => resolve(url); // Return original URL on read error
-            reader.readAsDataURL(blob);
-        });
-    } catch (error) {
-        console.error('Error converting URL to data URI:', error);
-        return url; // Return original URL as fallback instead of throwing
-    }
+                fallbackImg.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = fallbackImg.width;
+                        canvas.height = fallbackImg.height;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            resolve(url);
+                            return;
+                        }
+                        ctx.drawImage(fallbackImg, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    } catch (e) {
+                        resolve(url);
+                    }
+                };
+
+                fallbackImg.onerror = () => resolve(url);
+                fallbackImg.src = url;
+            } else {
+                resolve(url);
+            }
+        };
+
+        img.src = proxyUrl;
+    });
 }
 
 export async function cropImageToContent(
@@ -69,11 +88,22 @@ export async function cropImageToContent(
 ): Promise<string> {
     try {
         // Convert to data URI first to avoid CORS issues
-        const dataUri = await urlToDataUri(imageUrl);
+        const dataUri = await loadImageAsDataUri(imageUrl);
+
+        // If conversion failed (returned original URL), we can't do pixel analysis
+        // Just return the original image to avoid CORS errors
+        const isDataUri = dataUri.startsWith('data:');
+        if (!isDataUri && !cropDetails) {
+            console.warn('Could not convert to data URI and no crop details provided, returning original');
+            return imageUrl;
+        }
 
         return new Promise((resolve, reject) => {
             const img = new Image();
-            // No need for crossOrigin when using data URI
+            // Set crossOrigin if not using data URI (for when we have cropDetails but no data URI)
+            if (!isDataUri) {
+                img.crossOrigin = "Anonymous";
+            }
 
             img.onload = () => {
                 try {
@@ -97,8 +127,8 @@ export async function cropImageToContent(
                         minX = cropDetails.x;
                         minY = cropDetails.y;
                         // maxX and maxY are not needed if we use width/height directly
-                    } else {
-                        // Get image data
+                    } else if (isDataUri) {
+                        // Only try getImageData if we have a data URI (CORS-safe)
                         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         const data = imageData.data;
 
@@ -112,7 +142,7 @@ export async function cropImageToContent(
 
                         // Threshold for difference to consider as content
                         // 30 is a reasonable starting point for "significant difference"
-                        const threshold = 30;
+                        const threshold = 50;
 
                         // Iterate over pixels
                         for (let y = 0; y < canvas.height; y++) {
@@ -160,12 +190,6 @@ export async function cropImageToContent(
                     const width = cropDetails ? cropDetails.width : (maxX - minX);
                     const height = cropDetails ? cropDetails.height : (maxY - minY);
 
-                    // If the crop is basically the whole image, just return original
-                    if (width >= canvas.width - 2 && height >= canvas.height - 2) {
-                        console.log('Crop is entire image, returning original');
-                        resolve(imageUrl);
-                        return;
-                    }
 
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = width;
