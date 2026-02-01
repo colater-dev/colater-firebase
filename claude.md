@@ -104,6 +104,8 @@ src/
 │   │   │   ├── presentation/
 │   │   │   │   ├── presentation-client.tsx       # Presentation mode client
 │   │   │   │   └── page.tsx                      # Presentation mode page
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx                      # Brand settings (API keys, integrations)
 │   │   │   ├── brand-detail-client.tsx           # Brand detail page client (672 lines)
 │   │   │   └── page.tsx                          # Brand detail page
 │   │   └── new/
@@ -156,6 +158,8 @@ src/
 │   │       ├── palette-dots.tsx                  # Color palette display
 │   │       ├── sticker-preview.tsx               # Sticker mockup preview
 │   │       ├── taglines-list.tsx                 # Taglines management
+│   │       ├── brand-api-keys-tab.tsx            # API key management tab
+│   │       ├── brand-integrations-tab.tsx        # MCP setup wizard, playground, snippets
 │   │       └── index.ts
 │   └── moodboard/
 │       ├── components/
@@ -924,6 +928,29 @@ GitHub Actions workflow at `.github/workflows/ci.yml` runs on every push to main
 - Config: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
 - Instrumentation: `src/instrumentation.ts`
 - Source map upload: enabled when `SENTRY_AUTH_TOKEN` is set
+
+## MCP / API System
+
+**4 API endpoints** for programmatic brand access, used by Claude Desktop and external integrations.
+
+**Authentication**: API keys with format `colater_sk_brand_{brandId}_{random}`, validated via SHA-256 hash lookup in Firestore `collectionGroup('apiKeys')`. Supports 3 permission tiers: owner (full), team (read+validate), developer (read+generate).
+
+**Auth module**: `src/lib/mcp-auth.ts` — `validateMCPApiKey()`, `requireMCPAuth()`
+
+**Endpoints** (all POST, require `Authorization: Bearer <api-key>`):
+- `/api/mcp/brands/context` — Full brand identity, voice, visual, positioning. Params: `brandId`, `sections?`, `includeAssets?`
+- `/api/mcp/brands/list` — List brands with pagination/sorting/filtering. Params: `limit?`, `offset?`, `sortBy?`, `filter?`
+- `/api/mcp/assets/get` — Logos, colors, fonts in multiple formats (hex/rgb/hsl/tailwind/css/figma). Params: `brandId`, `assetTypes`, `format?`
+- `/api/mcp/voice/validate` — AI voice validation via Gemini. Params: `brandId`, `text`, `context?`, `strictness?`
+
+**Settings page**: `/brands/[brandId]/settings` with 3 tabs:
+- **Share & API Keys** (`brand-api-keys-tab.tsx`) — Create/list/revoke API keys, MCP config generator dialog
+- **Integrations** (`brand-integrations-tab.tsx`) — MCP setup wizard (3-step Claude Desktop config), interactive API playground (test endpoints live with session auth), code snippets (cURL/TypeScript/Python), quick reference table
+- **General** — Coming soon
+
+**Discoverability**: Settings button in `brand-identity-header.tsx` links to `/brands/[brandId]/settings?tab=integrations`. Tab query param respected via `useSearchParams()`.
+
+**API key service**: `src/services/api-key.service.ts` — CRUD for brand API keys
 
 ## Environment Variables
 

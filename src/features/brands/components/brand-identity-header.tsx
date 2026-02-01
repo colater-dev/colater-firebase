@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Type, Share2, Trash2, Presentation } from 'lucide-react';
+import { Loader2, MessageSquare, Type, Share2, Trash2, Presentation, Settings } from 'lucide-react';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Logo } from '@/lib/types';
 import { useState } from 'react';
@@ -143,6 +143,12 @@ export function BrandIdentityHeader({
               <Button variant="outline">
                 <Presentation className="mr-2 h-4 w-4" />
                 Present
+              </Button>
+            </Link>
+            <Link href={`/brands/${brandId}/settings?tab=integrations`}>
+              <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </Button>
             </Link>
 
