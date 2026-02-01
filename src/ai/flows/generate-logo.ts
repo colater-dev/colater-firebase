@@ -50,7 +50,7 @@ const generateLogoFlow = ai.defineFlow(
     console.log(`[generate-logo] Prompt key: ${key}`);
 
     const tryGenerate = async () => ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
+      model: 'googleai/gemini-3-pro-image-preview',
       prompt,
       config: {
         responseModalities: ['IMAGE'],

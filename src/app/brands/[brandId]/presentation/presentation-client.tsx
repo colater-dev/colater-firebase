@@ -28,6 +28,9 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ErrorBoundary } from '@/components/error-boundary';
+import { useCredits } from '@/hooks/use-credits';
+import { CREDIT_COSTS } from '@/lib/credits';
 
 export default function PresentationClient() {
     const { brandId } = useParams() as { brandId: string };
@@ -36,6 +39,8 @@ export default function PresentationClient() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const { toggleOpen } = useSidebar();
+
+    const { balance: creditBalance, creditsService } = useCredits();
 
     const brandService = useMemo(() => createBrandService(firestore), [firestore]);
     const logoService = useMemo(() => createLogoService(firestore), [firestore]);
@@ -81,6 +86,18 @@ export default function PresentationClient() {
                 if (existing) {
                     setPresentation(existing);
                 } else if (brand && activeLogo) {
+                    // Check credits before generating narrative
+                    const cost = CREDIT_COSTS.presentationNarrative;
+                    if (creditBalance < cost) {
+                        toast({
+                            variant: 'destructive',
+                            title: 'Insufficient Credits',
+                            description: `Generating a presentation costs ${cost} credits. You have ${creditBalance}.`,
+                        });
+                        return;
+                    }
+                    await creditsService.deductCredits(user.uid, 'presentationNarrative');
+
                     generatingRef.current = true;
                     setIsGenerating(true);
 
@@ -133,7 +150,7 @@ export default function PresentationClient() {
         };
 
         loadPresentation();
-    }, [user, brandId, presentationService, brand, activeLogo, activePalette, toast]);
+    }, [user, brandId, presentationService, brand, activeLogo, activePalette, toast, creditBalance, creditsService]);
 
     // Keyboard Navigation
     useEffect(() => {
@@ -362,7 +379,9 @@ export default function PresentationClient() {
                             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                             className="w-full h-full"
                         >
-                            {renderSlide()}
+                            <ErrorBoundary section={`Slide: ${currentSlide.slideId}`}>
+                                {renderSlide()}
+                            </ErrorBoundary>
                         </motion.div>
                     </AnimatePresence>
 
@@ -423,14 +442,16 @@ export default function PresentationClient() {
 
                     return (
                         <div key={slide.slideId} data-slide={slide.slideId} className="w-[1200px] aspect-[16/10] bg-white overflow-hidden">
-                            {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />}
-                            {slide.slideId === 'challenge' && <Slides.ChallengeSlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'solution' && <Slides.SolutionSlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />}
-                            {slide.slideId === 'visual-identity' && <Slides.VisualIdentitySlide {...baseProps} />}
-                            {slide.slideId === 'color-story' && <Slides.ColorStorySlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'applications' && <Slides.ApplicationsSlide {...baseProps} />}
-                            {slide.slideId === 'next-steps' && <Slides.NextStepsSlide {...baseProps} content={content as any} />}
+                            <ErrorBoundary section={`Export: ${slide.slideId}`}>
+                                {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />}
+                                {slide.slideId === 'challenge' && <Slides.ChallengeSlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'solution' && <Slides.SolutionSlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />}
+                                {slide.slideId === 'visual-identity' && <Slides.VisualIdentitySlide {...baseProps} />}
+                                {slide.slideId === 'color-story' && <Slides.ColorStorySlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'applications' && <Slides.ApplicationsSlide {...baseProps} />}
+                                {slide.slideId === 'next-steps' && <Slides.NextStepsSlide {...baseProps} content={content as any} />}
+                            </ErrorBoundary>
                         </div>
                     );
                 })}

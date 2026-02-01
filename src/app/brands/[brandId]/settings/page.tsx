@@ -6,12 +6,14 @@
 'use client';
 
 import { use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/features/auth/hooks';
 import { useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BrandAPIKeysTab } from '@/features/brands/components/brand-api-keys-tab';
+import { BrandIntegrationsTab } from '@/features/brands/components/brand-integrations-tab';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -20,8 +22,13 @@ interface BrandSettingsPageProps {
   params: Promise<{ brandId: string }>;
 }
 
+const VALID_TABS = ['share', 'integrations', 'general'] as const;
+
 export default function BrandSettingsPage({ params }: BrandSettingsPageProps) {
   const { brandId } = use(params);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const defaultTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : 'share';
   const { user, isLoading: isAuthLoading } = useRequireAuth();
   const firestore = useFirestore();
 
@@ -81,20 +88,29 @@ export default function BrandSettingsPage({ params }: BrandSettingsPageProps) {
             {brand.latestName} Settings
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage API keys and team access
+            Manage API keys, integrations, and team access
           </p>
         </div>
 
         {/* Settings Tabs */}
         <Card className="p-6">
-          <Tabs defaultValue="share" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="share">Share & API Keys</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
               <TabsTrigger value="general">General</TabsTrigger>
             </TabsList>
 
             <TabsContent value="share" className="mt-6">
               <BrandAPIKeysTab
+                brandId={brandId}
+                brandName={brand.latestName}
+                userId={user!.uid}
+              />
+            </TabsContent>
+
+            <TabsContent value="integrations" className="mt-6">
+              <BrandIntegrationsTab
                 brandId={brandId}
                 brandName={brand.latestName}
                 userId={user!.uid}

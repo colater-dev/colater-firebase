@@ -104,6 +104,8 @@ src/
 │   │   │   ├── presentation/
 │   │   │   │   ├── presentation-client.tsx       # Presentation mode client
 │   │   │   │   └── page.tsx                      # Presentation mode page
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx                      # Brand settings (API keys, integrations)
 │   │   │   ├── brand-detail-client.tsx           # Brand detail page client (672 lines)
 │   │   │   └── page.tsx                          # Brand detail page
 │   │   └── new/
@@ -156,6 +158,8 @@ src/
 │   │       ├── palette-dots.tsx                  # Color palette display
 │   │       ├── sticker-preview.tsx               # Sticker mockup preview
 │   │       ├── taglines-list.tsx                 # Taglines management
+│   │       ├── brand-api-keys-tab.tsx            # API key management tab
+│   │       ├── brand-integrations-tab.tsx        # MCP setup wizard, playground, snippets
 │   │       └── index.ts
 │   └── moodboard/
 │       ├── components/
@@ -488,7 +492,7 @@ const font = getRandomFontByCategory('Stylish');
 interface Brand {
   id: string;                      // Document ID
   userId: string;                  // Owner's user ID
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;   // Firestore Timestamp
   latestName: string;              // Brand name
   latestElevatorPitch: string;     // Brand description
   latestAudience: string;          // Target audience
@@ -510,7 +514,7 @@ interface Tagline {
   brandId: string;
   userId: string;
   tagline: string;
-  createdAt: any; // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
   status?: 'generated' | 'liked' | 'disliked';
 }
 ```
@@ -525,7 +529,7 @@ interface Logo {
   logoUrl: string;                 // Original logo URL
   prompt?: string;                 // Generation prompt
   concept?: string;                // Logo concept description
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
   isPublic?: boolean;              // Public sharing enabled
 
   // Display settings
@@ -567,8 +571,8 @@ interface Logo {
   font?: string;                   // Selected font
   rating?: number;                 // 1-5 star ranking
   feedback?: string;               // Qualitative feedback
-  presentationData?: any;          // Presentation slide data
-  justification?: any;             // Design justification
+  presentationData?: PresentationData;
+  justification?: Justification;
 }
 ```
 
@@ -601,7 +605,7 @@ interface LogoFeedback {
   authorName?: string;             // Present if user was logged in
   authorId?: string;               // Present if user was logged in
   isAnonymous: boolean;
-  createdAt: any;                  // Firestore Timestamp
+  createdAt: FirestoreTimestamp;
 }
 ```
 
@@ -856,7 +860,97 @@ npm run start            # Start production server
 # Code Quality
 npm run lint             # Run ESLint
 npm run typecheck        # Run TypeScript compiler check (tsc --noEmit)
+npm test                 # Run Vitest test suite (117 tests)
+npm run test:watch       # Run Vitest in watch mode
 ```
+
+## Testing
+
+**Test runner**: Vitest (configured in `vitest.config.ts`)
+
+**Test files** (117 tests across 4 files):
+- `src/lib/__tests__/color-utils.test.ts` — hex/rgb/hsl conversion, darken/lighten, shiftHue, isLightColor
+- `src/lib/__tests__/logo-analysis.test.ts` — analyzeLogoImage, calculateBalance, balanceToDisplaySettings
+- `src/lib/__tests__/image-utils.test.ts` — getProxyUrl
+- `src/features/onboarding/utils/__tests__/validation-schemas.test.ts` — all onboarding Zod schemas
+
+## CI
+
+GitHub Actions workflow at `.github/workflows/ci.yml` runs on every push to main and every PR:
+1. `npm run typecheck`
+2. `npm run lint`
+3. `npm test`
+
+## Credits System
+
+**Credits** gate AI generation actions. Each action has a cost defined in `src/lib/credits.ts`.
+
+**Architecture:**
+- Firestore path: `userProfiles/{userId}` (balance, totalPurchased, totalUsed)
+- Transaction history: `userProfiles/{userId}/transactions/{id}`
+- Service: `src/services/credits.service.ts` — `CreditsService` / `createCreditsService(firestore)`
+- Hook: `src/hooks/use-credits.ts` — `useCredits()` returns `{ balance, isLoading, creditsService }`
+- Constants: `src/lib/credits.ts` — `CREDIT_COSTS`, `CREDIT_PACKAGES`, `INITIAL_CREDITS`
+
+**Credit costs:**
+- Logo generation: 10 | Colorization: 5 | Vectorization: 5
+- Critique: 3 | Concept: 3 | Tagline: 2
+- Presentation narrative: 5 | Brand completion/suggestions: 3
+
+**New users** get 50 free credits (initialized on first load via `useCredits` hook).
+
+**Mock payment page** at `/credits` — buy 50/100/200 credits with a single click. Shows balance, cost table, and transaction history.
+
+**Header** shows credit balance as a clickable pill linking to `/credits`.
+
+**Integration points** (credit checks added):
+- `brand-detail-client.tsx`: concept generation, logo generation, colorization, critique, vectorization
+- `presentation-client.tsx`: narrative generation
+
+## Error Handling
+
+**Error Boundaries**: React error boundaries prevent individual component failures from crashing the entire page.
+
+- `src/components/error-boundary.tsx` — Reusable `<ErrorBoundary section="Name">` component (class component). Catches render errors, reports to Sentry, shows fallback UI with "Try again" button.
+- `src/app/global-error.tsx` — Catches errors in the root layout (required for `FirebaseErrorListener` throws)
+- `src/app/error.tsx` — Root-level error page
+- `src/app/not-found.tsx` — 404 page
+- `src/app/dashboard/error.tsx` — Dashboard-specific error page
+- `src/app/brands/[brandId]/error.tsx` — Brand editor error page
+- `src/app/brands/[brandId]/presentation/error.tsx` — Presentation error page
+
+**Where error boundaries are applied**:
+- Brand editor: `BrandIdentityCard` wrapped in `<ErrorBoundary section="Brand Editor">`
+- Dashboard: Each `BrandListItem` wrapped individually (one bad brand card won't crash the grid)
+- Presentation: Each slide render + each PDF export slide wrapped individually
+
+**Sentry** (`@sentry/nextjs`): Error tracking, activated by setting `NEXT_PUBLIC_SENTRY_DSN` env var.
+- Config: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
+- Instrumentation: `src/instrumentation.ts`
+- Source map upload: enabled when `SENTRY_AUTH_TOKEN` is set
+
+## MCP / API System
+
+**4 API endpoints** for programmatic brand access, used by Claude Desktop and external integrations.
+
+**Authentication**: API keys with format `colater_sk_brand_{brandId}_{random}`, validated via SHA-256 hash lookup in Firestore `collectionGroup('apiKeys')`. Supports 3 permission tiers: owner (full), team (read+validate), developer (read+generate).
+
+**Auth module**: `src/lib/mcp-auth.ts` — `validateMCPApiKey()`, `requireMCPAuth()`
+
+**Endpoints** (all POST, require `Authorization: Bearer <api-key>`):
+- `/api/mcp/brands/context` — Full brand identity, voice, visual, positioning. Params: `brandId`, `sections?`, `includeAssets?`
+- `/api/mcp/brands/list` — List brands with pagination/sorting/filtering. Params: `limit?`, `offset?`, `sortBy?`, `filter?`
+- `/api/mcp/assets/get` — Logos, colors, fonts in multiple formats (hex/rgb/hsl/tailwind/css/figma). Params: `brandId`, `assetTypes`, `format?`
+- `/api/mcp/voice/validate` — AI voice validation via Gemini. Params: `brandId`, `text`, `context?`, `strictness?`
+
+**Settings page**: `/brands/[brandId]/settings` with 3 tabs:
+- **Share & API Keys** (`brand-api-keys-tab.tsx`) — Create/list/revoke API keys, MCP config generator dialog
+- **Integrations** (`brand-integrations-tab.tsx`) — MCP setup wizard (3-step Claude Desktop config), interactive API playground (test endpoints live with session auth), code snippets (cURL/TypeScript/Python), quick reference table
+- **General** — Coming soon
+
+**Discoverability**: Settings button in `brand-identity-header.tsx` links to `/brands/[brandId]/settings?tab=integrations`. Tab query param respected via `useSearchParams()`.
+
+**API key service**: `src/services/api-key.service.ts` — CRUD for brand API keys
 
 ## Environment Variables
 
@@ -888,6 +982,10 @@ R2_BUCKET_NAME=...
 
 # Unsplash (optional, for moodboard)
 UNSPLASH_ACCESS_KEY=...
+
+# Sentry (optional, for error tracking)
+NEXT_PUBLIC_SENTRY_DSN=...
+SENTRY_AUTH_TOKEN=...  # Only needed for source map upload
 ```
 
 ## UI Components (shadcn/ui)
@@ -972,29 +1070,18 @@ Using shadcn/ui with Radix UI primitives (40+ components):
 9. **Use client components sparingly** - prefer server components
 10. **Test responsive design** at multiple breakpoints
 
-## Testing Strategy (Recommended)
+## Testing Strategy
 
-1. **Unit Tests**:
-   - Service layer methods
-   - Utility functions (color-utils, image-utils)
-   - Custom hooks (useRequireAuth)
+**Currently tested** (117 tests, all passing):
+- Color conversion utilities (hex/rgb/hsl roundtrips, darken/lighten/shiftHue)
+- Logo analysis algorithms (visual weight, balance calculation, display settings)
+- Image proxy URL generation
+- Onboarding validation schemas (all 4 steps + merged schema)
 
-2. **Component Tests**:
-   - Brand components
-   - Logo controls
-   - Form inputs
-
-3. **Integration Tests**:
-   - Auth flow (login, redirect, logout)
-   - Brand creation flow
-   - AI generation flows with all providers
-   - Logo manipulation workflows
-
-4. **E2E Tests**:
-   - Full user journey
-   - Brand creation to presentation
-   - Logo generation and customization
-   - Multi-provider logo generation
+**Recommended next areas to add tests**:
+- Service layer methods (brand.service, logo.service, tagline.service) with mocked Firestore
+- API routes (api-key CRUD, image search)
+- AI flow contract tests (validate response shapes, not AI output content)
 
 ## Contributing
 

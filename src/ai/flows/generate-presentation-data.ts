@@ -54,7 +54,7 @@ export const generatePresentationData = ai.defineFlow(
     `;
 
         const response = await ai.generate({
-            model: 'googleai/gemini-2.0-flash',
+            model: 'googleai/gemini-3-flash-preview',
             prompt,
             output: { format: 'json', schema: GeneratePresentationDataOutputSchema },
         });

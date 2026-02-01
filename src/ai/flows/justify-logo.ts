@@ -62,7 +62,7 @@ export async function justifyLogo(input: JustifyLogoInput): Promise<Justificatio
 
     try {
         const result = await ai.generate({
-            model: 'googleai/gemini-2.5-flash',
+            model: 'googleai/gemini-3-flash-preview',
             prompt: [
                 { text: prompt },
                 { media: { url: logoUrl } }

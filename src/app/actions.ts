@@ -3,16 +3,16 @@
 
 import { generateTaglines } from "@/ai/flows/generate-tagline";
 import { generateLogo } from "@/ai/flows/generate-logo";
-import { generateBrandDetails } from "@/ai/flows/generate-brand-details";
+import { generateBrandDetails, type GenerateBrandDetailsOutput } from "@/ai/flows/generate-brand-details";
 import { colorizeLogo, ColorizeLogoInput } from "@/ai/flows/colorize-logo";
 import { generateLogoOpenAI } from "@/ai/flows/generate-logo-openai";
 import { generateLogoFal } from "@/ai/flows/generate-logo-fal";
-import { completeBrandDetails } from "@/ai/flows/complete-brand-details";
+import { completeBrandDetails, type CompleteBrandDetailsOutput } from "@/ai/flows/complete-brand-details";
 import { generateLogoConcept } from "@/ai/flows/generate-logo-concept";
 import { critiqueLogo, CritiqueLogoInput, Critique } from "@/ai/flows/critique-logo";
 import { vectoriseLogo } from "@/ai/flows/vectorise-logo";
 import { generateStories, GenerateStoriesInput } from "@/ai/flows/generate-stories";
-import { generatePresentationData, GeneratePresentationDataInput } from "@/ai/flows/generate-presentation-data";
+import { generatePresentationData, GeneratePresentationDataInput, type GeneratePresentationDataOutput } from "@/ai/flows/generate-presentation-data";
 import { justifyLogo, JustifyLogoInput, Justification } from "@/ai/flows/justify-logo";
 import { generatePresentationNarrative, PresentationNarrativeInput, PresentationNarrativeOutput } from "@/ai/flows/generate-presentation-narrative";
 
@@ -146,7 +146,7 @@ export async function getLogoSuggestionFal(
 export async function getBrandCompletion(
   name: string,
   elevatorPitch: string
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: CompleteBrandDetailsOutput; error?: string }> {
   try {
     if (!name || !elevatorPitch) {
       return { success: false, error: "Name and elevator pitch are required." };
@@ -163,7 +163,7 @@ export async function getBrandCompletion(
   }
 }
 
-export async function getBrandSuggestions(topic: string): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function getBrandSuggestions(topic: string): Promise<{ success: boolean; data?: GenerateBrandDetailsOutput; error?: string }> {
   try {
     if (!topic) {
       return { success: false, error: "Topic is required." };
@@ -290,7 +290,7 @@ export async function getVectorizedLogo(
 
 export async function getGeneratedStories(
   input: GenerateStoriesInput
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: Array<{ headline: string; body: string }>; error?: string }> {
   try {
     if (!input.name || !input.elevatorPitch) {
       return { success: false, error: "Name and elevator pitch are required." };
@@ -309,7 +309,7 @@ export async function getGeneratedStories(
 
 export async function getPresentationData(
   input: GeneratePresentationDataInput
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: GeneratePresentationDataOutput; error?: string }> {
   try {
     if (!input.name || !input.elevatorPitch || !input.concept) {
       return { success: false, error: "Name, elevator pitch, and concept are required." };
@@ -340,6 +340,7 @@ export async function getLogoJustification(
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return {
       success: false,
+      error: `An unexpected error occurred while justifying the logo: ${errorMessage}`,
     };
   }
 }
