@@ -28,6 +28,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export default function PresentationClient() {
     const { brandId } = useParams() as { brandId: string };
@@ -362,7 +363,9 @@ export default function PresentationClient() {
                             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                             className="w-full h-full"
                         >
-                            {renderSlide()}
+                            <ErrorBoundary section={`Slide: ${currentSlide.slideId}`}>
+                                {renderSlide()}
+                            </ErrorBoundary>
                         </motion.div>
                     </AnimatePresence>
 
@@ -423,14 +426,16 @@ export default function PresentationClient() {
 
                     return (
                         <div key={slide.slideId} data-slide={slide.slideId} className="w-[1200px] aspect-[16/10] bg-white overflow-hidden">
-                            {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />}
-                            {slide.slideId === 'challenge' && <Slides.ChallengeSlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'solution' && <Slides.SolutionSlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />}
-                            {slide.slideId === 'visual-identity' && <Slides.VisualIdentitySlide {...baseProps} />}
-                            {slide.slideId === 'color-story' && <Slides.ColorStorySlide {...baseProps} content={content as any} />}
-                            {slide.slideId === 'applications' && <Slides.ApplicationsSlide {...baseProps} />}
-                            {slide.slideId === 'next-steps' && <Slides.NextStepsSlide {...baseProps} content={content as any} />}
+                            <ErrorBoundary section={`Export: ${slide.slideId}`}>
+                                {slide.slideId === 'cover' && <Slides.CoverSlide {...baseProps} content={content as any} palette={activePalette} />}
+                                {slide.slideId === 'challenge' && <Slides.ChallengeSlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'solution' && <Slides.SolutionSlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'logo-reveal' && <Slides.LogoRevealSlide {...baseProps} palette={activePalette} />}
+                                {slide.slideId === 'visual-identity' && <Slides.VisualIdentitySlide {...baseProps} />}
+                                {slide.slideId === 'color-story' && <Slides.ColorStorySlide {...baseProps} content={content as any} />}
+                                {slide.slideId === 'applications' && <Slides.ApplicationsSlide {...baseProps} />}
+                                {slide.slideId === 'next-steps' && <Slides.NextStepsSlide {...baseProps} content={content as any} />}
+                            </ErrorBoundary>
                         </div>
                     );
                 })}

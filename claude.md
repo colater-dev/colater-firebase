@@ -877,6 +877,28 @@ GitHub Actions workflow at `.github/workflows/ci.yml` runs on every push to main
 2. `npm run lint`
 3. `npm test`
 
+## Error Handling
+
+**Error Boundaries**: React error boundaries prevent individual component failures from crashing the entire page.
+
+- `src/components/error-boundary.tsx` — Reusable `<ErrorBoundary section="Name">` component (class component). Catches render errors, reports to Sentry, shows fallback UI with "Try again" button.
+- `src/app/global-error.tsx` — Catches errors in the root layout (required for `FirebaseErrorListener` throws)
+- `src/app/error.tsx` — Root-level error page
+- `src/app/not-found.tsx` — 404 page
+- `src/app/dashboard/error.tsx` — Dashboard-specific error page
+- `src/app/brands/[brandId]/error.tsx` — Brand editor error page
+- `src/app/brands/[brandId]/presentation/error.tsx` — Presentation error page
+
+**Where error boundaries are applied**:
+- Brand editor: `BrandIdentityCard` wrapped in `<ErrorBoundary section="Brand Editor">`
+- Dashboard: Each `BrandListItem` wrapped individually (one bad brand card won't crash the grid)
+- Presentation: Each slide render + each PDF export slide wrapped individually
+
+**Sentry** (`@sentry/nextjs`): Error tracking, activated by setting `NEXT_PUBLIC_SENTRY_DSN` env var.
+- Config: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
+- Instrumentation: `src/instrumentation.ts`
+- Source map upload: enabled when `SENTRY_AUTH_TOKEN` is set
+
 ## Environment Variables
 
 **Required in `.env`**:
@@ -907,6 +929,10 @@ R2_BUCKET_NAME=...
 
 # Unsplash (optional, for moodboard)
 UNSPLASH_ACCESS_KEY=...
+
+# Sentry (optional, for error tracking)
+NEXT_PUBLIC_SENTRY_DSN=...
+SENTRY_AUTH_TOKEN=...  # Only needed for source map upload
 ```
 
 ## UI Components (shadcn/ui)

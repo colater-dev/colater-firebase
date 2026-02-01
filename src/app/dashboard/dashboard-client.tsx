@@ -14,6 +14,7 @@ import { CreateProjectCard } from '@/components/dashboard/create-project-card';
 import { UploadLogoCard } from '@/components/dashboard/upload-logo-card';
 import type { Brand } from '@/lib/types';
 import { BRAND_FONTS } from '@/config/brand-fonts';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const BrandListItem = ({ brand }: { brand: Brand }) => {
     const [croppedLogoUrl, setCroppedLogoUrl] = useState<string | null>(null);
@@ -163,7 +164,9 @@ export function DashboardClient() {
                     <CreateProjectCard />
                     <UploadLogoCard />
                     {brands.map((brand) => (
-                        <BrandListItem key={brand.id} brand={brand} />
+                        <ErrorBoundary key={brand.id} section={`Brand: ${brand.latestName}`}>
+                            <BrandListItem brand={brand} />
+                        </ErrorBoundary>
                     ))}
                 </div>
             )}

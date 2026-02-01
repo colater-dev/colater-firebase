@@ -33,6 +33,7 @@ import { ContentCard } from '@/components/layout';
 import { TutorialModal } from '@/features/onboarding/components';
 import { BRAND_FONTS } from '@/config/brand-fonts';
 import type { Brand, Logo } from '@/lib/types';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export function BrandDetailClient() {
     const { brandId } = useParams();
@@ -635,6 +636,7 @@ export function BrandDetailClient() {
 
                     {brand && (
                         <div className="space-y-8">
+                            <ErrorBoundary section="Brand Editor">
                             <BrandIdentityCard
                                 brandId={brandId as string}
                                 brandName={brand.latestName}
@@ -667,6 +669,7 @@ export function BrandDetailClient() {
                                 onDeleteLogo={handleDeleteLogo}
                                 onSaveCropDetails={handleSaveCropDetails}
                             />
+                            </ErrorBoundary>
 
                             <TutorialModal
                                 isOpen={showTutorial}
