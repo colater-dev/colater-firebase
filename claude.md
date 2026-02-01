@@ -877,6 +877,32 @@ GitHub Actions workflow at `.github/workflows/ci.yml` runs on every push to main
 2. `npm run lint`
 3. `npm test`
 
+## Credits System
+
+**Credits** gate AI generation actions. Each action has a cost defined in `src/lib/credits.ts`.
+
+**Architecture:**
+- Firestore path: `userProfiles/{userId}` (balance, totalPurchased, totalUsed)
+- Transaction history: `userProfiles/{userId}/transactions/{id}`
+- Service: `src/services/credits.service.ts` — `CreditsService` / `createCreditsService(firestore)`
+- Hook: `src/hooks/use-credits.ts` — `useCredits()` returns `{ balance, isLoading, creditsService }`
+- Constants: `src/lib/credits.ts` — `CREDIT_COSTS`, `CREDIT_PACKAGES`, `INITIAL_CREDITS`
+
+**Credit costs:**
+- Logo generation: 10 | Colorization: 5 | Vectorization: 5
+- Critique: 3 | Concept: 3 | Tagline: 2
+- Presentation narrative: 5 | Brand completion/suggestions: 3
+
+**New users** get 50 free credits (initialized on first load via `useCredits` hook).
+
+**Mock payment page** at `/credits` — buy 50/100/200 credits with a single click. Shows balance, cost table, and transaction history.
+
+**Header** shows credit balance as a clickable pill linking to `/credits`.
+
+**Integration points** (credit checks added):
+- `brand-detail-client.tsx`: concept generation, logo generation, colorization, critique, vectorization
+- `presentation-client.tsx`: narrative generation
+
 ## Error Handling
 
 **Error Boundaries**: React error boundaries prevent individual component failures from crashing the entire page.

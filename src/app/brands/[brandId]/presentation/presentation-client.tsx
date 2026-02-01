@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ErrorBoundary } from '@/components/error-boundary';
+import { useCredits } from '@/hooks/use-credits';
+import { CREDIT_COSTS } from '@/lib/credits';
 
 export default function PresentationClient() {
     const { brandId } = useParams() as { brandId: string };
@@ -37,6 +39,8 @@ export default function PresentationClient() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const { toggleOpen } = useSidebar();
+
+    const { balance: creditBalance, creditsService } = useCredits();
 
     const brandService = useMemo(() => createBrandService(firestore), [firestore]);
     const logoService = useMemo(() => createLogoService(firestore), [firestore]);
@@ -82,6 +86,18 @@ export default function PresentationClient() {
                 if (existing) {
                     setPresentation(existing);
                 } else if (brand && activeLogo) {
+                    // Check credits before generating narrative
+                    const cost = CREDIT_COSTS.presentationNarrative;
+                    if (creditBalance < cost) {
+                        toast({
+                            variant: 'destructive',
+                            title: 'Insufficient Credits',
+                            description: `Generating a presentation costs ${cost} credits. You have ${creditBalance}.`,
+                        });
+                        return;
+                    }
+                    await creditsService.deductCredits(user.uid, 'presentationNarrative');
+
                     generatingRef.current = true;
                     setIsGenerating(true);
 
@@ -134,7 +150,7 @@ export default function PresentationClient() {
         };
 
         loadPresentation();
-    }, [user, brandId, presentationService, brand, activeLogo, activePalette, toast]);
+    }, [user, brandId, presentationService, brand, activeLogo, activePalette, toast, creditBalance, creditsService]);
 
     // Keyboard Navigation
     useEffect(() => {
